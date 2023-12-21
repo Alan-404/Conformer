@@ -1,0 +1,8 @@
+{
+    "alpha": 2.1,
+    "beta": 9.2,
+    "hotwords": [],
+    "beam_width": 190,
+    "beam_prune_logp": -20,
+    "hotword_weight": 9.0
+}

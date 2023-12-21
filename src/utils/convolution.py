@@ -1,0 +1,44 @@
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from src.utils.activation import GLU, Swish
+
+class ConvolutionModule(nn.Module):
+    def __init__(self, channels: int, kernel_size: int, eps: float, dropout_rate: float = 0.0) -> None:
+        super().__init__()
+        padding = (kernel_size - 1) // 2
+
+        self.layer_norm = nn.LayerNorm(normalized_shape=channels, eps=eps)
+        self.pointwise_conv_1 = nn.Conv1d(in_channels=channels, out_channels=channels * 2, kernel_size=1, stride=1, padding=0)
+        self.glu = GLU(dim=1)
+        self.deepwise_conv = nn.Conv1d(in_channels=channels, out_channels=channels, kernel_size=kernel_size, stride=1, padding=padding, groups=channels)
+        self.batch_norm = nn.BatchNorm1d(num_features=channels, eps=eps)
+        self.swish = Swish()
+        self.pointwise_conv_2 = nn.Conv1d(in_channels=channels, out_channels=channels, kernel_size=1, stride=1, padding=0)
+        self.dropout = nn.Dropout(p=dropout_rate)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = self.layer_norm(x)
+        x = x.transpose(-1, -2)
+        x = self.pointwise_conv_1(x)
+        x = self.glu(x)
+        x = self.deepwise_conv(x)
+        x = self.swish(x)
+        x = self.pointwise_conv_2(x)
+        x = self.dropout(x)
+        x = x.transpose(-1, -2)
+        return x
+    
+class Extractor(nn.Module):
+    def __init__(self, in_channels: int, out_channels: int) -> None:
+        super().__init__()
+        self.conv_1 = nn.Conv1d(in_channels=in_channels, out_channels=out_channels, kernel_size=3, stride=1, padding=1)
+        self.conv_2 = nn.Conv1d(in_channels=out_channels, out_channels=out_channels, kernel_size=3, stride=1, padding=1)
+    
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = self.conv_1(x)
+        x = F.gelu(x)
+        x = self.conv_2(x)
+        x = F.gelu(x)
+
+        return x

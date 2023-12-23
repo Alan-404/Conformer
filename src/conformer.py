@@ -13,7 +13,6 @@ class Conformer(nn.Module):
     def forward(self, x: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
         if mask is not None:
             mask = (mask == False).unsqueeze(1).unsqueeze(1)
-
         x = self.encoder(x, mask)
         x = self.decoder(x)
         return x

@@ -4,7 +4,6 @@ import torch.nn as nn
 class PositionalEncoding(nn.Module):
     def __init__(self, d_model: int) -> None:
         super().__init__()
-
         self.register_buffer("angles", self.__encode_embedding(d_model))
         
     def __encode_ctx(self, n_ctx: int) -> torch.Tensor:

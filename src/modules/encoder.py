@@ -1,13 +1,7 @@
 import torch
 import torch.nn as nn
-<<<<<<< HEAD
-
 from src.utils.position import PositionalEncoding
 from src.utils.convolution import Extractor
-=======
-from src.utils.convolution import Extractor
-from src.utils.position import PositionalEncoding
->>>>>>> 38e5bbddb652930aa03db79baf9ed0021784d1a3
 from src.utils.block import ConformerBlock
 
 from typing import Optional

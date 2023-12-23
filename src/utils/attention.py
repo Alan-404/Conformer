@@ -11,7 +11,7 @@ class RelativeMultiHeadAttention(nn.Module):
         self.d_model = d_model
         self.head_samples = int(d_model / heads)
         self.heads = heads
-        self.sqrt_dim = math.sqrt(d_model)
+        self.sqrt_dim = math.sqrt(self.head_samples)
 
         self.query_proj = nn.Linear(in_features=d_model, out_features=d_model)
         self.key_proj = nn.Linear(in_features=d_model, out_features=d_model)

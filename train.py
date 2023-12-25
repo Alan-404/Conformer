@@ -156,9 +156,6 @@ def calculate_score(outputs: torch.Tensor, labels: torch.Tensor) -> torch.Tensor
 
     score = F_metric.word_error_rate(hypothesis, reference)
 
-    if score > 1:
-        score = 1
-
     return score
 
 # Train and Validate Processing Setup

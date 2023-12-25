@@ -7,7 +7,6 @@
 /board.ipynb
 /log_dir
 /datasets
-/__pycache__
 /venv
 /local
 /.env
@@ -19,3 +18,5 @@
 /vi_checkpoint
 /results
 /en_checkpoints
+/*/__pycache__
+/*/*/__pycache__

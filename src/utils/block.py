@@ -3,10 +3,6 @@ import torch.nn as nn
 from src.utils.ffn import FeedForwardModule
 from src.utils.attention import RelativeMultiHeadAttention
 from src.utils.convolution import ConvolutionModule
-
-from src.utils.attention import RelativeMultiHeadAttention
-from src.utils.ffn import FeedForwardModule
-from src.utils.convolution import ConvolutionModule
 from typing import Optional
 
 class ConformerBlock(nn.Module):

@@ -19,7 +19,7 @@ from src.conformer import Conformer
 
 from typing import Tuple
 
-import wandb
+# import wandb
 
 ########################################
 from argparse import ArgumentParser

@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from src.utils.activation import GLU, Swish
 
 class ConvolutionModule(nn.Module):
-    def __init__(self, channels: int, kernel_size: int, eps: float, dropout_rate: float = 0.0) -> None:
+    def __init__(self, channels: int, kernel_size: int, eps: float = 1e-5, dropout_rate: float = 0.0) -> None:
         super().__init__()
         padding = (kernel_size - 1) // 2
 
@@ -32,7 +32,7 @@ class ConvolutionModule(nn.Module):
 class Extractor(nn.Module):
     def __init__(self, in_channels: int, out_channels: int) -> None:
         super().__init__()
-        self.conv_1 = nn.Conv1d(in_channels=in_channels, out_channels=out_channels, kernel_size=3, stride=1, padding=1)
+        self.conv_1 = nn.Conv1d(in_channels=in_channels, out_channels=out_channels, kernel_size=3, stride=2, padding=1)
         self.conv_2 = nn.Conv1d(in_channels=out_channels, out_channels=out_channels, kernel_size=3, stride=1, padding=1)
     
     def forward(self, x: torch.Tensor) -> torch.Tensor:

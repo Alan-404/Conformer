@@ -10,9 +10,9 @@ class Conformer(nn.Module):
         self.encoder = Encoder(n_mel_channels=n_mel_channels, n=n, d_model=d_model, heads=heads, kernel_size=kernel_size, eps=eps, dropout_rate=dropout_rate)
         self.decoder = Decoder(vocab_size=vocab_size, d_model=d_model)
 
-    def forward(self, x: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
-        if mask is not None:
-            mask = (mask == False).unsqueeze(1).unsqueeze(1)
-        x = self.encoder(x, mask)
+    def forward(self, x: torch.Tensor, lengths: Optional[torch.Tensor] = None) -> torch.Tensor:
+        x = self.encoder(x, lengths)
         x = self.decoder(x)
+        if lengths is not None:
+            return x, lengths
         return x

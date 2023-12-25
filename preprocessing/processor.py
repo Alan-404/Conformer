@@ -242,13 +242,13 @@ class ConformerProcessor:
             mels.append(self.mel_spectrogram(padded_signal))
             mel_lengths.append((signal_length // self.hop_length) + 1)
 
+        mels = torch.stack(mels).type(torch.FloatTensor)
+        # mels = self.spec_augment(mels)
+
         if return_attention_mask:
-            masks = self.generate_mask(mel_lengths)
-            mels = torch.stack(mels).type(torch.FloatTensor)
-            # mels = self.spec_augment(mels)
-            return mels, masks, torch.tensor(mel_lengths)
+            return mels, torch.tensor(mel_lengths)
         
-        return torch.stack(mels)
+        return mels
     
     def tokenize(self, sentences: List[str], max_len: Optional[int] = None) -> Tuple[torch.Tensor, torch.Tensor]:
         tokens = []

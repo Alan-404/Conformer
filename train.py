@@ -123,10 +123,10 @@ scheduler = lr_scheduler.CosineAnnealingLR(optimizer=optimizer, T_max=1000)
 
 def get_batch(batch) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     signals, transcripts = zip(*batch)
-    mels, mask, mel_lengths = processor(signals, return_attention_mask=True)
+    mels, mel_lengths = processor(signals, return_attention_mask=True)
     tokens, token_lengths = processor.tokenize(transcripts)
 
-    return mels, tokens, mel_lengths, token_lengths, mask
+    return mels, tokens, mel_lengths, token_lengths
 
 train_dataset = ConformerDataset(manifest_path=args.train_path, processor=processor, num_examples=args.num_train)
 
@@ -166,10 +166,8 @@ def train_step(engine: Engine, batch: Tuple[torch.Tensor]) -> float:
     input_lengths = batch[2].to(device)
     target_lengths = batch[3].to(device)
 
-    mask = batch[4].to(device)
-
     optimizer.zero_grad()
-    outputs = model(inputs, mask)
+    outputs, input_lengths = model(inputs, input_lengths)
 
     loss = loss_func(outputs, input_lengths, labels, target_lengths)
     loss.backward()

@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import math
 from typing import Optional
+import time
 
 class RelativeMultiHeadAttention(nn.Module):
     def __init__(self, d_model: int, heads: int, dropout_rate: float = 0.1):
@@ -41,9 +42,7 @@ class RelativeMultiHeadAttention(nn.Module):
 
         # (Optional) Apply Mask
         if mask is not None:
-            print(attention_score.shape)
-            print(mask.shape)
-            attention_score += mask * (float('-inf'))
+            attention_score = attention_score.masked_fill(mask, float('-inf'))
 
         # Softmax
         attention_weights = F.softmax(attention_score, dim=-1)

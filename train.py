@@ -172,6 +172,7 @@ def train_step(engine: Engine, batch: Tuple[torch.Tensor]) -> float:
     assert (input_lengths > target_lengths).all()
 
     loss = loss_func(outputs, input_lengths, labels, target_lengths)
+    print(loss)
     loss.backward()
     optimizer.step()
 
@@ -299,7 +300,8 @@ def finish_validating(engine: Engine) -> None:
     val_loss.reset()
     val_score.reset()
 
-validator.add_event_handler(Events.EPOCH_COMPLETED, early_stopping_handler)
+if args.use_validation:
+    validator.add_event_handler(Events.EPOCH_COMPLETED, early_stopping_handler)
 
 # Load Checkpoint
 if args.checkpoint is not None:

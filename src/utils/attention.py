@@ -41,6 +41,8 @@ class RelativeMultiHeadAttention(nn.Module):
 
         # (Optional) Apply Mask
         if mask is not None:
+            print(attention_score.shape)
+            print(mask.shape)
             attention_score += mask * (float('-inf'))
 
         # Softmax

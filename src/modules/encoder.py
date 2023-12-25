@@ -16,6 +16,7 @@ class Encoder(nn.Module):
         self.layers = nn.ModuleList([ConformerBlock(d_model=d_model, heads=heads, kernel_size=kernel_size, eps=eps, dropout_rate=dropout_rate) for _ in range(n)])
     
     def forward(self, x: torch.Tensor, lengths: Optional[torch.Tensor] = None) -> torch.Tensor:
+        print(x.size())
         x = self.extractor(x)
         x = x.transpose(-1, -2)
         x = self.linear(x)
@@ -25,8 +26,9 @@ class Encoder(nn.Module):
 
         mask = None
         if lengths is not None:
-            lengths = lengths // 2
-            mask = generate_mask(lengths)
+            lengths = torch.ceil(lengths // 2)
+            mask = generate_mask(lengths).to(x.device)
+            mask = (mask == False).unsqueeze(1).unsqueeze(1)
     
         for layer in self.layers:
             x = layer(x, pos_embedding, mask)

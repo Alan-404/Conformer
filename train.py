@@ -169,6 +169,8 @@ def train_step(engine: Engine, batch: Tuple[torch.Tensor]) -> float:
     optimizer.zero_grad()
     outputs, input_lengths = model(inputs, input_lengths)
 
+    assert (input_lengths > target_lengths).all()
+
     loss = loss_func(outputs, input_lengths, labels, target_lengths)
     loss.backward()
     optimizer.step()

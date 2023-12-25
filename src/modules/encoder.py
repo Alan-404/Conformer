@@ -16,13 +16,12 @@ class Encoder(nn.Module):
         self.layers = nn.ModuleList([ConformerBlock(d_model=d_model, heads=heads, kernel_size=kernel_size, eps=eps, dropout_rate=dropout_rate) for _ in range(n)])
     
     def forward(self, x: torch.Tensor, lengths: Optional[torch.Tensor] = None) -> torch.Tensor:
-        batch_size, _, n_ctx = x.size()
         x = self.extractor(x)
         x = x.transpose(-1, -2)
         x = self.linear(x)
         x = self.dropout(x)
 
-        pos_embedding = self.positional_embedding(n_ctx).repeat([batch_size, 1,1])
+        pos_embedding = self.positional_embedding(x.size(1)).repeat([x.size(0), 1,1])
 
         mask = None
         if lengths is not None:

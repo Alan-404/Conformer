@@ -81,7 +81,7 @@ parser.add_argument("--wandb_username", type=str, default="tri")
 # Parse Config
 args = parser.parse_args()
 
-wandb.init(project=args.wandb_project_name, name=args.wandb_username)
+# wandb.init(project=args.wandb_project_name, name=args.wandb_username)
 
 # Device Config
 device = 'cpu'
@@ -216,8 +216,6 @@ val_score.attach(validator, 'score')
 
 if args.use_validation:
     early_stopping_handler = EarlyStopping(patience=args.early_stopping_patience, score_function=val_early_stopping_condition, trainer=trainer)
-else:
-    early_stopping_handler = EarlyStopping(patience=args.early_stopping_patience, score_function=train_early_stopping_condition, trainer=trainer)
 
 # Checkpoint Manager Setup
 to_save = {
@@ -263,19 +261,19 @@ def start_epoch(engine: Engine) -> None:
 def finish_epoch(engine: Engine) -> None:
     print(f"Train Loss: {(engine.state.metrics['loss']):.4f}")
     print(f"Learning Rate: {optimizer.param_groups[0]['lr']}")
-    wandb.log({
-        "train_loss": engine.state.metrics['loss'], 
-        'learning_rate': optimizer.param_groups[0]['lr']
-    }, step=engine.state.epoch)
+    # wandb.log({
+    #     "train_loss": engine.state.metrics['loss'], 
+    #     'learning_rate': optimizer.param_groups[0]['lr']
+    # }, step=engine.state.epoch)
     
     scheduler.step()
     train_loss.reset()
-    if args.use_validation == False:
-        wandb.log({
-            'early_stopping_patience': early_stopping_handler.counter
-        }, step=engine.state.epoch)
-    else:
+    if args.use_validation == True:
         validator.run(val_dataloader, max_epochs=1)
+    # else:
+    #     wandb.log({
+    #         'early_stopping_patience': early_stopping_handler.counter
+    #     }, step=engine.state.epoch)
     
     print(f"========== Done Epoch {engine.state.epoch} =============\n")
 
@@ -290,19 +288,16 @@ def finish_training(engine: Engine):
 def finish_validating(engine: Engine) -> None:
     print(f"Validation Loss {(engine.state.metrics['loss']):.4f}")
     print(f"Validation WER Score {(engine.state.metrics['score']):.4f}")
-    wandb.log({
-        'val_loss': engine.state.metrics['loss'], 
-        'val_score': engine.state.metrics['score'],
-        'early_stopping_patience': early_stopping_handler.counter
-    }, step=trainer.state.epoch)
+    # wandb.log({
+    #     'val_loss': engine.state.metrics['loss'], 
+    #     'val_score': engine.state.metrics['score'],
+    #     'early_stopping_patience': early_stopping_handler.counter
+    # }, step=trainer.state.epoch)
 
     val_loss.reset()
     val_score.reset()
 
-if args.use_validation == False:
-    trainer.add_event_handler(Events.EPOCH_COMPLETED, early_stopping_handler)
-else:
-    validator.add_event_handler(Events.EPOCH_COMPLETED, early_stopping_handler)
+validator.add_event_handler(Events.EPOCH_COMPLETED, early_stopping_handler)
 
 # Load Checkpoint
 if args.checkpoint is not None:

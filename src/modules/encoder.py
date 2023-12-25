@@ -27,7 +27,7 @@ class Encoder(nn.Module):
 
         mask = None
         if lengths is not None:
-            lengths = torch.ceil(lengths / 2)
+            lengths = torch.ceil(lengths / 2).type(torch.int)
             mask = generate_mask(lengths).to(x.device) == 0
             mask = mask.unsqueeze(1).unsqueeze(1)
     

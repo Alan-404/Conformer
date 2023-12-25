@@ -172,7 +172,7 @@ def train_step(engine: Engine, batch: Tuple[torch.Tensor]) -> float:
     assert (input_lengths > target_lengths).all()
 
     loss = loss_func(outputs, input_lengths, labels, target_lengths)
-    print(loss)
+
     loss.backward()
     optimizer.step()
 

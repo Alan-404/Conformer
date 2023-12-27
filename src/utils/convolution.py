@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from src.utils.activation import GLU, Swish
 from typing import Optional
 
@@ -49,6 +48,6 @@ class ConvolutionSubsampling(nn.Module):
         x = self.max_pool_2(x)
 
         if lengths is not None:
-            lengths = torch.ceil(lengths/4)
+            lengths = torch.ceil(torch.ceil(lengths/2)/4)
             
         return x, lengths

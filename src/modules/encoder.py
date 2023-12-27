@@ -27,8 +27,8 @@ class Encoder(nn.Module):
         # Mask Generation
         mask = None
         if lengths is not None:
-            mask = generate_mask(lengths).to(x.device) == 0
-            mask = mask.unsqueeze(1).unsqueeze(1)
+            mask = generate_mask(lengths).to(x.device)
+            mask = (mask == 0).unsqueeze(1).unsqueeze(1)
         # Conformer Handling
         for layer in self.layers:
             x = layer(x, pos_embedding, mask)

@@ -11,14 +11,13 @@ class FeedForwardModule(nn.Module):
         self.dropout_1 = nn.Dropout(p=dropout_rate)
         self.out_linear = nn.Linear(in_features=4*dim, out_features=dim)
         self.dropout_2 = nn.Dropout(p=dropout_rate)
-        self.dropout_rate = dropout_rate
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.layer_norm(x)
-        x = self.hidden_linear(x)
-        x = self.swish(x)
-        x = self.dropout_1(x)
-        x = self.out_linear(x)
-        x = self.dropout_2(x)
+        y = self.layer_norm(x)
+        y = self.hidden_linear(y)
+        y = self.swish(y)
+        y = self.dropout_1(y)
+        y = self.out_linear(y)
+        y = self.dropout_2(y)
 
-        return x
+        return (1/2) * y + x

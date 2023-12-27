@@ -1,7 +1,17 @@
 # Conformer Model - Speech to Text
+<a href="https://arxiv.org/abs/2005.08100">Link Paper</a>
+
 ## Model Architecture
 <img src="./assets/model.png"/>
-<a href="https://arxiv.org/abs/2005.08100">Link Paper</a>
+
+### Relative Multi - Head Attention Module
+<img src="assets/attention.png"/>
+
+### Convolution Module
+<img src="assets/conv.png"/>
+
+### Feed Forward Module
+<img src="assets/ffn.png"/>
 
 ## Folder Structure
 ```
@@ -19,8 +29,8 @@ vocab.json          # Characters Dictionary
 
 ## Setup Environment
 ```
-git clone https://git.cads.live/trind18/conformer_model.git
-cd conformer_model
+git clone https://github.com/Alan-404/Conformer.git
+cd Conformer
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt

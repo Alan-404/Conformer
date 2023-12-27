@@ -18,30 +18,28 @@ class ConvolutionModule(nn.Module):
         self.dropout = nn.Dropout(p=dropout_rate)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.layer_norm(x)
-        x = x.transpose(-1, -2)
-        x = self.pointwise_conv_1(x)
-        x = self.glu(x)
-        x = self.deepwise_conv(x)
-        x = self.swish(x)
-        x = self.pointwise_conv_2(x)
-        x = self.dropout(x)
-        x = x.transpose(-1, -2)
-        return x
+        y = self.layer_norm(x)
+        y = x.transpose(-1, -2)
+        y = self.pointwise_conv_1(y)
+        y = self.glu(y)
+        y = self.deepwise_conv(y)
+        y = self.swish(y)
+        y = self.pointwise_conv_2(y)
+        y = self.dropout(y)
+        y = y.transpose(-1, -2)
+        return y + x
     
 class ConvolutionSubsampling(nn.Module):
     def __init__(self, in_channels: int, out_channels: int) -> None:
         super().__init__()
         self.conv_1 = nn.Conv1d(in_channels=in_channels, out_channels=out_channels, kernel_size=3, stride=2, padding=1)
         self.act_1 = nn.GELU()
-        #self.max_pool = nn.MaxPool1d(kernel_size=3, stride=2, padding=1)
         self.conv_2 = nn.Conv1d(in_channels=out_channels, out_channels=out_channels, kernel_size=3, stride=1, padding=1)
         self.act_2 = nn.GELU()
     
     def forward(self, x: torch.Tensor, lengths: Optional[torch.Tensor] = None) -> torch.Tensor:
         x = self.conv_1(x)
         x = self.act_1(x)
-        #x = self.max_pool(x)
         x = self.conv_2(x)
         x = self.act_2(x)
 

@@ -10,6 +10,9 @@
 ### Convolution Module
 <img src="assets/conv.png"/>
 
+### Feed Forward Module
+<img src="assets/ffn.png"/>
+
 ## Folder Structure
 ```
 assets

@@ -18,16 +18,16 @@ class ConvolutionModule(nn.Module):
         self.dropout = nn.Dropout(p=dropout_rate)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.layer_norm(x)
-        x = x.transpose(-1, -2)
-        x = self.pointwise_conv_1(x)
-        x = self.glu(x)
-        x = self.deepwise_conv(x)
-        x = self.swish(x)
-        x = self.pointwise_conv_2(x)
-        x = self.dropout(x)
-        x = x.transpose(-1, -2)
-        return x
+        y = self.layer_norm(x)
+        y = x.transpose(-1, -2)
+        y = self.pointwise_conv_1(y)
+        y = self.glu(y)
+        y = self.deepwise_conv(y)
+        y = self.swish(y)
+        y = self.pointwise_conv_2(y)
+        y = self.dropout(y)
+        y = y.transpose(-1, -2)
+        return y + x
     
 class ConvolutionSubsampling(nn.Module):
     def __init__(self, in_channels: int, out_channels: int) -> None:

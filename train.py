@@ -42,10 +42,11 @@ parser.add_argument("--unk_token", type=str, default="<unk>")
 parser.add_argument("--word_delim_token", type=str, default="|")
 
 # Model Config
-parser.add_argument("--n", type=int, default=12)
+parser.add_argument("--n", type=int, default=17)
 parser.add_argument("--d_model", type=int, default=512)
 parser.add_argument("--heads", type=int, default=8)
 parser.add_argument("--kernel_size", type=int, default=31)
+parser.add_argument("--hidden_dim", type=int, default=640)
 parser.add_argument("--eps", type=float, default=1e-5)
 parser.add_argument("--dropout_rate", type=float, default=0.1)
 
@@ -111,6 +112,7 @@ model = Conformer(
     d_model=args.d_model,
     heads=args.heads,
     kernel_size=args.kernel_size,
+    hidden_dim=args.hidden_dim,
     eps=args.eps,
     dropout_rate=args.dropout_rate
 ).to(device)

@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from src.utils.activation import GLU, Swish
+from typing import Optional
 
 class ConvolutionModule(nn.Module):
     def __init__(self, channels: int, kernel_size: int, eps: float = 1e-5, dropout_rate: float = 0.0) -> None:
@@ -33,12 +34,18 @@ class Extractor(nn.Module):
     def __init__(self, in_channels: int, out_channels: int) -> None:
         super().__init__()
         self.conv_1 = nn.Conv1d(in_channels=in_channels, out_channels=out_channels, kernel_size=3, stride=2, padding=1)
+        self.act_1 = nn.GELU()
         self.conv_2 = nn.Conv1d(in_channels=out_channels, out_channels=out_channels, kernel_size=3, stride=1, padding=1)
+        self.act_2 = nn.GELU()
     
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, lengths: Optional[torch.Tensor] = None) -> torch.Tensor:
         x = self.conv_1(x)
-        x = F.gelu(x)
+        x = self.act_1(x)
         x = self.conv_2(x)
-        x = F.gelu(x)
+        x = self.act_2(x)
+
+        if lengths is not None:
+            lengths = torch.ceil(lengths/2)
+            return x, lengths
 
         return x

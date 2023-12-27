@@ -16,21 +16,23 @@ class Encoder(nn.Module):
         self.layers = nn.ModuleList([ConformerBlock(d_model=d_model, heads=heads, kernel_size=kernel_size, eps=eps, dropout_rate=dropout_rate) for _ in range(n)])
     
     def forward(self, x: torch.Tensor, lengths: Optional[torch.Tensor] = None) -> torch.Tensor:
-        x = self.extractor(x)
+        # Subsampling Mel - Spectrogram
+        if lengths is not None:
+            x, lengths = self.extractor(x, lengths)
+        else:
+            x = self.extractor(x)
+        # Pre - Project
         x = x.transpose(-1, -2)
         x = self.linear(x)
         x = self.dropout(x)
-
-        pos_embedding = self.positional_embedding(x.size(1))
-
-        pos_embedding = pos_embedding.repeat([x.size(0), 1,1])
-
+        # Positional Encoding
+        pos_embedding = self.positional_embedding(x.size(1)).repeat([x.size(0), 1,1])
+        # Mask Generation
         mask = None
         if lengths is not None:
-            lengths = torch.ceil(lengths / 2).type(torch.int)
             mask = generate_mask(lengths).to(x.device) == 0
             mask = mask.unsqueeze(1).unsqueeze(1)
-    
+        # Conformer Handling
         for layer in self.layers:
             x = layer(x, pos_embedding, mask)
 

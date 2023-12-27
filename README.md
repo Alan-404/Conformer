@@ -1,7 +1,14 @@
 # Conformer Model - Speech to Text
 <a href="https://arxiv.org/abs/2005.08100">Link Paper</a>
+
 ## Model Architecture
 <img src="./assets/model.png"/>
+
+### Relative Multi - Head Attention Module
+<img src="assets/attention.png"/>
+
+### Convolution Module
+<img src="assets/conv.png"/>
 
 ## Folder Structure
 ```

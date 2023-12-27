@@ -47,14 +47,3 @@ class ConvolutionSubsampling(nn.Module):
             lengths = torch.ceil(lengths/2).type(torch.int)
             
         return x, lengths
-    
-class SeperableConvolution(nn.Module):
-    def __init__(self, d_model: int, hidden_dim: int) -> None:
-        super().__init__()
-        self.depthwise_conv = nn.Conv1d(in_channels=d_model, out_channels=hidden_dim, kernel_size=3, stride=1, padding=1, groups=d_model)
-        self.pointwise_conv = nn.Conv1d(in_channels=hidden_dim, out_channels=d_model, kernel_size=1, stride=1)
-
-    def forward(self, x :torch.Tensor):
-        x = self.depthwise_conv(x)
-        x = self.pointwise_conv(x)
-        return x

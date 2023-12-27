@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-from src.utils.convolution import SeperableConvolution
 
 class Decoder(nn.Module):
     def __init__(self, vocab_size: int, d_model: int) -> None:

@@ -62,7 +62,7 @@ class RelativeMultiHeadAttention(nn.Module):
         v = self.value_proj(v).view(batch_size, -1, self.heads, self.head_samples).permute(0, 2, 1, 3)
         pos_embedding = self.pos_proj(pos_embedding).view(batch_size, -1, self.heads, self.head_samples).permute(0, 2, 3, 1)
 
-        # Scaled - dot Attention with Relative Position
+        # Scaled - dot Product Attention with Relative Position
         attention_context = self.scaled_dot_product_relative_attention(q, k, v, pos_embedding, mask)
 
         # Concat Heads

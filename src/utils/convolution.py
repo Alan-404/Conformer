@@ -30,22 +30,25 @@ class ConvolutionModule(nn.Module):
         x = x.transpose(-1, -2)
         return x
     
-class Extractor(nn.Module):
+class ConvolutionSubsampling(nn.Module):
     def __init__(self, in_channels: int, out_channels: int) -> None:
         super().__init__()
-        self.conv_1 = nn.Conv1d(in_channels=in_channels, out_channels=out_channels, kernel_size=3, stride=2, padding=1)
+        self.conv_1 = nn.Conv1d(in_channels=in_channels, out_channels=out_channels, kernel_size=3, stride=1, padding=1)
         self.act_1 = nn.GELU()
+        self.max_pool_1 = nn.MaxPool1d(kernel_size=3, stride=2, padding=1)
         self.conv_2 = nn.Conv1d(in_channels=out_channels, out_channels=out_channels, kernel_size=3, stride=1, padding=1)
         self.act_2 = nn.GELU()
+        self.max_pool_2 = nn.MaxPool1d(kernel_size=3, stride=2, padding=1)
     
     def forward(self, x: torch.Tensor, lengths: Optional[torch.Tensor] = None) -> torch.Tensor:
         x = self.conv_1(x)
         x = self.act_1(x)
+        x = self.max_pool_1(x)
         x = self.conv_2(x)
         x = self.act_2(x)
+        x = self.max_pool_2(x)
 
         if lengths is not None:
-            lengths = torch.ceil(lengths/2)
-            return x, lengths
-
-        return x
+            lengths = torch.ceil(lengths/4)
+            
+        return x, lengths

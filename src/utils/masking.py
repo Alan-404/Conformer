@@ -6,5 +6,4 @@ def generate_mask(lengths: torch.Tensor):
     mask = []
     for length in lengths:
         mask.append(torch.tensor(np.array([1] * int(length.item()) + [0] * int(max_len.item() - length.item()))))
-
     return torch.stack(mask)

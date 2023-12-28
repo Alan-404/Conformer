@@ -1,6 +1,4 @@
 # Conformer Model - Speech to Text
-<a href="https://arxiv.org/abs/2005.08100">Link Paper</a>
-
 ## Model Architecture
 <img src="./assets/model.png"/>
 
@@ -16,15 +14,26 @@
 ## Folder Structure
 ```
 assets
+configs
+preprocessing
+pretraining
+src
+|---modules
+|---utils
+|---conformer.py
+|---loss.py
+|---metric.py
+vocabulary
 .gitignore
-conformer.py        # Model Source
-dataset.py          # Dataset Loader
-hotwords.json       # Hotwords of BEAM Search - Used in Post Processing
-processor.py        # Data Processing Handler
+build_lm.py
+build_onnx.py
+dataset.py
+infer.py
+pretrain.py
 README.md
 requirements.txt
-train.py            # Train Model
-vocab.json          # Characters Dictionary
+test.py
+train.py
 ```
 
 ## Setup Environment

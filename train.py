@@ -1,6 +1,5 @@
 import os
 import torch
-import torch.nn.functional as F
 import torch.optim as optim
 import torch.optim.lr_scheduler as lr_scheduler
 from torch.utils.data import DataLoader, random_split
@@ -11,11 +10,12 @@ from ignite.handlers import Checkpoint, DiskSaver, EarlyStopping, global_step_fr
 from ignite.contrib.handlers.tqdm_logger import ProgressBar
 
 import torchsummary
-import torcheval.metrics.functional as F_metric
 
 from preprocessing.processor import ConformerProcessor
 from dataset import ConformerDataset
 from src.conformer import Conformer
+from src.loss import ctc_loss
+from src.metric import WER_score
 
 from typing import Tuple
 
@@ -68,14 +68,13 @@ parser.add_argument("--num_val", type=int, default=None)
 # Optimizer Config
 parser.add_argument("--set_lr", type=bool, default=False)
 parser.add_argument("--lr", type=float, default=7e-5)
-parser.add_argument("--weight_decay", type=float, default=0.0)
 
 # Early Stopping Config
 parser.add_argument("--early_stopping_patience", type=int, default=4)
 
-# WanDB Config
-parser.add_argument("--wandb_project_name", type=str, default="(STT) Conformer")
-parser.add_argument("--wandb_username", type=str, default="tri")
+# # WanDB Config
+# parser.add_argument("--wandb_project_name", type=str, default="(STT) Conformer")
+# parser.add_argument("--wandb_username", type=str, default="tri")
 
 ########################################
 # Parse Config
@@ -116,7 +115,7 @@ model = Conformer(
 ).to(device)
 
 # Optimizer Setup
-optimizer = optim.Adam(params=model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+optimizer = optim.Adam(params=model.parameters(), lr=args.lr, weight_decay=1e-9, betas=[0.9, 0.98])
 scheduler = lr_scheduler.CosineAnnealingLR(optimizer=optimizer, T_max=1000)
 
 # Dataset and DataLoader Setup
@@ -139,25 +138,6 @@ if args.use_validation:
 
 train_dataloader = DataLoader(dataset=train_dataset, batch_size=args.batch_size, shuffle=True, collate_fn=get_batch)
 
-# Evaluation Functions Setup
-def loss_func(outputs: torch.Tensor, output_lengths: torch.Tensor, targets: torch.Tensor, target_lengths: torch.Tensor) -> torch.Tensor:
-    return F.ctc_loss(
-        outputs.log_softmax(dim=-1).transpose(0, 1),
-        targets,
-        output_lengths,
-        target_lengths,
-        blank=processor.pad_token,
-        zero_infinity=True
-    )
-
-def calculate_score(outputs: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
-    hypothesis = processor.decode_batch(outputs)
-    reference = processor.decode_batch(labels, group_token=False)
-
-    score = F_metric.word_error_rate(hypothesis, reference)
-
-    return score
-
 # Train and Validate Processing Setup
 def train_step(engine: Engine, batch: Tuple[torch.Tensor]) -> float:
     inputs = batch[0].to(device)
@@ -169,7 +149,14 @@ def train_step(engine: Engine, batch: Tuple[torch.Tensor]) -> float:
     optimizer.zero_grad()
     outputs, input_lengths = model(inputs, input_lengths)
 
-    loss = loss_func(outputs, input_lengths, labels, target_lengths)
+    loss = ctc_loss(
+        outputs,
+        labels,
+        input_lengths,
+        target_lengths,
+        blank_id=processor.pad_token,
+        zero_infinity=True
+    )
 
     loss.backward()
     optimizer.step()
@@ -183,14 +170,22 @@ def val_step(engine: Engine, batch: Tuple[torch.Tensor]) -> Tuple[float, float]:
     input_lengths = batch[2].to(device)
     target_lengths = batch[3].to(device)
 
-    mask = batch[4].to(device)
-
     with torch.no_grad():
-        outputs = model(inputs, mask)
+        outputs = model(inputs, input_lengths)
 
-    loss = loss_func(outputs, input_lengths, labels, target_lengths).item()
+    loss = ctc_loss(
+        outputs,
+        labels,
+        input_lengths,
+        target_lengths,
+        blank_id=processor.pad_token,
+        zero_infinity=True
+    )
 
-    score = calculate_score(torch.argmax(outputs, dim=-1), labels)
+    hypothesis = processor.decode_batch(outputs)
+    reference = processor.decode_batch(labels, group_token=False)
+
+    score = WER_score(hypothesis, reference)
 
     return loss, score
 
@@ -305,9 +300,6 @@ if args.use_validation:
 if args.checkpoint is not None:
     assert os.path.exists(args.checkpoint), f"NOT FOUND CHECKPOINT AT {args.checkpoint}"
     Checkpoint.load_objects(to_save, checkpoint=torch.load(args.checkpoint, map_location=device))
-
-if trainer.state.epoch is not None:
-    args.num_epochs += trainer.state.epoch
 
 # Start Training
 trainer.run(train_dataloader, max_epochs=args.num_epochs)

@@ -47,6 +47,8 @@ parser.add_argument("--d_model", type=int, default=512)
 parser.add_argument("--heads", type=int, default=8)
 parser.add_argument("--kernel_size", type=int, default=31)
 parser.add_argument("--eps", type=float, default=1e-5)
+parser.add_argument("--decoder_dim", type=int, default=640)
+parser.add_argument("--decoder_n_layers", type=int, default=1)
 parser.add_argument("--dropout_rate", type=float, default=0.1)
 
 # Training Config
@@ -111,6 +113,8 @@ model = Conformer(
     heads=args.heads,
     kernel_size=args.kernel_size,
     eps=args.eps,
+    decoder_dim=args.decoder_dim,
+    decoder_n_layers=args.decoder_n_layers,
     dropout_rate=args.dropout_rate
 ).to(device)
 

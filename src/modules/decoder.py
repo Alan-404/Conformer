@@ -15,7 +15,9 @@ class Decoder(nn.Module):
 
         self.lstm.flatten_parameters()
         x, _ = self.lstm(x)
-        x, _ = nn.utils.rnn.pad_packed_sequence(x, batch_first=True)
+
+        if lengths is not None:
+            x, _ = nn.utils.rnn.pad_packed_sequence(x, batch_first=True)
         
         x = self.linear(x)
         return x

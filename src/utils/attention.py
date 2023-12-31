@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import math
-from src.utils.position import PositionalEncoding
 from typing import Optional
 
 class MultiHeadSelfAttentionModule(nn.Module):
@@ -11,8 +10,6 @@ class MultiHeadSelfAttentionModule(nn.Module):
         self.layer_norm = nn.LayerNorm(normalized_shape=d_model, eps=eps)
         self.attention = RelativeMultiHeadAttention(d_model=d_model, heads=heads, dropout_rate=dropout_rate)
         self.dropout = nn.Dropout(p=dropout_rate)
-
-        self.positional_encoding = PositionalEncoding(d_model=d_model)    
 
     def forward(self, x: torch.Tensor, pos_embedding: torch.Tensor, mask: Optional[torch.Tensor] = None):
         x = self.layer_norm(x)

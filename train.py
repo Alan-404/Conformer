@@ -126,7 +126,7 @@ scheduler = lr_scheduler.CosineAnnealingLR(optimizer=optimizer, T_max=1000)
 
 def get_batch(batch) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     signals, transcripts = zip(*batch)
-    mels, mel_lengths = processor(signals, return_attention_mask=True)
+    mels, mel_lengths = processor(signals, return_length=True)
     tokens, token_lengths = processor.tokenize(transcripts)
 
     return mels, tokens, mel_lengths, token_lengths

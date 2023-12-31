@@ -167,8 +167,8 @@ def train_step(engine: Engine, batch: Tuple[torch.Tensor]) -> float:
             zero_infinity=True
         )
 
-    scaler.scale(loss.backward())
-    scaler.step(optimizer.step())
+    scaler.scale(loss).backward()
+    scaler.step(optimizer)
 
     scaler.update()
 

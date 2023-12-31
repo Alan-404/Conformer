@@ -3,6 +3,7 @@ import torch
 import torch.optim as optim
 import torch.optim.lr_scheduler as lr_scheduler
 from torch.utils.data import DataLoader, random_split
+from torch.cuda.amp import GradScaler, autocast
 
 from ignite.engine import Engine, Events
 from ignite.metrics import RunningAverage
@@ -89,6 +90,8 @@ device = 'cpu'
 if args.device == 'cuda' or args.device == 'gpu':
     device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
 
+scaler = GradScaler()
+
 # Processor Setup
 processor = ConformerProcessor(
     vocab_path=args.vocab_path,
@@ -151,19 +154,23 @@ def train_step(engine: Engine, batch: Tuple[torch.Tensor]) -> float:
     target_lengths = batch[3].to(device)
 
     optimizer.zero_grad()
-    outputs, input_lengths = model(inputs, input_lengths)
+    
+    with autocast(dtype=torch.float16):
+        outputs, input_lengths = model(inputs, input_lengths)
 
-    loss = ctc_loss(
-        outputs,
-        labels,
-        input_lengths,
-        target_lengths,
-        blank_id=processor.pad_token,
-        zero_infinity=True
-    )
+        loss = ctc_loss(
+            outputs,
+            labels,
+            input_lengths,
+            target_lengths,
+            blank_id=processor.pad_token,
+            zero_infinity=True
+        )
 
-    loss.backward()
-    optimizer.step()
+    scaler.scale(loss.backward())
+    scaler.step(optimizer.step())
+
+    scaler.update()
 
     return loss.item()
 

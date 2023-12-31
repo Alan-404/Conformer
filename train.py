@@ -69,7 +69,7 @@ parser.add_argument("--num_val", type=int, default=None)
 
 # Optimizer Config
 parser.add_argument("--set_lr", type=bool, default=False)
-parser.add_argument("--lr", type=float, default=7e-5)
+parser.add_argument("--lr", type=float, default=1e-3)
 
 # Early Stopping Config
 parser.add_argument("--early_stopping_patience", type=int, default=4)

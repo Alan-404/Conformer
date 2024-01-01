@@ -114,8 +114,6 @@ model = Conformer(
     heads=args.heads,
     kernel_size=args.kernel_size,
     eps=args.eps,
-    decoder_dim=args.decoder_dim,
-    decoder_n_layers=args.decoder_n_layers,
     dropout_rate=args.dropout_rate
 ).to(device)
 

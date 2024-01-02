@@ -47,3 +47,31 @@ class ConvolutionSubsampling(nn.Module):
             lengths = torch.ceil(lengths/2).type(torch.int)
             
         return x, lengths
+
+class Convolution2DSubsampling(nn.Module):
+    def __init__(self, channels: int) -> None:
+        super().__init__()
+        self.conv_1 = nn.Conv2d(in_channels=1, out_channels=channels, kernel_size=3, stride=2)
+        self.act_1 = nn.ReLU()
+        self.conv_2 = nn.Conv2d(in_channels=channels, out_channels=channels, kernel_size=3, stride=2)
+        self.act_2 = nn.ReLU()
+
+    def forward(self, x: torch.Tensor, lengths: Optional[torch.Tensor] = None):
+        x = x.unsqueeze(1)
+        x = self.conv_1(x)
+        x = self.act_1(x)
+        x = self.conv_2(x)
+        x = self.act_2(x)
+
+        batch_size, dim, subsampling_channels, subsampling_length = x.size()
+
+        x = x.permute([0, 3, 1, 2])
+        x = x.contiguous().view(batch_size, subsampling_length, dim * subsampling_channels)
+
+        if lengths is not None:
+            lengths = lengths >> 2
+            lengths -= 1
+
+            return x, lengths
+        
+        return x

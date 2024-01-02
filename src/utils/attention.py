@@ -1,19 +1,22 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from src.utils.position import RelPositionalEncoding
 import math
 from typing import Optional
-import time
+
 class MultiHeadSelfAttentionModule(nn.Module):
     def __init__(self, d_model: int, heads: int, eps: float, dropout_rate: float = 0.0) -> None:
         super().__init__()
         self.layer_norm = nn.LayerNorm(normalized_shape=d_model, eps=eps)
         self.attention = RelativeMultiHeadAttention(d_model=d_model, heads=heads, dropout_rate=dropout_rate)
         # self.attention = MultiHeadAttention(heads=heads, d_model=d_model, dropout_rate=dropout_rate)
+        self.pe = RelPositionalEncoding(d_model=d_model)
         self.dropout = nn.Dropout(p=dropout_rate)
 
-    def forward(self, x: torch.Tensor, pos_embedding: torch.Tensor, mask: Optional[torch.Tensor] = None):
+    def forward(self, x: torch.Tensor, mask: Optional[torch.Tensor] = None):
         x = self.layer_norm(x)
+        pos_embedding = self.pe(x).repeat((x.size(0), 1, 1))
         x = self.attention(x, x, x, pos_embedding, mask)
         x = self.dropout(x)
         return x
@@ -45,10 +48,10 @@ class RelativeMultiHeadAttention(nn.Module):
     def scaled_dot_product_relative_attention(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, pos_embedding: torch.Tensor, mask: Optional[torch.Tensor] = None):
         # q x k^T
         content_score = torch.matmul((q + self.content_bias).transpose(1, 2), k.transpose(2, 3))
-        
+
         # Relative Postional Encoding with score
         pos_score = torch.matmul((q + self.position_bias).transpose(1, 2), pos_embedding)
-        pos_score = self.relative_positional_encoding(pos_score)
+        pos_score = self._relative_shift(pos_score)
 
         # Accumulate score and Scale
         attention_score = (content_score + pos_score) / self.sqrt_dim
@@ -87,13 +90,13 @@ class RelativeMultiHeadAttention(nn.Module):
 
         return attention_context
     
-    def relative_positional_encoding(self, pos_score: torch.Tensor) -> torch.Tensor:
+    def _relative_shift(self, pos_score: torch.Tensor) -> torch.Tensor:
         batch_size, num_heads, seq_length1, seq_length2 = pos_score.size()
         zeros = pos_score.new_zeros(batch_size, num_heads, seq_length1, 1)
         padded_pos_score = torch.cat([zeros, pos_score], dim=-1)
 
         padded_pos_score = padded_pos_score.view(batch_size, num_heads, seq_length2 + 1, seq_length1)
-        pos_score = padded_pos_score[:, :, 1:].view_as(pos_score)
+        pos_score = padded_pos_score[:, :, 1:].view_as(pos_score)[:, :, :, : seq_length2 // 2 + 1]
 
         return pos_score
     

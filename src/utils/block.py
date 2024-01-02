@@ -14,11 +14,11 @@ class ConformerBlock(nn.Module):
         self.ffn_2 = FeedForwardModule(dim=d_model, eps=eps, dropout_rate=dropout_rate)
         self.layer_norm = nn.LayerNorm(normalized_shape=d_model, eps=eps)
 
-    def forward(self, x: torch.Tensor, pos_embedding: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
         # sub - layer 1
         ffn_1_out = (1/2) * self.ffn_1(x) + x
         # sub - layer 2
-        attention_out = self.attention(ffn_1_out, pos_embedding, mask) + ffn_1_out
+        attention_out = self.attention(ffn_1_out, mask) + ffn_1_out
         # sub - layer 3
         conv_output = self.conv(attention_out) + attention_out
         # sub - layer 4

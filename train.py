@@ -19,8 +19,7 @@ from src.loss import ctc_loss
 from src.metric import WER_score
 
 from typing import Tuple
-
-# import wandb
+import wandb
 
 ########################################
 from argparse import ArgumentParser
@@ -68,20 +67,20 @@ parser.add_argument("--num_val", type=int, default=None)
 
 # Optimizer Config
 parser.add_argument("--set_lr", type=bool, default=False)
-parser.add_argument("--lr", type=float, default=1e-3)
+parser.add_argument("--lr", type=float, default=3e-4)
 
 # Early Stopping Config
 parser.add_argument("--early_stopping_patience", type=int, default=4)
 
 # # WanDB Config
-# parser.add_argument("--wandb_project_name", type=str, default="(STT) Conformer")
-# parser.add_argument("--wandb_username", type=str, default="tri")
+parser.add_argument("--wandb_project_name", type=str, default="(STT) Conformer")
+parser.add_argument("--wandb_username", type=str, default="tri")
 
 ########################################
 # Parse Config
 args = parser.parse_args()
 
-# wandb.init(project=args.wandb_project_name, name=args.wandb_username)
+wandb.init(project=args.wandb_project_name, name=args.wandb_username)
 
 # Device Config
 device = 'cpu'
@@ -150,24 +149,20 @@ def train_step(engine: Engine, batch: Tuple[torch.Tensor]) -> float:
     target_lengths = batch[3].to(device)
 
     optimizer.zero_grad()
+
+    outputs, input_lengths = model(inputs, input_lengths)
+    loss = ctc_loss(
+        outputs,
+        labels,
+        input_lengths,
+        target_lengths,
+        blank_id=processor.pad_token,
+        zero_infinity=True
+    )
+
+    loss.backward()
+    optimizer.step()
     
-    with autocast(dtype=torch.float16):
-        outputs, input_lengths = model(inputs, input_lengths)
-
-        loss = ctc_loss(
-            outputs,
-            labels,
-            input_lengths,
-            target_lengths,
-            blank_id=processor.pad_token,
-            zero_infinity=True
-        )
-
-    scaler.scale(loss).backward()
-    scaler.step(optimizer)
-
-    scaler.update()
-
     return loss.item()
 
 def val_step(engine: Engine, batch: Tuple[torch.Tensor]) -> Tuple[float, float]:
@@ -264,10 +259,10 @@ def start_epoch(engine: Engine) -> None:
 def finish_epoch(engine: Engine) -> None:
     print(f"Train Loss: {(engine.state.metrics['loss']):.4f}")
     print(f"Learning Rate: {optimizer.param_groups[0]['lr']}")
-    # wandb.log({
-    #     "train_loss": engine.state.metrics['loss'], 
-    #     'learning_rate': optimizer.param_groups[0]['lr']
-    # }, step=engine.state.epoch)
+    wandb.log({
+        "train_loss": engine.state.metrics['loss'], 
+        'learning_rate': optimizer.param_groups[0]['lr']
+    }, step=engine.state.epoch)
     
     scheduler.step()
     train_loss.reset()
@@ -291,11 +286,11 @@ def finish_training(engine: Engine):
 def finish_validating(engine: Engine) -> None:
     print(f"Validation Loss {(engine.state.metrics['loss']):.4f}")
     print(f"Validation WER Score {(engine.state.metrics['score']):.4f}")
-    # wandb.log({
-    #     'val_loss': engine.state.metrics['loss'], 
-    #     'val_score': engine.state.metrics['score'],
-    #     'early_stopping_patience': early_stopping_handler.counter
-    # }, step=trainer.state.epoch)
+    wandb.log({
+        'val_loss': engine.state.metrics['loss'], 
+        'val_score': engine.state.metrics['score'],
+        'early_stopping_patience': early_stopping_handler.counter
+    }, step=trainer.state.epoch)
 
     val_loss.reset()
     val_score.reset()

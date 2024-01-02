@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import math
 from typing import Optional
-
+import time
 class MultiHeadSelfAttentionModule(nn.Module):
     def __init__(self, d_model: int, heads: int, eps: float, dropout_rate: float = 0.0) -> None:
         super().__init__()
@@ -59,6 +59,7 @@ class RelativeMultiHeadAttention(nn.Module):
 
         # Softmax
         attention_weights = F.softmax(attention_score, dim=-1)
+
         attention_weights = self.dropout(attention_weights)
 
         # attention_weights x v

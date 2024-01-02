@@ -243,7 +243,7 @@ class ConformerProcessor:
             mel_lengths.append((signal_length // self.hop_length) + 1)
 
         mels = torch.stack(mels).type(torch.FloatTensor)
-        mels = self.spec_augment(mels)
+        # mels = self.spec_augment(mels)
 
         if return_length:
             return mels, torch.tensor(mel_lengths)

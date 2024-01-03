@@ -150,18 +150,25 @@ def train_step(engine: Engine, batch: Tuple[torch.Tensor]) -> float:
 
     optimizer.zero_grad()
 
-    outputs, input_lengths = model(inputs, input_lengths)
-    loss = ctc_loss(
-        outputs,
-        labels,
-        input_lengths,
-        target_lengths,
-        blank_id=processor.pad_token,
-        zero_infinity=True
-    )
+    with autocast():
+        outputs, input_lengths = model(inputs, input_lengths)
+        loss = ctc_loss(
+            outputs,
+            labels,
+            input_lengths,
+            target_lengths,
+            blank_id=processor.pad_token,
+            zero_infinity=True
+        )
 
-    loss.backward()
-    optimizer.step()
+    # loss.backward()
+    # optimizer.step()
+        
+    scaler.scale(loss).backward()
+    scaler.unscale_(optimizer)
+    scaler.step(optimizer)
+
+    scaler.update()
     
     return loss.item()
 
@@ -219,7 +226,8 @@ if args.use_validation:
 to_save = {
     'model': model,
     'optimizer': optimizer,
-    'lr_scheduler': scheduler
+    'lr_scheduler': scheduler,
+    'scaler': scaler
 }
 
 checkpoint_manager = Checkpoint(to_save=to_save, 

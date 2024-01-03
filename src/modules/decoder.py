@@ -30,8 +30,7 @@ class Decoder(nn.Module):
 
         if lengths is not None:
             x, _ = nn.utils.rnn.pad_packed_sequence(x, batch_first=True)
-        
         x = self.activation(x)
-        x = self.norm(x)
+        x = self.norm(x.transpose(1,2)).transpose(1,2)
         x = self.linear(x)
         return x

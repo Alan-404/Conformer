@@ -9,15 +9,16 @@ class Conformer(nn.Module):
                  vocab_size: int, 
                  n_mel_channels: int, 
                  encoder_n_layers: int, 
-                 d_model: int, 
+                 encoder_dim: int, 
                  heads: int, 
                  kernel_size: int, 
                  eps: float=1e-5, 
                  decoder_n_layers: int = 1,
+                 decoder_dim: int = 640,
                  dropout_rate: float = 0.0) -> None:
         super().__init__()
-        self.encoder = Encoder(n_mel_channels=n_mel_channels, n=encoder_n_layers, d_model=d_model, heads=heads, kernel_size=kernel_size, eps=eps, dropout_rate=dropout_rate)
-        self.decoder = Decoder(vocab_size=vocab_size, d_model=d_model, n=decoder_n_layers)
+        self.encoder = Encoder(n_mel_channels=n_mel_channels, n=encoder_n_layers, d_model=encoder_dim, heads=heads, kernel_size=kernel_size, eps=eps, dropout_rate=dropout_rate)
+        self.decoder = Decoder(vocab_size=vocab_size, d_model=encoder_dim, n=decoder_n_layers, hidden_dim=decoder_dim)
 
     def forward(self, x: torch.Tensor, lengths: Optional[torch.Tensor] = None) -> torch.Tensor:
         x, lengths = self.encoder(x, lengths)

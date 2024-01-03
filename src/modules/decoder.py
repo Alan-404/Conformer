@@ -14,11 +14,11 @@ from src.utils.activation import Swish
     
 
 class Decoder(nn.Module):
-    def __init__(self, vocab_size: int, d_model: int, n: int = 1, hidden_dim: int = 640) -> None:
+    def __init__(self, vocab_size: int, d_model: int, n: int = 1, hidden_dim: int = 640, eps: float = 1e-5) -> None:
         super().__init__()
         self.lstm = nn.LSTM(input_size=d_model, hidden_size=hidden_dim, num_layers=n, batch_first=True)
         self.activation = Swish()
-        self.norm = nn.BatchNorm1d(num_features=hidden_dim)
+        self.norm = nn.BatchNorm1d(num_features=hidden_dim, eps=eps)
         self.linear = nn.Linear(in_features=hidden_dim, out_features=vocab_size)
 
     def forward(self, x: torch.Tensor, lengths: Optional[torch.Tensor] = None) -> torch.Tensor:

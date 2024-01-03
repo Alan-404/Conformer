@@ -8,8 +8,8 @@ from typing import Optional
 class Encoder(nn.Module):
     def __init__(self, n_mel_channels: int, n: int, d_model: int, heads: int, kernel_size: int, eps: float, dropout_rate: float = 0.0) -> None:
         super().__init__()
-        self.subsampling = ConvolutionSubsampling(in_channels=n_mel_channels, out_channels=d_model)
-        self.linear = nn.Linear(in_features=d_model, out_features=d_model)
+        self.subsampling = ConvolutionSubsampling(channels=d_model)
+        self.linear = nn.Linear(in_features=d_model * (((n_mel_channels - 1) // 2 - 1) // 2), out_features=d_model)
         self.dropout = nn.Dropout(p=dropout_rate)
         self.layers = nn.ModuleList([ConformerBlock(d_model=d_model, heads=heads, kernel_size=kernel_size, eps=eps, dropout_rate=dropout_rate) for _ in range(n)])
     
@@ -17,7 +17,6 @@ class Encoder(nn.Module):
         # Subsampling Mel - Spectrogram
         x, lengths = self.subsampling(x, lengths)
         # Pre - Project
-        x = x.transpose(-1, -2)
         x = self.linear(x)
         x = self.dropout(x)
         # Mask Generation

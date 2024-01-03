@@ -29,7 +29,7 @@ class PositionalEncoding(nn.Module):
         pos_angles = pos_angles.unsqueeze(0)
         return pos_angles
     
-class RelPositionalEncoding(nn.Module):
+class RelativePositionalEncoding(nn.Module):
     """
     Relative positional encoding module.
     Args:
@@ -38,7 +38,7 @@ class RelPositionalEncoding(nn.Module):
     """
 
     def __init__(self, d_model: int = 512, max_len: int = 5000) -> None:
-        super(RelPositionalEncoding, self).__init__()
+        super().__init__()
         self.d_model = d_model
         self.pe = None
         self.extend_pe(torch.tensor(0.0).expand(1, max_len))

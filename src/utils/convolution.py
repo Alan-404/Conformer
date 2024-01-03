@@ -28,27 +28,9 @@ class ConvolutionModule(nn.Module):
         x = self.dropout(x)
         x = x.transpose(-1, -2)
         return x
-    
+
+
 class ConvolutionSubsampling(nn.Module):
-    def __init__(self, in_channels: int, out_channels: int) -> None:
-        super().__init__()
-        self.conv_1 = nn.Conv1d(in_channels=in_channels, out_channels=out_channels, kernel_size=3, stride=2, padding=1)
-        self.act_1 = nn.GELU()
-        self.conv_2 = nn.Conv1d(in_channels=out_channels, out_channels=out_channels, kernel_size=3, stride=1, padding=1)
-        self.act_2 = nn.GELU()
-    
-    def forward(self, x: torch.Tensor, lengths: Optional[torch.Tensor] = None) -> torch.Tensor:
-        x = self.conv_1(x)
-        x = self.act_1(x)
-        x = self.conv_2(x)
-        x = self.act_2(x)
-
-        if lengths is not None:
-            lengths = torch.ceil(lengths/2).type(torch.int)
-            
-        return x, lengths
-
-class Convolution2DSubsampling(nn.Module):
     def __init__(self, channels: int) -> None:
         super().__init__()
         self.conv_1 = nn.Conv2d(in_channels=1, out_channels=channels, kernel_size=3, stride=2)
@@ -71,7 +53,5 @@ class Convolution2DSubsampling(nn.Module):
         if lengths is not None:
             lengths = lengths >> 2
             lengths -= 1
-
-            return x, lengths
         
-        return x
+        return x, lengths

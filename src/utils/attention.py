@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from src.utils.position import RelPositionalEncoding
+from src.utils.position import RelativePositionalEncoding
 import math
 from typing import Optional
 
@@ -10,8 +10,7 @@ class MultiHeadSelfAttentionModule(nn.Module):
         super().__init__()
         self.layer_norm = nn.LayerNorm(normalized_shape=d_model, eps=eps)
         self.attention = RelativeMultiHeadAttention(d_model=d_model, heads=heads, dropout_rate=dropout_rate)
-        # self.attention = MultiHeadAttention(heads=heads, d_model=d_model, dropout_rate=dropout_rate)
-        self.pe = RelPositionalEncoding(d_model=d_model)
+        self.pe = RelativePositionalEncoding(d_model=d_model)
         self.dropout = nn.Dropout(p=dropout_rate)
 
     def forward(self, x: torch.Tensor, mask: Optional[torch.Tensor] = None):

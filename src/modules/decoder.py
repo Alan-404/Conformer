@@ -20,7 +20,7 @@ class Decoder(nn.Module):
 
     def forward(self, x: torch.Tensor, lengths: Optional[torch.Tensor] = None) -> torch.Tensor:
         if lengths is not None:
-            x = nn.utils.rnn.pack_padded_sequence(x, lengths=lengths, batch_first=True, enforce_sorted=False)
+            x = nn.utils.rnn.pack_padded_sequence(x, lengths=lengths.cpu(), batch_first=True, enforce_sorted=False)
         
         self.lstm.flatten_parameters()
         x, _ = self.lstm(x)

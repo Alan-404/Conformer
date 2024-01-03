@@ -54,7 +54,6 @@ parser.add_argument("--num_epochs", type=int, default=1)
 parser.add_argument("--checkpoint", type=str, default=None)
 parser.add_argument("--saved_checkpoint", type=str, default="./checkpoints")
 parser.add_argument("--train_path", type=str, default="./datasets/train.tsv")
-parser.add_argument("--device", type=str, default='cuda')
 parser.add_argument("--batch_size", type=int, default=1)
 parser.add_argument("--num_train", type=int, default=None)
 
@@ -83,9 +82,7 @@ args = parser.parse_args()
 wandb.init(project=args.wandb_project_name, name=args.wandb_username)
 
 # Device Config
-device = 'cpu'
-if args.device == 'cuda' or args.device == 'gpu':
-    device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
+device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
 
 scaler = GradScaler()
 

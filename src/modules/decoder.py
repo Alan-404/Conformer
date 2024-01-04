@@ -3,16 +3,6 @@ import torch.nn as nn
 from typing import Optional
 from src.utils.activation import Swish
 
-# class Decoder(nn.Module):
-#     def __init__(self, vocab_size: int, d_model: int) -> None:
-#         super().__init__()
-#         self.linear = nn.Linear(in_features=d_model, out_features=vocab_size)
-
-#     def forward(self, x: torch.Tensor) -> torch.Tensor:
-#         x = self.linear(x)
-#         return x
-    
-
 class Decoder(nn.Module):
     def __init__(self, vocab_size: int, d_model: int, n: int = 1, hidden_dim: int = 640, eps: float = 1e-5) -> None:
         super().__init__()
@@ -30,6 +20,7 @@ class Decoder(nn.Module):
 
         if lengths is not None:
             x, _ = nn.utils.rnn.pad_packed_sequence(x, batch_first=True)
+        
         x = self.activation(x)
         x = self.norm(x.transpose(1,2)).transpose(1,2)
         x = self.linear(x)

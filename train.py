@@ -161,9 +161,6 @@ def train_step(engine: Engine, batch: Tuple[torch.Tensor]) -> float:
             blank_id=processor.pad_token,
             zero_infinity=True
         )
-
-    # loss.backward()
-    # optimizer.step()
         
     scaler.scale(loss).backward()
     scaler.unscale_(optimizer)
@@ -203,9 +200,6 @@ def val_step(engine: Engine, batch: Tuple[torch.Tensor]) -> Tuple[float, float]:
 def val_early_stopping_condition(engine: Engine) -> float:
     return 1 - engine.state.metrics['score']
 
-def train_early_stopping_condition(engine: Engine) -> float:
-    return -engine.state.metrics['loss']
-
 # Setup Trainer
 trainer = Engine(train_step)
 train_loss = RunningAverage(output_transform=lambda x: x)
@@ -233,7 +227,7 @@ to_save = {
 
 checkpoint_manager = Checkpoint(to_save=to_save, 
                                 save_handler=DiskSaver(args.saved_checkpoint, create_dir=True, require_empty=False),
-                                n_saved=args.early_stopping_patience + 2,
+                                n_saved=args.early_stopping_patience + 1,
                                 global_step_transform=global_step_from_engine(trainer))
 
 # Trainer Events

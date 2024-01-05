@@ -227,12 +227,12 @@ class ConformerProcessor:
         graphemes = []
         start = 0
         if len(text) - 1 < n_grams:
-            n_grams = len(text) - 1
+            n_grams = len(text)
         num_steps = n_grams
         while start < len(text):
             found = True
             item = text[start:start + num_steps]
-
+            
             if item in self.dictionary:
                 graphemes.append(item)
             else:
@@ -296,7 +296,6 @@ class ConformerProcessor:
         lengths = []
         for sentence in sentences:
             morphonemes = self.sentence2morphonemes(sentence)
-            print(morphonemes)
             token = torch.tensor(np.array(self.dictionary(morphonemes)))
             lengths.append(len(token))
             tokens.append(token)

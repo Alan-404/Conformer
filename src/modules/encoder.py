@@ -9,7 +9,7 @@ class Encoder(nn.Module):
     def __init__(self, n_mel_channels: int, n: int, d_model: int, heads: int, kernel_size: int, eps: float, dropout_rate: float = 0.0) -> None:
         super().__init__()
         self.subsampling = ConvolutionSubsampling(channels=d_model)
-        self.linear = nn.Linear(in_features=d_model * ((n_mel_channels - 1) // 2), out_features=d_model)
+        self.linear = nn.Linear(in_features=d_model * ((((n_mel_channels - 1) // 2) - 1) // 2), out_features=d_model)
         self.dropout = nn.Dropout(p=dropout_rate)
         self.layers = nn.ModuleList([ConformerBlock(d_model=d_model, heads=heads, kernel_size=kernel_size, eps=eps, dropout_rate=dropout_rate) for _ in range(n)])
     

@@ -1,6 +1,6 @@
 {
     "vowel": ["a", "ă", "â", "e", "ê", "i", "o", "ô", "ơ", "u", "ư", "y"],
-    "consonant": ["b", "c", "d", "đ", "g", "h", "k", "l", "m", "n", "p", "q", "r", "s", "t", "v", "x", "f", "z"],
+    "consonant": ["b", "c", "d", "đ", "g", "h", "k", "l", "m", "n", "p", "q", "r", "s", "t", "v", "x", "f", "j", "w", "z"],
     "compound_consonant": ["ch", "tr", "gh", "kh", "nh", "th", "ngh", "ng", "ph", "qu", "gi"],
     "double_vowel": [
         "ai", "ao", "au", "ay", "âu", "ây", 
@@ -8,8 +8,7 @@
         "ia", "iê", "yê", "iu",
         "oa", "oă", "oe", "oi", "ôi", "ơi", 
         "ua", "uâ", "uă", "ue", "uê", "ui", "ưi", "ưa", "uo", "ưu", "ươ", "uy", "uô", 
-        "oo",
-        "as", "at", "er", "ox", "in", "et", "is", "or"
+        "oo"
     ],
     "triple_vowel": [
         "oai", "oao", "uao", "oeo", "iêu", "yêu", "uôi", "ươu", "uya", "uyê", "ươi", "oay", "uây", "uyu"
@@ -69,6 +68,7 @@
         "ượi", "ười", "ưởi", "ưỡi", "ưới",
         "oạy", "oày", "oảy", "oãy", "oáy",
         "uậy", "uầy", "uẩy", "uẫy", "uấy",
-        "uỵu", "uỳu", "uỷu", "uỹu", "uýu"
+        "uỵu", "uỳu", "uỷu", "uỹu", "uýu",
+        "'"
     ]
 }

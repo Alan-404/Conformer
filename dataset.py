@@ -37,7 +37,7 @@ class ConformerDataset(Dataset):
             sentences = self.prompts['text'].to_list()
             for sentence in tqdm(sentences):
                 graphemes_ = self.processor.sentence2graphemes(sentence)
-                graphemes.append(graphemes_)
+                graphemes.append(" ".join(graphemes_))
                 grapheme_lengths.append(len(graphemes_))
 
             self.prompts['graphemes'] = graphemes
@@ -52,7 +52,7 @@ class ConformerDataset(Dataset):
         index_df = self.prompts.iloc[index]
 
         audio_path = index_df[self.audio_path_col]
-        transcript = index_df['graphemes']
+        transcript = index_df['graphemes'].split(" ")
 
         start = end = None
         if "start" in self.columns and "end" in self.columns:

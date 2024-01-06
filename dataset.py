@@ -54,7 +54,7 @@ class ConformerDataset(Dataset):
         audio_path = index_df[self.audio_path_col]
         transcript = index_df['graphemes']
         if type(transcript) != str:
-            transcript = ""
+            transcript = ['']
         else:
             transcript = transcript.split(" ")
 

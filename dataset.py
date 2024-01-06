@@ -52,7 +52,11 @@ class ConformerDataset(Dataset):
         index_df = self.prompts.iloc[index]
 
         audio_path = index_df[self.audio_path_col]
-        transcript = index_df['graphemes'].split(" ")
+        transcript = index_df['graphemes']
+        if type(transcript) != str:
+            transcript = ""
+        else:
+            transcript = transcript.split(" ")
 
         start = end = None
         if "start" in self.columns and "end" in self.columns:

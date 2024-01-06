@@ -51,7 +51,6 @@ class ConvolutionSubsampling(nn.Module):
         x = x.contiguous().view(batch_size, subsampling_length, dim * subsampling_channels)
 
         if lengths is not None:
-            lengths = lengths >> 2
-            lengths -= 1
+            lengths = ((lengths - 1) // 2 - 1) // 2
             
         return x, lengths

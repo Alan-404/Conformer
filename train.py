@@ -123,9 +123,9 @@ scheduler = lr_scheduler.CosineAnnealingLR(optimizer=optimizer, T_max=1000)
 
 # Dataset and DataLoader Setup
 
-def get_batch(batch) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+def get_batch(batch, augment: bool) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     signals, transcripts = zip(*batch)
-    mels, mel_lengths = processor(signals, return_length=True)
+    mels, mel_lengths = processor(signals, return_length=True, set_augment=augment)
     tokens, token_lengths = processor.tokenize(transcripts)
 
     return mels, tokens, mel_lengths, token_lengths
@@ -137,9 +137,9 @@ if args.use_validation:
         val_dataset = ConformerDataset(manifest_path=args.val_path, processor=processor, num_examples=args.num_val)
     else:
         train_dataset, val_dataset = random_split(train_dataset, [1 - args.val_size, args.val_size], generator=torch.Generator().manual_seed(41))
-    val_dataloader = DataLoader(dataset=val_dataset, batch_size=args.val_batch_size, shuffle=True, collate_fn=get_batch)
+    val_dataloader = DataLoader(dataset=val_dataset, batch_size=args.val_batch_size, shuffle=True, collate_fn=lambda batch: get_batch(batch, False))
 
-train_dataloader = DataLoader(dataset=train_dataset, batch_size=args.batch_size, shuffle=True, collate_fn=get_batch)
+train_dataloader = DataLoader(dataset=train_dataset, batch_size=args.batch_size, shuffle=True, collate_fn=lambda batch: get_batch(batch, True))
 
 # Train and Validate Processing Setup
 def train_step(engine: Engine, batch: Tuple[torch.Tensor]) -> float:

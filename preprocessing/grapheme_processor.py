@@ -21,6 +21,7 @@ class ConformerProcessor:
         self.dictionary = self.create_vocab(vocab_path, pad_token, word_delim_token, unk_token)
 
         self.word_delim_item = word_delim_token
+        self.unk_item = unk_token
 
         self.unk_token = self.find_token(unk_token)
         self.pad_token = self.find_token(pad_token)
@@ -223,7 +224,9 @@ class ConformerProcessor:
     
     def word2graphemes(self, text: str,  n_grams: int = 3):
         if len(text) == 1:
-            return [text]
+            if text in self.dictionary:
+                return [text]
+            return [self.unk_item]
         graphemes = []
         start = 0
         if len(text) - 1 < n_grams:
@@ -235,6 +238,8 @@ class ConformerProcessor:
             
             if item in self.dictionary:
                 graphemes.append(item)
+            elif num_steps == 1:
+                graphemes.append(self.unk_item)
             else:
                 found = False
 

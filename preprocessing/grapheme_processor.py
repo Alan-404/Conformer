@@ -126,7 +126,7 @@ class ConformerProcessor:
 
         signal = torch.FloatTensor(signal)
 
-        signal = self.standard_normalize(signal)
+        # signal = self.standard_normalize(signal)
 
         return signal
 

@@ -68,10 +68,10 @@ parser.add_argument("--num_val", type=int, default=None)
 
 # Optimizer Config
 parser.add_argument("--set_lr", type=bool, default=False)
-parser.add_argument("--lr", type=float, default=3e-4)
+parser.add_argument("--lr", type=float, default=3e-5)
 
 # Early Stopping Config
-parser.add_argument("--early_stopping_patience", type=int, default=4)
+parser.add_argument("--early_stopping_patience", type=int, default=3)
 
 # # WanDB Config
 parser.add_argument("--wandb_project_name", type=str, default="(STT) Conformer")

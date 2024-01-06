@@ -275,7 +275,7 @@ class ConformerProcessor:
         
         return torch.stack(masks)
     
-    def __call__(self, signals: List[torch.Tensor], max_len: Optional[int] = None, return_length: bool = False, set_augment: bool = True) -> torch.Tensor:
+    def __call__(self, signals: List[torch.Tensor], max_len: Optional[int] = None, return_length: bool = False, set_augment: bool = False) -> torch.Tensor:
         if max_len is None:
             max_len = np.max([len(signal) for signal in signals])
 

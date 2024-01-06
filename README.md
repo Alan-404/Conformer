@@ -1,4 +1,4 @@
-# Conformer Model - Speech to Text
+# (Speech to Text) Convolution - augmented Transformer
 ## Model Architecture
 <img src="./assets/model.png"/>
 

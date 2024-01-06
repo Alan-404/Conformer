@@ -6,7 +6,7 @@ import torch
 from tqdm import tqdm
 
 class ConformerDataset(Dataset):
-    def __init__(self, manifest_path: str, processor: ConformerProcessor, audio_path_col: str = "path", transcript_col: str = "text", num_examples: Optional[int] = None) -> None:
+    def __init__(self, manifest_path: str, processor: ConformerProcessor, audio_path_col: str = "path", transcript_col: str = "text", num_examples: Optional[int] = None, make_grapheme: bool = True) -> None:
         super().__init__()
         self.prompts = pd.read_csv(manifest_path, sep="\t")
         self.columns = self.prompts.columns
@@ -30,7 +30,7 @@ class ConformerDataset(Dataset):
 
         self.processor = processor
 
-        if 'graphemes' not in self.prompts.columns:
+        if 'graphemes' not in self.prompts.columns or make_grapheme:
             print("Converting Text to Graphemes")
             graphemes = []
             grapheme_lengths = []

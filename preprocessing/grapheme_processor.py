@@ -296,12 +296,11 @@ class ConformerProcessor:
         
         return mels
     
-    def tokenize(self, sentences: List[str], max_len: Optional[int] = None) -> Tuple[torch.Tensor, torch.Tensor]:
+    def tokenize(self, graphemes: List[List[str]], max_len: Optional[int] = None) -> Tuple[torch.Tensor, torch.Tensor]:
         tokens = []
         lengths = []
-        for sentence in sentences:
-            graphemes = self.sentence2graphemes(sentence)
-            token = torch.tensor(np.array(self.dictionary(graphemes)))
+        for item in graphemes:
+            token = torch.tensor(np.array(self.dictionary(item)))
             lengths.append(len(token))
             tokens.append(token)
 

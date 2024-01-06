@@ -1,14 +1,17 @@
 from torch.utils.data import Dataset
-from preprocessing.processor import ConformerProcessor
+from preprocessing.grapheme_processor import ConformerProcessor
 import pandas as pd
 from typing import Optional, Tuple
 import torch
+from tqdm import tqdm
 
 class ConformerDataset(Dataset):
     def __init__(self, manifest_path: str, processor: ConformerProcessor, audio_path_col: str = "path", transcript_col: str = "text", num_examples: Optional[int] = None) -> None:
         super().__init__()
         self.prompts = pd.read_csv(manifest_path, sep="\t")
         self.columns = self.prompts.columns
+
+        self.prompts = self.prompts.fillna('')
 
         if num_examples is not None:
             self.prompts = self.prompts[:num_examples]
@@ -27,6 +30,21 @@ class ConformerDataset(Dataset):
 
         self.processor = processor
 
+        if 'graphemes' not in self.prompts.columns:
+            print("Converting Text to Graphemes")
+            graphemes = []
+            grapheme_lengths = []
+            sentences = self.prompts['text'].to_list()
+            for sentence in tqdm(sentences):
+                graphemes_ = self.processor.sentence2graphemes(sentence)
+                graphemes.append(graphemes_)
+                grapheme_lengths.append(len(graphemes_))
+
+            self.prompts['graphemes'] = graphemes
+            self.prompts['grapheme_length'] = grapheme_lengths
+
+            self.prompts.to_csv(manifest_path, sep="\t", index=False)
+
     def __len__(self) -> int:
         return len(self.prompts)
     
@@ -34,7 +52,7 @@ class ConformerDataset(Dataset):
         index_df = self.prompts.iloc[index]
 
         audio_path = index_df[self.audio_path_col]
-        transcript = str(index_df[self.transcript_col])
+        transcript = index_df['graphemes']
 
         start = end = None
         if "start" in self.columns and "end" in self.columns:

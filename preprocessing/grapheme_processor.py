@@ -221,7 +221,7 @@ class ConformerProcessor:
         text = re.sub(r"\s\s+", " ", text)
         return text.strip()
     
-    def word2morphonemes(self, text: str,  n_grams: int = 3):
+    def word2graphemes(self, text: str,  n_grams: int = 3):
         if len(text) == 1:
             return [text]
         graphemes = []
@@ -249,15 +249,15 @@ class ConformerProcessor:
 
         return graphemes
     
-    def sentence2morphonemes(self, sentence: str):
+    def sentence2graphemes(self, sentence: str):
         sentence = self.clean_text(sentence)
         words = sentence.split(' ')
-        morphonemes = []
+        graphemes = []
         for index, word in enumerate(words):
-            morphonemes += self.word2morphonemes(word)
+            graphemes += self.word2graphemes(word)
             if index != len(words) -1:
-                morphonemes.append("|")
-        return morphonemes
+                graphemes.append("|")
+        return graphemes
     
     def generate_mask(self, lengths: List[int], max_len: Optional[int] = None) -> torch.Tensor:
         masks = []
@@ -295,8 +295,8 @@ class ConformerProcessor:
         tokens = []
         lengths = []
         for sentence in sentences:
-            morphonemes = self.sentence2morphonemes(sentence)
-            token = torch.tensor(np.array(self.dictionary(morphonemes)))
+            graphemes = self.sentence2graphemes(sentence)
+            token = torch.tensor(np.array(self.dictionary(graphemes)))
             lengths.append(len(token))
             tokens.append(token)
 

@@ -6,7 +6,7 @@ import torch
 from tqdm import tqdm
 
 class ConformerDataset(Dataset):
-    def __init__(self, manifest_path: str, processor: ConformerProcessor, audio_path_col: str = "path", transcript_col: str = "text", num_examples: Optional[int] = None, make_grapheme: bool = True) -> None:
+    def __init__(self, manifest_path: str, processor: ConformerProcessor, audio_path_col: str = "path", transcript_col: str = "text", num_examples: Optional[int] = None, make_grapheme: bool = False) -> None:
         super().__init__()
         self.prompts = pd.read_csv(manifest_path, sep="\t")
         self.columns = self.prompts.columns

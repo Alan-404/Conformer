@@ -301,7 +301,7 @@ class ConformerProcessor:
         lengths = []
         for item in graphemes:
             if len(item) == 1 and item[0] == '':
-                token = torch.tensor(np.array([self.pad_token]))
+                token = torch.tensor(np.array([]))
             else:
                 token = torch.tensor(np.array(self.dictionary(item)))
             lengths.append(len(token))

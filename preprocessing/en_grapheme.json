@@ -28,11 +28,14 @@
         "igh",
         "ee", "ea", "ey", "ei", "eo",
         "ai", "ea", "ay", "ey", "aigh", 
-        "our", "ore", "oor", "au", "aw", "oar", "ar",
+        "ore", "or", "oor", "au", "aw", "oar", "ar",
         "ar", "yr",
-        "oo", "oul", "oi", "oy", "ir",
+        "oo", "oy",
         "ue", "are", "eir", "ayor", "ayer", "ae",
-        "ui", "ion"
+        "ui", "ti"
+    ],
+    "last": [
+        "me", "ne", "le", "te", "al", "se", "ke"
     ],
     "mark": ["'", "n'"]
 }

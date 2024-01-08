@@ -1,0 +1,51 @@
+{
+    "vowel": [
+        "a", "e", "u", "o", "i"
+    ],
+    "consonant": [
+        "b", "c", "d", "f", "g", "h", "j", "k", "l", "m", "n", "p", "q", "r", "s", "t", "v", "x", "y", "z", "w"
+    ],
+    "compound_consonant": [
+        "bb",
+        "dd", "ed",
+        "ff", "ph", "lf", "ft",
+        "gg", "gh", "gu", "gue",
+        "wh",
+        "ge", "dge", "di",
+        "ch", "cc", "lk", "qu", "ck",
+        "ll",
+        "mm", "mb", "mn", "lm",
+        "nn", "kn", "gn", "pn",
+        "pp",
+        "rr", "wr", "rh",
+        "ss", "sc", "ps", "st", "ce", "se",
+        "tt", "th",
+        "ph", "ve",
+        "zz", "ss", "ze",
+        "tch", "tu", "te",
+        "sh", "ci", "si", "sci", "ti",
+        "th", "ng", "ngue",
+        "tr",
+        "ve", "se", "ce"
+    ],
+    "compound_vowel": [
+        "ai", "au",
+        "eigh", "aigh", "ay", "er", "et", "ei", "au", "ea", "ey",
+        "ie", "eo", "ei", "ae",
+        "ee", "ea", "oe", "ay",
+        "ui",
+        "igh", "uy", "ye",
+        "ho", "aw", "ough",
+        "oa", "ow", "eau", "oo", "ew",
+        "oo", "ou",
+        "ue", "oew",
+        "oi", "oy", "uoy",
+        "ar", "our", "ur",
+        "air", "are", "ear", "ere", "eir", "ayer",
+        "ir", "ur", "or", "yr",
+        "aw", "oor", "ore", "oar", "augh",
+        "eer", "ere", "ier",
+        "ure"
+    ],
+    "mark": ["'", "n'"]
+}

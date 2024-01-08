@@ -1,0 +1,38 @@
+{
+    "vowel": [
+        "a", "e", "u", "o", "i"
+    ],
+    "consonant": [
+        "b", "c", "d", "f", "g", "h", "j", "k", "l", "m", "n", "p", "q", "r", "s", "t", "v", "x", "y", "z", "w"
+    ],
+    "compound_consonant": [
+        "pp",
+        "bb",
+        "wh",
+        "dd", "ed",
+        "ss", "sc", "ps",
+        "gg", "gh",
+        "ff", "ph",
+        "ck", "ch",
+        "mm", "mb", "mn",
+        "sh", "ll",
+        "rr", "wr", "rh",
+        "dg", "dj",
+        "kn", "nn", "gn", "pn",
+        "zz", "qu", "cc", "tt", "bt", "pt",
+        "th", "ng", "tr"
+    ],
+    "compound_vowel": [
+        "oa", "ow", "oe", "ough", "ou", "ew",
+        "ear", "eer", "ere", "er",
+        "igh",
+        "ee", "ea", "ey", "ei", "eo",
+        "ai", "ea", "ay", "ey", "aigh", 
+        "our", "ore", "oor", "au", "aw", "oar", "ar",
+        "ar", "yr",
+        "oo", "oul", "oi", "oy", "ir",
+        "ue", "are", "eir", "ayor", "ayer", "ae",
+        "ui", "ion"
+    ],
+    "mark": ["'", "n'"]
+}

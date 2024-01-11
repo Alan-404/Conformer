@@ -154,7 +154,6 @@ class ConformerProcessor:
     def decode_beam_search(self, digit: np.ndarray, beam_width: int = 4, beam_prune_logp: float = -20.0):
         return self.ctc_lm.decode(
                     digit,
-                    hotwords=self.beam_config['hotwords'],
                     beam_width=beam_width,
                     beam_prune_logp=beam_prune_logp
                 )

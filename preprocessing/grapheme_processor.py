@@ -100,7 +100,7 @@ class ConformerProcessor:
             signal = signal[role]
         return signal
     
-    def spectral_normalize(self, x: torch.Tensor, C=1, clip_val=1e-5) -> torch.Tensor:
+    def spectral_normalize(self, x: torch.Tensor, C: int = 1, clip_val: float = 1e-5) -> torch.Tensor:
         return torch.log(torch.clamp(x, min=clip_val) * C)
 
     def mel_spectrogram(self, signal: torch.Tensor) -> torch.Tensor:

@@ -16,7 +16,7 @@ from pyctcdecode import build_ctcdecoder
 MAX_AUDIO_VALUE = 32768
 
 class ConformerProcessor:
-    def __init__(self, vocab_path: str, unk_token: str = "<unk>", pad_token: str = "<pad>", word_delim_token: str = "|", sampling_rate: int = 16000, num_mels: int = 80, n_fft: int = 400, hop_length: int = 160, win_length: int = 400, fmin: float = 0.0, fmax: float = 8000.0, freq_augment: int = 27, time_augment: int = 10, time_mask_ratio: float = 0.05, puncs: str = r"([:./,?!@#$%^&=`~*\(\)\[\]\"\-\\])", lm_path: Optional[str] = None, beam_config_path: Optional[str] = None) -> None:
+    def __init__(self, vocab_path: str, unk_token: str = "<unk>", pad_token: str = "<pad>", word_delim_token: str = "|", sampling_rate: int = 16000, num_mels: int = 80, n_fft: int = 400, hop_length: int = 160, win_length: int = 400, fmin: float = 0.0, fmax: float = 8000.0, freq_augment: int = 27, time_augment: int = 10, time_mask_ratio: float = 0.05, puncs: str = r"([:./,?!@#$%^&=`~*\(\)\[\]\"\-\\])", lm_path: Optional[str] = None, beam_alpha: float = 2.1, beam_beta: float = 9.2) -> None:
         # Text
         self.dictionary = self.create_vocab(vocab_path, pad_token, word_delim_token, unk_token)
 
@@ -32,15 +32,12 @@ class ConformerProcessor:
         self.puncs = puncs
 
         if lm_path is not None and os.path.exists(lm_path):
-            if beam_config_path is not None:
-                assert os.path.exists(beam_config_path), "Not Found BEAM Config"
-                self.beam_config = json.load(open(beam_config_path, encoding='utf-8'))
-                self.decoder = build_ctcdecoder(self.dictionary.get_itos(), 
-                                            alpha=self.beam_config['alpha'], 
-                                            beta=self.beam_config['beta'])
-            else:
-                self.beam_config = None
-                self.decoder = build_ctcdecoder(self.dictionary.get_itos())
+            self.ctc_lm = build_ctcdecoder(
+                labels=self.dictionary.get_itos(),
+                kenlm_model_path=lm_path,
+                alpha=beam_alpha,
+                beta=beam_beta
+            )
             
         # Audio
         self.sampling_rate = sampling_rate
@@ -154,19 +151,14 @@ class ConformerProcessor:
             tokens.append(self.find_token(char))
         return torch.tensor(tokens)
     
-    def decode_beam_search(self, digit: np.ndarray):
-        if self.beam_config is not None:
-            return self.decoder.decode(
-                digit,
-                hotwords=self.beam_config['hotwords'],
-                beam_width=self.beam_config['beam_width'],
-                beam_prune_logp=self.beam_config['beam_prune_logp'],
-                hotword_weight=self.beam_config['hotword_weight']
-            )
-        else:
-            return self.decoder.decode(
-                digit
-            )
+    def decode_beam_search(self, digit: np.ndarray, beam_width: int = 4, beam_prune_logp: float = -20.0):
+        return self.ctc_lm.decode(
+                    digit,
+                    hotwords=self.beam_config['hotwords'],
+                    beam_width=beam_width,
+                    beam_prune_logp=beam_prune_logp
+                )
+
 
     def decode_batch(self, digits: Union[torch.Tensor, np.ndarray, list], group_token: bool = True) -> List[str]:
         sentences = []

@@ -57,6 +57,24 @@ class ConformerProcessor:
         self.freq_masker = FrequencyMasking(freq_mask_param=freq_augment)
         self.time_masker = TimeMasking(time_mask_param=time_augment, p=time_mask_ratio)
 
+        self.replace_dict = {
+            "oà": "òa",
+            "oá": "óa",
+            "oả": "ỏa",
+            "oã": "õa",
+            "oạ": "ọa",
+            "oè": "òe",
+            "oé": "óe",
+            "oẻ": "ỏe",
+            "oẽ": "õe",
+            "oẹ": "ọe",
+            "uỳ": "ùy",
+            "uý": "úy",
+            "uỷ": "ủy",
+            "uỹ": "ũy",
+            "uỵ": "ụy"
+        }
+
     def create_vocab(self, vocab_path: str, pad_token: str, word_delim_token: str, unk_token: str) -> Vocab:
         data = json.load(open(vocab_path, encoding='utf-8'))
         vocabs = []
@@ -104,9 +122,6 @@ class ConformerProcessor:
         mel_spec = self.mel_transform(signal)
         log_mel = self.spectral_normalize(mel_spec)
         return log_mel
-        
-    def standard_normalize(self, signal: torch.Tensor) -> torch.Tensor:
-        return (signal - signal.mean()) / torch.sqrt(signal.var() + 1e-7)
 
     def load_audio(self, path: str, start: Optional[float] = None, end: Optional[float] = None, role: Optional[int] = None) -> torch.Tensor:
         if ".pickle" in path:
@@ -122,8 +137,6 @@ class ConformerProcessor:
             signal = signal[int(start * self.sampling_rate) : int(end * self.sampling_rate)]
 
         signal = torch.FloatTensor(signal)
-
-        # signal = self.standard_normalize(signal)
 
         return signal
 
@@ -213,6 +226,12 @@ class ConformerProcessor:
         text = re.sub(r"\s\s+", " ", text)
         return text.strip()
     
+    def spec_replace(self, word: str):
+        for key in self.replace_dict:
+            word = word.replace(key, self.replace_dict[key])
+        
+        return word
+    
     def word2graphemes(self, text: str,  n_grams: int = 3):
         if len(text) == 1:
             if text in self.dictionary:
@@ -226,6 +245,9 @@ class ConformerProcessor:
         while start < len(text):
             found = True
             item = text[start:start + num_steps]
+
+            if num_steps == 2:
+                item = self.spec_replace(item)
             
             if item in self.dictionary:
                 graphemes.append(item)

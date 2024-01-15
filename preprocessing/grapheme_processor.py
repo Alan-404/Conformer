@@ -110,9 +110,12 @@ class ConformerProcessor:
         return np.array(audio).astype(np.float64) / MAX_AUDIO_VALUE
     
     def read_audio(self, path: str, role: Optional[int] = None) -> np.ndarray:
-        signal, _ = librosa.load(path, sr=self.sampling_rate, mono=False)
-        if signal.ndim == 2 and role is not None:
+        if role is not None:
+            signal, _ = librosa.load(path, sr=self.sampling_rate, mono=False)
             signal = signal[role]
+        else:
+            signal, _ = librosa.load(path, sr=self.sampling_rate, mono=True)
+
         return signal
     
     def spectral_normalize(self, x: torch.Tensor, C: int = 1, clip_val: float = 1e-5) -> torch.Tensor:

@@ -43,7 +43,7 @@ class ConformerDataset(Dataset):
             self.prompts['graphemes'] = graphemes
             self.prompts['grapheme_length'] = grapheme_lengths
 
-            self.prompts.to_csv(manifest_path, sep="\t", index=False)
+            self.prompts[['path', 'text',' start', 'end', 'type', 'graphememes']].to_csv(manifest_path, sep="\t", index=False)
 
     def __len__(self) -> int:
         return len(self.prompts)

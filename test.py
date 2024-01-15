@@ -39,9 +39,6 @@ parser.add_argument("--decoder_n_layers", type=int, default=1)
 parser.add_argument("--decoder_dim", type=int, default=640)
 parser.add_argument("--dropout_rate", type=float, default=0.1)
 
-# Device
-parser.add_argument("--device", type=str, default='cuda')
-
 # Path
 parser.add_argument("--result_folder", type=str, default='./results')
 parser.add_argument("--saved_name", type=str, default=None)
@@ -52,9 +49,7 @@ if os.path.exists(args.result_folder) == False:
     os.mkdir(args.result_folder)
 
 # Device Config
-device = 'cpu'
-if args.device == 'cuda' or args.device == 'gpu':
-    device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
+device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
 
 # Processor Setup
 # Processor Setup

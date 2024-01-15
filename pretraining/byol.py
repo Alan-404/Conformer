@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 from src.conformer import Encoder
 import copy
-from typing import Optional
 
 class BYOL(nn.Module):
     def __init__(self, n_mel_channels: int, n: int, d_model: int, heads: int, kernel_size: int, eps: float, dropout_rate: float, embedding_size: int, moving_average_decay: float = 0.99) -> None:

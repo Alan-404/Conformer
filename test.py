@@ -62,7 +62,8 @@ processor = ConformerProcessor(
     fmax=args.fmax,
     pad_token=args.pad_token,
     unk_token=args.unk_token,
-    word_delim_token=args.word_delim_token
+    word_delim_token=args.word_delim_token,
+    lm_path=args.arpa_path
 )
 
 # Model Setup

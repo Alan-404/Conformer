@@ -6,7 +6,7 @@ import torch
 from tqdm import tqdm
 
 class ConformerDataset(Dataset):
-    def __init__(self, manifest_path: str, processor: ConformerProcessor, audio_path_col: str = "path", transcript_col: str = "text", num_examples: Optional[int] = None, make_grapheme: bool = False) -> None:
+    def __init__(self, manifest_path: str, processor: ConformerProcessor, num_examples: Optional[int] = None, make_grapheme: bool = False) -> None:
         super().__init__()
         self.prompts = pd.read_csv(manifest_path, sep="\t")
         self.columns = self.prompts.columns
@@ -22,11 +22,6 @@ class ConformerDataset(Dataset):
         
         if "type" not in self.columns:
             self.prompts['type'] = None
-
-        assert audio_path_col in self.columns and transcript_col in self.columns
-
-        self.audio_path_col = audio_path_col
-        self.transcript_col = transcript_col
 
         self.processor = processor
 
@@ -51,7 +46,7 @@ class ConformerDataset(Dataset):
     def __getitem__(self, index: int) -> Tuple[torch.Tensor, str]:
         index_df = self.prompts.iloc[index]
 
-        audio_path = index_df[self.audio_path_col]
+        audio_path = index_df['path']
         transcript = index_df['graphemes']
         if type(transcript) != str:
             transcript = ['']
@@ -70,7 +65,3 @@ class ConformerDataset(Dataset):
             role = 1
 
         return self.processor.load_audio(audio_path, start=start, end=end, role=role), transcript
-    
-class BYOLDataset(Dataset):
-    def __init__(self) -> None:
-        super().__init__()

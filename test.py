@@ -1,11 +1,10 @@
 import os
 import torch
-import torcheval.metrics.functional as F_metric
+import torchmetrics.functional as F
 from preprocessing.processor import ConformerProcessor
 from conformer import Conformer
-from dataset import ConformerDataset
 from tqdm import tqdm
-
+import pandas as pd
 from argparse import ArgumentParser
 
 parser = ArgumentParser()
@@ -13,6 +12,7 @@ parser = ArgumentParser()
 parser.add_argument("--test_path", type=str)
 parser.add_argument("--num_examples", type=int, default=None)
 parser.add_argument("--checkpoint", type=str)
+parser.add_argument("--arpa_path", type=str)
 
 # Audio Processor Config
 parser.add_argument("--num_mels", type=int, default=80)
@@ -24,11 +24,11 @@ parser.add_argument("--fmin", type=float, default=0.0)
 parser.add_argument("--fmax", type=float, default=8000.0)
 
 # Text Processor Config
-parser.add_argument("--vocab_path", type=str, default="./vocab.json")
+parser.add_argument("--vocab_path", type=str, default="./vocabulary/dictionary.json")
 parser.add_argument("--pad_token", type=str, default="<pad>")
 parser.add_argument("--unk_token", type=str, default="<unk>")
 parser.add_argument("--word_delim_token", type=str, default="|")
-parser.add_argument("--arpa_path", type=str)
+
 # Model Config
 parser.add_argument("--encoder_n_layers", type=int, default=17)
 parser.add_argument("--encoder_dim", type=int, default=512)
@@ -51,7 +51,6 @@ if os.path.exists(args.result_folder) == False:
 device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
 
 # Processor Setup
-# Processor Setup
 processor = ConformerProcessor(
     vocab_path=args.vocab_path,
     num_mels=args.num_mels,
@@ -68,7 +67,7 @@ processor = ConformerProcessor(
 
 # Model Setup
 model = Conformer(
-    vocab_size=len(processor.dictionary.get_itos()),
+    vocab_size=len(processor.dictionary),
     n_mel_channels=processor.num_mels,
     encoder_n_layers=args.encoder_n_layers,
     encoder_dim=args.encoder_dim,
@@ -83,33 +82,53 @@ model.load_state_dict(torch.load(args.checkpoint, map_location='cpu')['model'])
 model.to(device)
 model.eval()
 
-testset = ConformerDataset(manifest_path=args.test_path, processor=processor, num_examples=args.num_examples)
+df = pd.read_csv(args.test_path, sep="\t")
+if args.num_examples is not None:
+    df = df[:args.num_examples]
+df['text'] = df['text'].fillna('')
+
+time_segment = True
+if "start" not in df.columns or "end" not in df.columns:
+    time_segment = False
+    df['start'] = None
+    df['end'] = None
+
+use_type = True
+if "type" not in df.columns:
+    use_type = False
+    df['type'] = None
+
+labels = df['text'].to_list()
 preds = []
 
 print('=============== Start Testing ====================')
-for idx in tqdm(range(testset.__len__())):
-    signal, _ = testset.__getitem__(idx)
-    mel_spec = processor.mel_spectrogram(signal).unsqueeze(0).to(device)
-
+for index, row in tqdm(df.iterrows(), total=df.shape[0]):
+    path = row['path']
+    start, end, role = row['start'], row['end'], row['type']
+    mel = processor.mel_spectrogram(processor.load_audio(path, start, end, role)).unsqueeze(0)
     with torch.no_grad():
-        output = model(mel_spec)[0]
-
-    preds.append(processor.decode_beam_search(output.cpu().numpy()))
+        logits = model(mel)
+    
+    preds.append(processor.decode_beam_search(logits.cpu().numpy()))
 print(f"=============== Finish Testing ====================\n")
 
-testset.prompts['pred'] = preds
-
-labels = testset.prompts['text'].to_list()
-for idx in range(len(preds)):
-    labels[idx] = str(labels[idx]).lower()
-    preds[idx] = str(preds[idx])
-
-print(f"WER Score: {F_metric.word_error_rate(preds, labels).item()}")
+print(f"WER Score: {F.word_error_rate(preds, labels).item()}")
 
 if args.saved_name is not None:
     saved_filename = args.saved_name
 else:
     test_name = os.path.basename(args.test_path)
-    saved_filename = f"result_{test_name}.csv"
+    saved_filename = f"result_{test_name}"
 
-testset.prompts.to_csv(f"./results/{saved_filename}", sep="\t", index=None)
+result = {
+    'path': df['path'].to_list(),
+}
+if time_segment:
+    result['start'] = df['start'].to_list()
+    result['end'] = df['end'].to_list()
+if use_type:
+    result['type'] = df['type'].to_list()
+result['text'] = labels
+result['predict'] = preds
+
+pd.DataFrame(result).to_csv(saved_filename, sep="\t", index=False)

@@ -4,77 +4,85 @@ from src.conformer import Encoder
 import copy
 
 class BYOL(nn.Module):
-    def __init__(self, n_mel_channels: int, n: int, d_model: int, heads: int, kernel_size: int, eps: float, dropout_rate: float, embedding_size: int, moving_average_decay: float = 0.99) -> None:
+    def __init__(self, n_mel_channels: int, n: int, d_model: int, heads: int, kernel_size: int, eps: float, alpha: float=0.99) -> None:
         super().__init__()
-        self.student = Network(
+        self.online_network = Network(
             n_mel_channels=n_mel_channels,
             n=n,
             d_model=d_model,
             heads=heads,
             kernel_size=kernel_size,
-            eps=eps,
-            dropout_rate=dropout_rate,
-            embedding_size=embedding_size
+            eps=eps
         )
 
-        self.teacher = self.__get_teacher()
-        self.updater = EMA(alpha=moving_average_decay)
+        self.target_network = self.copy_network()
 
-        self.predict = nn.Linear(in_features=embedding_size, out_features=embedding_size)
+        self.predictor = MLP(dim=d_model)
+        self.update_handler = EMA(alpha=alpha)
+
+        self.freeze_target()
+
+    def freeze_target(self):
+        for params in self.target_network.parameters():
+            params.requires_grad = False
+    
+    @torch.no_grad()
+    def copy_network(self):
+        return copy.deepcopy(self.online_network)
 
     @torch.no_grad()
     def update_moving_average(self):
-        for student_params, teacher_params in zip(self.student.parameters(), self.teacher.parameters()):
-            old_weight, up_weight = teacher_params.data, student_params.data
-            teacher_params.data = self.updater.update_average(old_weight, up_weight)
+        for online_params, target_params in zip(self.online_network.parameters(), self.target_network.parameters()):
+            old_weights, new_weights = target_params.data, online_params.data
+            target_params = self.update_handler.update_average(old_weights, new_weights)
 
-    @torch.no_grad()
-    def __get_teacher(self):
-        return copy.deepcopy(self.student)
-    
-    def forward(self, x: torch.Tensor, return_embedding: bool = False):
-        if return_embedding:
-            return self.student(x, return_embedding=True)
-        
-        proj = self.student(x)
-        student_pred = self.predict(proj)
+    def forward(self, online_item: torch.Tensor, target_item: torch.Tensor):
+        online_output = self.online_network(online_item)
+        online_output = self.predictor(online_output)
 
         with torch.no_grad():
-            teacher_proj = self.teacher(x)
+            target_output = self.target_network(target_item)
 
-        return student_pred, teacher_proj
+        return online_output, target_output
+
+class MLP(nn.Module):
+    def __init__(self, dim: int) -> None:
+        super().__init__()
+        self.hidden = nn.Linear(in_features=dim ,out_features=4*dim)
+        self.activation = nn.ReLU()
+        self.out = nn.Linear(in_features=4*dim, out_features=dim)
+
+    def forward(self, x: torch.Tensor):
+        x = self.hidden(x)
+        x = self.activation(x)
+        x = self.out(x)
+        return x
 
 class EMA:
-   def __init__(self, alpha):
-       super().__init__()
-       self.alpha = alpha
+    def __init__(self, alpha: float = 1.0) -> None:
+        self.alpha = alpha
 
-   def update_average(self, old, new):
-       if old is None:
-           return new
-       return old * self.alpha + (1 - self.alpha) * new
+    def update_average(self, old: torch.Tensor, new: torch.Tensor):
+        if old is None:
+            return new
+        return self.alpha * old + (1 - self.alpha) * new
 
 class Network(nn.Module):
-    def __init__(self, n_mel_channels: int, n: int, d_model: int, heads: int, kernel_size: int, eps: float, dropout_rate: float, embedding_size: int) -> None:
+    def __init__(self, n_mel_channels: int, n: int, d_model: int, heads: int, kernel_size: int, eps: float) -> None:
         super().__init__()
-        self.projection = Encoder(
+        self.encoder = Encoder(
             n_mel_channels=n_mel_channels,
             n=n,
             d_model=d_model,
             heads=heads,
             kernel_size=kernel_size,
-            eps=eps,
-            dropout_rate=dropout_rate
+            eps=eps
         )
 
-        self.mlp = nn.Linear(in_features=d_model, out_features=embedding_size)
+        self.projector = MLP(dim=d_model)
 
-    def forward(self, x: torch.Tensor, return_embedding: bool = False) -> torch.Tensor:
-        x = self.projection(x)
-
-        if return_embedding:
-            return x
-        
-        x = self.mlp(x)
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x, _ = self.encoder(x)
+        x = self.projector(x)
         return x
 

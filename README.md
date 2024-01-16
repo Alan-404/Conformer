@@ -11,6 +11,9 @@
 ### Feed Forward Module
 <img src="assets/ffn.png"/>
 
+### BYOL Pre - train Unlabeled Data
+<img src="assets/pretrain.png">
+
 ## Folder Structure
 ```
 assets

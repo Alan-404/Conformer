@@ -70,3 +70,7 @@ class ConformerDataset(Dataset):
             role = 1
 
         return self.processor.load_audio(audio_path, start=start, end=end, role=role), transcript
+    
+class BYOLDataset(Dataset):
+    def __init__(self) -> None:
+        super().__init__()

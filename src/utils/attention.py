@@ -6,9 +6,9 @@ import math
 from typing import Optional
 
 class MultiHeadSelfAttentionModule(nn.Module):
-    def __init__(self, d_model: int, heads: int, eps: float, dropout_rate: float = 0.0) -> None:
+    def __init__(self, d_model: int, heads: int, dropout_rate: float = 0.0) -> None:
         super().__init__()
-        self.layer_norm = nn.LayerNorm(normalized_shape=d_model, eps=eps)
+        self.layer_norm = nn.LayerNorm(normalized_shape=d_model)
         self.attention = RelativeMultiHeadAttention(d_model=d_model, heads=heads, dropout_rate=dropout_rate)
         self.pe = RelativePositionalEncoding(d_model=d_model)
         self.dropout = nn.Dropout(p=dropout_rate)

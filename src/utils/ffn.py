@@ -3,9 +3,9 @@ import torch.nn as nn
 from src.utils.activation import Swish
 
 class FeedForwardModule(nn.Module):
-    def __init__(self, dim: int, eps: float, dropout_rate: float = 0.0) -> None:
+    def __init__(self, dim: int, dropout_rate: float = 0.0) -> None:
         super().__init__()
-        self.layer_norm = nn.LayerNorm(normalized_shape=dim, eps=eps)
+        self.layer_norm = nn.LayerNorm(normalized_shape=dim)
         self.hidden_linear = nn.Linear(in_features=dim, out_features=4 * dim)
         self.swish = Swish()
         self.dropout_1 = nn.Dropout(p=dropout_rate)

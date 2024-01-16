@@ -19,7 +19,10 @@ class ConformerProcessor:
     def __init__(self, vocab_path: str, unk_token: str = "<unk>", pad_token: str = "<pad>", word_delim_token: str = "|", sampling_rate: int = 16000, num_mels: int = 80, n_fft: int = 400, hop_length: int = 160, win_length: int = 400, fmin: float = 0.0, fmax: float = 8000.0, freq_augment: int = 27, time_augment: int = 10, time_mask_ratio: float = 0.05, puncs: str = r"([:./,?!@#$%^&=`~*\(\)\[\]\"\-\\])", lm_path: Optional[str] = None, beam_alpha: float = 2.1, beam_beta: float = 9.2) -> None:
         # Text
         self.replace_dict = dict()
-        self.dictionary = self.create_vocab(vocab_path, pad_token, word_delim_token, unk_token)
+        self.dictionary = None
+        self.hotwords_dict = dict()
+
+        self.create_vocab(vocab_path, pad_token=pad_token, word_delim_token=word_delim_token, unk_token=unk_token)
 
         self.word_delim_item = word_delim_token
         self.unk_item = unk_token
@@ -60,8 +63,12 @@ class ConformerProcessor:
 
     def create_vocab(self, vocab_path: str, pad_token: str, word_delim_token: str, unk_token: str) -> Vocab:
         data = json.load(open(vocab_path, encoding='utf-8'))
+
+        assert "vocab" in data.keys() and "replace" in data.keys() and "hotword" in data.keys()
+
         vocabs = data['vocab']
         self.replace_dict = data['replace']
+        self.hotwords_dict = data['hotword']
         
         dictionary = dict()
         count = 0
@@ -69,17 +76,14 @@ class ConformerProcessor:
             count += 1
             dictionary[item] = count
 
-        vocab = Vocab(
+        self.dictionary = Vocab(
             vocab=create_vocab(
                 dictionary,
                 specials=[pad_token]
             ))
     
-        vocab.insert_token(word_delim_token, index=len(vocab))
-        vocab.insert_token(unk_token, index=len(vocab))
-        
-
-        return vocab
+        self.dictionary.insert_token(word_delim_token, index=len(self.dictionary))
+        self.dictionary.insert_token(unk_token, index=len(self.dictionary))
 
     def read_pickle(self, path: str) -> np.ndarray:
         with open(path, 'rb') as file:
@@ -115,9 +119,7 @@ class ConformerProcessor:
             signal = self.read_pickle(path)
         elif ".pcm" in path:
             signal = self.read_pcm(path)
-        elif ".mp3" in path or ".flac" in path:
-            signal = self.read_audio(path)
-        elif ".wav" in path:
+        else:
             signal = self.read_audio(path, role)
 
         if start is not None and end is not None:
@@ -151,27 +153,26 @@ class ConformerProcessor:
             tokens.append(self.find_token(char))
         return torch.tensor(tokens)
     
-    def decode_beam_search(self, digit: np.ndarray, beam_width: int = 4, beam_prune_logp: float = -20.0):
+    def decode_beam_search(self, digits: np.ndarray, beam_width: int = 4, beam_prune_logp: float = -20.0):
         return self.ctc_lm.decode(
-                    digit,
+                    digits,
                     beam_width=beam_width,
-                    beam_prune_logp=beam_prune_logp
+                    beam_prune_logp=beam_prune_logp,
+                    hotword_weight=self.hotwords_dict['weight'],
+                    hotwords=self.hotwords_dict['items']
                 )
 
     def decode_batch(self, digits: Union[torch.Tensor, np.ndarray, list], group_token: bool = True) -> List[str]:
         sentences = []
-
         for logit in digits:
             if group_token:
                 logit = self.group_tokens(logit)
             sentences.append(self.token2text(logit))
-        
         return sentences
     
     def spec_augment(self, x: torch.Tensor) -> torch.Tensor:
         x = self.freq_masker(x)
         x = self.time_masker(x)
-
         return x
     
     def group_tokens(self, logits: Union[torch.Tensor, np.ndarray], length: Optional[int] = None) -> Union[np.ndarray, torch.Tensor]:

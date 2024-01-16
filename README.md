@@ -2,7 +2,7 @@
 ## Model Architecture
 <img src="./assets/model.png"/>
 
-### Relative Multi - Head Attention Module
+### Multi - Head Attention Module
 <img src="assets/attention.png"/>
 
 ### Convolution Module
@@ -11,7 +11,7 @@
 ### Feed Forward Module
 <img src="assets/ffn.png"/>
 
-### BYOL Pre - train Unlabeled Data
+### BYOL Pre - train Unlabeled Data Framework
 <img src="assets/pretrain.png">
 
 ## Folder Structure

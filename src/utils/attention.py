@@ -22,8 +22,8 @@ class MultiHeadSelfAttentionModule(nn.Module):
 
 class RelativeMultiHeadAttention(nn.Module):
     def __init__(self, d_model: int, heads: int, dropout_rate: float = 0.1):
-        super(RelativeMultiHeadAttention, self).__init__()
-        assert d_model % heads == 0, "d_model % num_heads should be zero."
+        super().__init__()
+        assert d_model % heads == 0
         self.d_model = d_model
         self.head_samples = int(d_model / heads)
         self.heads = heads

@@ -1,5 +1,5 @@
 from torch.utils.data import Dataset
-from preprocessing.grapheme_processor import ConformerProcessor
+from preprocessing.processor import ConformerProcessor
 import pandas as pd
 from typing import Optional, Tuple
 import torch

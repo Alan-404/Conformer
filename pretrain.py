@@ -1,3 +1,2 @@
 import torch
-from ignite.engine import Engine, Events
-
+from pretraining.byol import BYOL

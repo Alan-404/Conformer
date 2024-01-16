@@ -30,14 +30,7 @@ class PositionalEncoding(nn.Module):
         return pos_angles
     
 class RelativePositionalEncoding(nn.Module):
-    """
-    Relative positional encoding module.
-    Args:
-        d_model: Embedding dimension.
-        max_len: Maximum input length.
-    """
-
-    def __init__(self, d_model: int = 512, max_len: int = 5000) -> None:
+    def __init__(self, d_model: int = 512, max_len: int = 2000) -> None:
         super().__init__()
         self.d_model = d_model
         self.pe = None
@@ -67,12 +60,6 @@ class RelativePositionalEncoding(nn.Module):
         self.pe = pe.to(device=x.device, dtype=x.dtype)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """
-        Args:
-            x : Input tensor B X T X C
-        Returns:
-            torch.Tensor: Encoded tensor B X T X C
-        """
         self.extend_pe(x)
         pos_emb = self.pe[
             :,

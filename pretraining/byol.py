@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from src.conformer import Encoder
 import copy
+import torchaudio
 
 class BYOL(nn.Module):
     def __init__(self, n_mel_channels: int, n: int, d_model: int, heads: int, kernel_size: int, eps: float, alpha: float=0.99) -> None:
@@ -22,6 +23,11 @@ class BYOL(nn.Module):
 
         self.freeze_target()
 
+        self.spec_augment = nn.Sequential(
+            torchaudio.transforms.FrequencyMasking(freq_mask_param=27),
+            torchaudio.transforms.TimeMasking(time_mask_param=10, p=0.05)
+        )
+
     def freeze_target(self):
         for params in self.target_network.parameters():
             params.requires_grad = False
@@ -36,7 +42,13 @@ class BYOL(nn.Module):
             old_weights, new_weights = target_params.data, online_params.data
             target_params = self.update_handler.update_average(old_weights, new_weights)
 
+    def gaussion_noise(self, x: torch.Tensor):
+        return (x - x.mean()) / (x.var() + 1e-7)
+
     def forward(self, online_item: torch.Tensor, target_item: torch.Tensor):
+        online_item = self.spec_augment(online_item)
+        target_item = self.gaussion_noise(target_item)
+
         online_output = self.online_network(online_item)
         online_output = self.predictor(online_output)
 
@@ -85,4 +97,3 @@ class Network(nn.Module):
         x, _ = self.encoder(x)
         x = self.projector(x)
         return x
-

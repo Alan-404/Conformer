@@ -12,7 +12,7 @@ from ignite.contrib.handlers.tqdm_logger import ProgressBar
 
 import torchsummary
 
-from preprocessing.grapheme_processor import ConformerProcessor
+from preprocessing.processor import ConformerProcessor
 from dataset import ConformerDataset
 from src.conformer import Conformer
 from src.loss import ctc_loss

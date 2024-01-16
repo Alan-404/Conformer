@@ -2,7 +2,7 @@ import os
 import torch
 import torchmetrics.functional as F
 from preprocessing.processor import ConformerProcessor
-from conformer import Conformer
+from src.conformer import Conformer
 from tqdm import tqdm
 import pandas as pd
 from argparse import ArgumentParser

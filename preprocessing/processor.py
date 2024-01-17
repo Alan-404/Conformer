@@ -165,7 +165,7 @@ class ConformerProcessor:
         for word in words:
             patterns = self.find_specs(word)
             print(patterns)
-            if patterns is None or word.split(patterns[1]) == '':
+            if patterns is None or word.split(patterns[1])[1] == '':
                 items.append(word)
             else:
                 items.append(word.replace(patterns[1], patterns[0]))

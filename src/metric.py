@@ -1,8 +1,10 @@
-import torchmetrics.functional as F
+from torchmetrics.text import WordErrorRate
 from typing import List
 
+wer = WordErrorRate()
+
 def WER_score(preds: List[str], labels: List[str]) -> float:
-    return F.word_error_rate(
+    return wer(
         preds=preds,
         target=labels
     ).item()

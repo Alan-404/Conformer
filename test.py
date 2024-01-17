@@ -1,12 +1,11 @@
 import os
 import torch
-import torchmetrics.functional as F
 from preprocessing.processor import ConformerProcessor
 from src.conformer import Conformer
 from tqdm import tqdm
 import pandas as pd
 from argparse import ArgumentParser
-
+from src.metric import WER_score
 parser = ArgumentParser()
 
 parser.add_argument("--test_path", type=str)
@@ -106,14 +105,14 @@ print('=============== Start Testing ====================')
 for index, row in tqdm(df.iterrows(), total=df.shape[0]):
     path = row['path']
     start, end, role = row['start'], row['end'], row['type']
-    mel = processor.mel_spectrogram(processor.load_audio(path, start, end, role)).unsqueeze(0)
+    mel = processor.mel_spectrogram(processor.load_audio(path, start, end, role)).unsqueeze(0).to(device)
     with torch.no_grad():
         logits = model(mel)
     
     preds.append(processor.decode_beam_search(logits.cpu().numpy()))
 print(f"=============== Finish Testing ====================\n")
 
-print(f"WER Score: {F.word_error_rate(preds, labels).item()}")
+print(f"WER Score: {WER_score(preds, labels)}")
 
 if args.saved_name is not None:
     saved_filename = args.saved_name

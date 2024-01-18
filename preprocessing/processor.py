@@ -62,7 +62,7 @@ class ConformerProcessor:
         self.time_masker = TimeMasking(time_mask_param=time_augment, p=time_mask_ratio)
 
     def create_vocab(self, vocab_path: str, pad_token: str, word_delim_token: str, unk_token: str) -> Vocab:
-        data = json.load(open(vocab_path, encoding='utf-8'))
+        data = json.load(open(vocab_path, encoding='utf8'))
 
         assert "vocab" in data.keys() and "replace" in data.keys() and "hotword" in data.keys()
 
@@ -152,7 +152,7 @@ class ConformerProcessor:
         for char in [*sentence]:
             tokens.append(self.find_token(char))
         return torch.tensor(tokens)
- 
+    
     def find_specs(self, word: str):
         for index, item in enumerate(list(self.replace_dict.values())):
             if item in word:
@@ -164,14 +164,13 @@ class ConformerProcessor:
         items = []
         for word in words:
             patterns = self.find_specs(word)
-            print(patterns)
             if patterns is None or word.split(patterns[1])[1] == '':
                 items.append(word)
             else:
                 items.append(word.replace(patterns[1], patterns[0]))
         return " ".join(items)
     
-    def decode_beam_search(self, digits: np.ndarray, beam_width: int = 4, beam_prune_logp: float = -20.0):
+    def decode_beam_search(self, digits: np.ndarray, beam_width: int = 170, beam_prune_logp: float = -20.0):
         text = self.ctc_lm.decode(
                     digits,
                     beam_width=beam_width,

@@ -85,7 +85,7 @@
         "uỵ": "ụy"
     },
     "hotword": {
-        "weigth": 9.0,
+        "weight": 9.0,
         "items": ["fpt"]
     }
 }

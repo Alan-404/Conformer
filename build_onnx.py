@@ -7,8 +7,7 @@ import torch
 from argparse import ArgumentParser
 parser = ArgumentParser()
 
-parser.add_argument("--checkpoint", type=str, default="./checkpoints")
-parser.add_argument("--checkpoint_step", type=str, default=None)
+parser.add_argument("--checkpoint", type=str)
 parser.add_argument("--saved_path", type=str, default="./conformer.onnx")
 
 # Text Processor Config
@@ -29,44 +28,25 @@ parser.add_argument("--fmin", type=float, default=0.0)
 parser.add_argument("--fmax", type=float, default=8000.0)
 
 # Model Config
-parser.add_argument("--n", type=int, default=6)
-parser.add_argument("--d_model", type=int, default=512)
+parser.add_argument("--encoder_n_layers", type=int, default=17)
+parser.add_argument("--encoder_dim", type=int, default=512)
 parser.add_argument("--heads", type=int, default=8)
 parser.add_argument("--kernel_size", type=int, default=31)
-parser.add_argument("--eps", type=float, default=0.2)
+parser.add_argument("--decoder_n_layers", type=int, default=1)
+parser.add_argument("--decoder_dim", type=int, default=640)
 parser.add_argument("--dropout_rate", type=float, default=0.1)
 
 # Dummy Data Example
 parser.add_argument("--audio_path", type=str)
 
-# Device
-parser.add_argument("--device", type=str, default='cpu')
-
 # Parse Config
 args = parser.parse_args()
 ########################################
 
-assert args.checkpoint and os.listdir(args.checkpoint) != 0
-
-def find_latest_checkpoint(checkpoints: list):
-    latest = 0
-    for checkpoint in checkpoints:
-        index = int(checkpoint.replace("checkpoint_", "").replace(".pt", ""))
-        if latest < index:
-            latest = index
-    return latest
-
-if args.checkpoint_step is None:
-    args.checkpoint_step = find_latest_checkpoint(os.listdir(args.checkpoint))
-else:
-    assert os.path.exists(f"{args.checkpoint}/checkpoint_{args.checkpoint_step}.pt")
-
-checkpoint = f"{args.checkpoint}/checkpoint_{args.checkpoint_step}.pt"
-
 # Device Config
-device = 'cpu'
-if args.device == 'cuda' or args.device == 'gpu':
-    device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
+device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
+
+assert os.path.exists(args.audio_path)
 
 # Processor Setup
 processor = ConformerProcessor(
@@ -88,15 +68,16 @@ processor = ConformerProcessor(
 model = Conformer(
     vocab_size=len(processor.dictionary.get_itos()),
     n_mel_channels=processor.num_mels,
-    n=args.n,
-    d_model=args.d_model,
+    encoder_n_layers=args.encoder_n_layers,
+    encoder_dim=args.encoder_dim,
     heads=args.heads,
     kernel_size=args.kernel_size,
-    eps=args.eps,
+    decoder_n_layers=args.decoder_n_layers,
+    decoder_dim=args.decoder_dim,
     dropout_rate=args.dropout_rate
 ).to(device)
 
-model.load_state_dict(torch.load(checkpoint, map_location=device)['model'])
+model.load_state_dict(torch.load(args.checkpoint, map_location=device)['model'])
 model.eval()
 
 dummy_input = processor.mel_spectrogram(processor.load_audio(args.audio_path)).unsqueeze(0).to(device)

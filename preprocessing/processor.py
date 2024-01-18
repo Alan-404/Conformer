@@ -152,15 +152,35 @@ class ConformerProcessor:
         for char in [*sentence]:
             tokens.append(self.find_token(char))
         return torch.tensor(tokens)
+ 
+    def find_specs(self, word: str):
+        for index, item in enumerate(list(self.replace_dict.values())):
+            if item in word:
+                return (list(self.replace_dict.keys())[index], item)
+        return None
     
-    def decode_beam_search(self, digits: np.ndarray, beam_width: int = 180, beam_prune_logp: float = -20.0):
-        return self.ctc_lm.decode(
+    def post_process(self, text: str):
+        words = text.split(" ")
+        items = []
+        for word in words:
+            patterns = self.find_specs(word)
+            print(patterns)
+            if patterns is None or word.split(patterns[1])[1] == '':
+                items.append(word)
+            else:
+                items.append(word.replace(patterns[1], patterns[0]))
+        return " ".join(items)
+    
+    def decode_beam_search(self, digits: np.ndarray, beam_width: int = 4, beam_prune_logp: float = -20.0):
+        text = self.ctc_lm.decode(
                     digits,
                     beam_width=beam_width,
                     beam_prune_logp=beam_prune_logp,
                     hotword_weight=self.hotwords_dict['weight'],
                     hotwords=self.hotwords_dict['items']
                 )
+        
+        return self.post_process(text)
 
     def decode_batch(self, digits: Union[torch.Tensor, np.ndarray, list], group_token: bool = True) -> List[str]:
         sentences = []

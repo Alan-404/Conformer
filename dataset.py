@@ -11,7 +11,7 @@ class ConformerDataset(Dataset):
         self.prompts = pd.read_csv(manifest_path, sep="\t")
         self.columns = self.prompts.columns
 
-        self.prompts = self.prompts.fillna('')
+        self.prompts['text'] = self.prompts['text'].fillna('')
 
         if num_examples is not None:
             self.prompts = self.prompts[:num_examples]

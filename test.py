@@ -1,12 +1,11 @@
 import os
 import torch
-from src.metric import WER_score
 from preprocessing.processor import ConformerProcessor
 from src.conformer import Conformer
 from tqdm import tqdm
 import pandas as pd
 from argparse import ArgumentParser
-
+from src.metric import WER_score
 parser = ArgumentParser()
 
 parser.add_argument("--test_path", type=str)

@@ -109,7 +109,7 @@ for index, row in tqdm(df.iterrows(), total=df.shape[0]):
     with torch.no_grad():
         logits = model(mel)
     
-    preds.append(processor.decode_beam_search(logits.cpu().numpy()))
+    preds.append(processor.decode_beam_search(logits[0].cpu().numpy()))
 print(f"=============== Finish Testing ====================\n")
 
 print(f"WER Score: {WER_score(preds, labels)}")
@@ -131,4 +131,4 @@ if use_type:
 result['text'] = labels
 result['predict'] = preds
 
-pd.DataFrame(result).to_csv(saved_filename, sep="\t", index=False)
+pd.DataFrame(result).to_csv(f"{args.result_folder}/{saved_filename}", sep="\t", index=False)

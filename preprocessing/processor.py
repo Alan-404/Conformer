@@ -152,7 +152,7 @@ class ConformerProcessor:
         for char in [*sentence]:
             tokens.append(self.find_token(char))
         return torch.tensor(tokens)
-    
+ 
     def find_specs(self, word: str):
         for index, item in enumerate(list(self.replace_dict.values())):
             if item in word:

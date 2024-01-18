@@ -1,6 +1,6 @@
 import os
 import torch
-import torchmetrics.functional as F
+from src.metric import WER_score
 from preprocessing.processor import ConformerProcessor
 from src.conformer import Conformer
 from tqdm import tqdm
@@ -106,14 +106,14 @@ print('=============== Start Testing ====================')
 for index, row in tqdm(df.iterrows(), total=df.shape[0]):
     path = row['path']
     start, end, role = row['start'], row['end'], row['type']
-    mel = processor.mel_spectrogram(processor.load_audio(path, start, end, role)).unsqueeze(0)
+    mel = processor.mel_spectrogram(processor.load_audio(path, start, end, role)).unsqueeze(0).to(device)
     with torch.no_grad():
         logits = model(mel)
     
-    preds.append(processor.decode_beam_search(logits.cpu().numpy()))
+    preds.append(processor.decode_beam_search(logits[0].cpu().numpy()))
 print(f"=============== Finish Testing ====================\n")
 
-print(f"WER Score: {F.word_error_rate(preds, labels).item()}")
+print(f"WER Score: {WER_score(preds, labels)}")
 
 if args.saved_name is not None:
     saved_filename = args.saved_name
@@ -132,4 +132,4 @@ if use_type:
 result['text'] = labels
 result['predict'] = preds
 
-pd.DataFrame(result).to_csv(saved_filename, sep="\t", index=False)
+pd.DataFrame(result).to_csv(f"{args.result_folder}/{saved_filename}", sep="\t", index=False)

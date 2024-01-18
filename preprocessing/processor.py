@@ -153,7 +153,7 @@ class ConformerProcessor:
             tokens.append(self.find_token(char))
         return torch.tensor(tokens)
     
-    def decode_beam_search(self, digits: np.ndarray, beam_width: int = 4, beam_prune_logp: float = -20.0):
+    def decode_beam_search(self, digits: np.ndarray, beam_width: int = 180, beam_prune_logp: float = -20.0):
         return self.ctc_lm.decode(
                     digits,
                     beam_width=beam_width,

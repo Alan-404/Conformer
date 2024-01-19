@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.optim.lr_scheduler as lr_scheduler
-from torch.utils.data import DataLoader, random_split
+from torch.utils.data import DataLoader, random_split, DistributedSampler
 from torch.cuda.amp import GradScaler, autocast
 
 from ignite.engine import Engine, Events
@@ -116,6 +116,8 @@ model = Conformer(
     dropout_rate=args.dropout_rate
 ).to(device)
 
+model = nn.parallel.DistributedDataParallel(model).to(device)
+
 # Optimizer Setup
 optimizer = optim.Adam(params=model.parameters(), lr=args.lr, weight_decay=1e-6, betas=[0.9, 0.98], eps=1e-9)
 scheduler = lr_scheduler.CosineAnnealingLR(optimizer=optimizer, T_max=1000)
@@ -130,6 +132,7 @@ def get_batch(batch, augment: bool) -> Tuple[torch.Tensor, torch.Tensor, torch.T
     return mels, tokens, mel_lengths, token_lengths
 
 train_dataset = ConformerDataset(manifest_path=args.train_path, processor=processor, num_examples=args.num_train)
+train_sampler = DistributedSampler(train_dataset)
 
 if args.use_validation:
     if args.val_path is not None:
@@ -138,7 +141,7 @@ if args.use_validation:
         train_dataset, val_dataset = random_split(train_dataset, [1 - args.val_size, args.val_size], generator=torch.Generator().manual_seed(41))
     val_dataloader = DataLoader(dataset=val_dataset, batch_size=args.val_batch_size, shuffle=True, collate_fn=lambda batch: get_batch(batch, False))
 
-train_dataloader = DataLoader(dataset=train_dataset, batch_size=args.batch_size, shuffle=True, collate_fn=lambda batch: get_batch(batch, True))
+train_dataloader = DataLoader(dataset=train_dataset, sampler=train_sampler, batch_size=args.batch_size, shuffle=True, collate_fn=lambda batch: get_batch(batch, True))
 
 # Train and Validate Processing Setup
 def train_step(engine: Engine, batch: Tuple[torch.Tensor]) -> float:

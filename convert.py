@@ -18,18 +18,20 @@ def convert(path: str):
         print(dst)
         sound = AudioSegment.from_mp3(path)
         sound.export(dst, format="wav")
+        return True
     except Exception as e:
         print(str(e))
+        return False
 
 files = glob(f"{args.folder_path}/*.mp3")
-print(files)
-# print("Converting All MP3 Files to Wave Format")
-# for item in tqdm(files, total=len(files)):
-#     convert(item)
 
-# if args.remove:
-#     print("Deleting All MP3 Files")
-#     for item in tqdm(files, total=len(files)):
-#         os.remove(item)
+print("Converting All MP3 Files to Wave Format")
+for item in tqdm(files, total=len(files)):
+    convert(item)
 
-# print("Finish")
+if args.remove:
+    print("Deleting All MP3 Files")
+    for item in tqdm(files, total=len(files)):
+        os.remove(item)
+
+print("Finish")

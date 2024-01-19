@@ -125,7 +125,7 @@ def training(rank: int = 0):
     # Optimizer Setup
     optimizer = optim.Adam(params=model.parameters(), lr=args.lr, weight_decay=1e-6, betas=[0.9, 0.98], eps=1e-9)
     optimizer = idist.auto_optim(optimizer)
-    
+
     scheduler = lr_scheduler.CosineAnnealingLR(optimizer=optimizer, T_max=1000)
 
     # Dataset and DataLoader Setup
@@ -146,7 +146,8 @@ def training(rank: int = 0):
         val_dataloader = DataLoader(dataset=val_dataset, batch_size=args.val_batch_size, shuffle=True, collate_fn=lambda batch: get_batch(batch, False))
     
     
-    train_dataloader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=False, collate_fn=lambda batch: get_batch(batch, True))
+    # train_dataloader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=False, collate_fn=lambda batch: get_batch(batch, True))
+    train_dataloader = idist.auto_dataloader(dataset=train_dataset, batch_size=batch_size, shuffle=False, collate_fn=lambda batch: get_batch(batch, True))
 
     # Train and Validate Processing Setup
     def train_step(engine: Engine, batch: Tuple[torch.Tensor]) -> float:

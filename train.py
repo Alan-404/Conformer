@@ -315,7 +315,7 @@ def training(rank: int):
 if __name__ == '__main__':
     if num_gpus > 1:
         spawn_kwargs = dict()
-        spawn_kwargs["nproc_per_node"] = 2
+        spawn_kwargs["nproc_per_node"] = 3
         with idist.Parallel(backend='nccl', **spawn_kwargs) as parallel:
             parallel.run(training)
     else:

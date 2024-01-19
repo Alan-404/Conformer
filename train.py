@@ -168,7 +168,7 @@ def train_step(engine: Engine, batch: Tuple[torch.Tensor]) -> float:
     
     return loss.item()
 
-def val_step(engine: Engine, batch: Tuple[torch.Tensor]) -> Tuple[float, float]:
+def val_step(_: Engine, batch: Tuple[torch.Tensor]) -> Tuple[float, float]:
     inputs = batch[0].to(device)
     labels = batch[1].to(device)
 
@@ -269,10 +269,6 @@ def finish_epoch(engine: Engine) -> None:
     train_loss.reset()
     if args.use_validation == True:
         validator.run(val_dataloader, max_epochs=1)
-    # else:
-    #     wandb.log({
-    #         'early_stopping_patience': early_stopping_handler.counter
-    #     }, step=engine.state.epoch)
     
     print(f"========== Done Epoch {engine.state.epoch} =============\n")
 

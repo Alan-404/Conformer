@@ -84,13 +84,13 @@ args = parser.parse_args()
 wandb.init(project=args.wandb_project_name, name=args.wandb_username)
 
 # Device Config
-device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
 num_gpus = torch.cuda.device_count()
 print(f"Num GPUs: {num_gpus}")
 
 batch_size = args.batch_size
 
-def training(rank: int = 1):
+def training(rank: int = 0):
+    device = idist.device()
     scaler = GradScaler()
 
     # Processor Setup
@@ -120,13 +120,15 @@ def training(rank: int = 1):
         decoder_dim=args.decoder_dim,
         dropout_rate=args.dropout_rate
     ).to(device)
+    model = idist.auto_model(model)
 
     # Optimizer Setup
     optimizer = optim.Adam(params=model.parameters(), lr=args.lr, weight_decay=1e-6, betas=[0.9, 0.98], eps=1e-9)
+    optimizer = idist.auto_optim(optimizer)
+    
     scheduler = lr_scheduler.CosineAnnealingLR(optimizer=optimizer, T_max=1000)
 
     # Dataset and DataLoader Setup
-
     def get_batch(batch, augment: bool) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         signals, transcripts = zip(*batch)
         mels, mel_lengths = processor(signals, return_length=True, set_augment=augment)
@@ -142,7 +144,8 @@ def training(rank: int = 1):
         else:
             train_dataset, val_dataset = random_split(train_dataset, [1 - args.val_size, args.val_size], generator=torch.Generator().manual_seed(41))
         val_dataloader = DataLoader(dataset=val_dataset, batch_size=args.val_batch_size, shuffle=True, collate_fn=lambda batch: get_batch(batch, False))
-
+    
+    
     train_dataloader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=False, collate_fn=lambda batch: get_batch(batch, True))
 
     # Train and Validate Processing Setup
@@ -314,4 +317,8 @@ def training(rank: int = 1):
 
 # Start Training
 if __name__ == '__main__':
-    training()
+    if num_gpus > 1:
+        with idist.Parallel(backend='nccl') as parallel:
+            parallel.run(training)
+    else:
+        training(-1)

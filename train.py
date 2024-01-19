@@ -5,7 +5,10 @@ import torch.optim as optim
 import torch.optim.lr_scheduler as lr_scheduler
 from torch.utils.data import DataLoader, random_split, DistributedSampler
 from torch.cuda.amp import GradScaler, autocast
-from torch.distributed import init_process_group
+import torch.multiprocessing as mp
+from torch.nn.parallel import DistributedDataParallel as DDP
+from torch.distributed import init_process_group, destroy_process_group
+
 from ignite.engine import Engine, Events
 from ignite.metrics import RunningAverage
 from ignite.handlers import Checkpoint, DiskSaver, EarlyStopping, global_step_from_engine
@@ -83,13 +86,11 @@ args = parser.parse_args()
 
 wandb.init(project=args.wandb_project_name, name=args.wandb_username)
 
-torch.backends.cudnn.benchmark = True
-
-init_process_group(
-    backend='nccl',
-    world_size=3,
-    rank=0
-)
+def ddp_setup(rank: int, world_size: int):
+    os.environ["MASTER_ADDR"] = "localhost"
+    os.environ["MASTER_PORT"] = "12355"
+    init_process_group(backend="nccl", rank=rank, world_size=world_size)
+    torch.cuda.set_device(rank)
 
 # Device Config
 device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
@@ -125,9 +126,9 @@ model = Conformer(
     decoder_n_layers=args.decoder_n_layers,
     decoder_dim=args.decoder_dim,
     dropout_rate=args.dropout_rate
-).to(device)
+)
 
-model = nn.parallel.DistributedDataParallel(model).to(device)
+model = DDP(model, device_ids=[0])
 
 # Optimizer Setup
 optimizer = optim.Adam(params=model.parameters(), lr=args.lr, weight_decay=1e-6, betas=[0.9, 0.98], eps=1e-9)
@@ -152,7 +153,7 @@ if args.use_validation:
         train_dataset, val_dataset = random_split(train_dataset, [1 - args.val_size, args.val_size], generator=torch.Generator().manual_seed(41))
     val_dataloader = DataLoader(dataset=val_dataset, batch_size=args.val_batch_size, shuffle=True, collate_fn=lambda batch: get_batch(batch, False))
 
-train_dataloader = DataLoader(dataset=train_dataset, sampler=train_sampler, batch_size=batch_size, shuffle=True, collate_fn=lambda batch: get_batch(batch, True))
+train_dataloader = DataLoader(dataset=train_dataset, sampler=train_sampler, batch_size=batch_size, shuffle=False, collate_fn=lambda batch: get_batch(batch, True))
 
 # Train and Validate Processing Setup
 def train_step(engine: Engine, batch: Tuple[torch.Tensor]) -> float:
@@ -320,4 +321,12 @@ if args.checkpoint is not None:
     Checkpoint.load_objects(to_save, checkpoint=torch.load(args.checkpoint, map_location=device))
 
 # Start Training
-trainer.run(train_dataloader, max_epochs=args.num_epochs)
+def main(rank: int, world_size: int):
+    ddp_setup(rank, world_size)
+
+    trainer.run(train_dataloader, max_epochs=args.num_epochs)
+    destroy_process_group()
+
+if __name__ == '__main__':
+    world_size = torch.cuda.device_count()
+    mp.spawn(main, args=(world_size), nprocs=world_size)

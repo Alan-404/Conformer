@@ -26,8 +26,9 @@ import wandb
 
 def train(
         # Processor Config
-        vocab_path: str, 
-        train_path: str,
+        rank: int = 0,
+        vocab_path: str = None, 
+        train_path: str = None,
         pad_token: str = "<pad>", 
         unk_token: str = "<unk>", 
         word_delim_token: str = "|", 
@@ -58,7 +59,12 @@ def train(
         set_lr: bool = False
     ):
 
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    assert vocab_path is not None and train_path is not None and os.path.exists(vocab_path) and os.path.exists(train_path)
+
+    if torch.cuda.is_available():
+        device = torch.device(f'cuda:{rank}')
+    else:
+        device = 'cpu'
 
     processor = ConformerProcessor(
         vocab_path=vocab_path,

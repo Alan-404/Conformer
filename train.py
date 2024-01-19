@@ -5,7 +5,7 @@ import torch.optim as optim
 import torch.optim.lr_scheduler as lr_scheduler
 from torch.utils.data import DataLoader, random_split, DistributedSampler
 from torch.cuda.amp import GradScaler, autocast
-
+from torch.distributed import init_process_group
 from ignite.engine import Engine, Events
 from ignite.metrics import RunningAverage
 from ignite.handlers import Checkpoint, DiskSaver, EarlyStopping, global_step_from_engine
@@ -83,8 +83,19 @@ args = parser.parse_args()
 
 wandb.init(project=args.wandb_project_name, name=args.wandb_username)
 
+torch.backends.cudnn.benchmark = True
+
+init_process_group(
+    backend='nccl',
+    world_size=3,
+    rank=0
+)
+
 # Device Config
 device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
+num_gpus = torch.cuda.device_count()
+
+batch_size = args.batch_size / num_gpus
 
 scaler = GradScaler()
 
@@ -141,7 +152,7 @@ if args.use_validation:
         train_dataset, val_dataset = random_split(train_dataset, [1 - args.val_size, args.val_size], generator=torch.Generator().manual_seed(41))
     val_dataloader = DataLoader(dataset=val_dataset, batch_size=args.val_batch_size, shuffle=True, collate_fn=lambda batch: get_batch(batch, False))
 
-train_dataloader = DataLoader(dataset=train_dataset, sampler=train_sampler, batch_size=args.batch_size, shuffle=True, collate_fn=lambda batch: get_batch(batch, True))
+train_dataloader = DataLoader(dataset=train_dataset, sampler=train_sampler, batch_size=batch_size, shuffle=True, collate_fn=lambda batch: get_batch(batch, True))
 
 # Train and Validate Processing Setup
 def train_step(engine: Engine, batch: Tuple[torch.Tensor]) -> float:

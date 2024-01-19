@@ -90,7 +90,9 @@ print(f"Num GPUs: {num_gpus}")
 batch_size = args.batch_size
 
 def training(rank: int = 0):
+    print(rank)
     device = idist.device()
+    print(device)
     scaler = GradScaler()
 
     # Processor Setup
@@ -145,10 +147,9 @@ def training(rank: int = 0):
             train_dataset, val_dataset = random_split(train_dataset, [1 - args.val_size, args.val_size], generator=torch.Generator().manual_seed(41))
         val_dataloader = DataLoader(dataset=val_dataset, batch_size=args.val_batch_size, shuffle=True, collate_fn=lambda batch: get_batch(batch, False))
     
-    
     # train_dataloader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=False, collate_fn=lambda batch: get_batch(batch, True))
     train_dataloader = idist.auto_dataloader(dataset=train_dataset, batch_size=batch_size, shuffle=False, collate_fn=lambda batch: get_batch(batch, True))
-
+    
     # Train and Validate Processing Setup
     def train_step(engine: Engine, batch: Tuple[torch.Tensor]) -> float:
         inputs = batch[0].to(device)
@@ -279,10 +280,6 @@ def training(rank: int = 0):
         train_loss.reset()
         if args.use_validation == True:
             validator.run(val_dataloader, max_epochs=1)
-        # else:
-        #     wandb.log({
-        #         'early_stopping_patience': early_stopping_handler.counter
-        #     }, step=engine.state.epoch)
         
         print(f"========== Done Epoch {engine.state.epoch} =============\n")
 

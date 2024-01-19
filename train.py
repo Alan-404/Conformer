@@ -126,7 +126,7 @@ model = Conformer(
     decoder_n_layers=args.decoder_n_layers,
     decoder_dim=args.decoder_dim,
     dropout_rate=args.dropout_rate
-)
+).to(device)
 
 model = DDP(model, device_ids=[0])
 

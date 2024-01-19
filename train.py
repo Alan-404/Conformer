@@ -1,5 +1,6 @@
 import os
 import torch
+import torch.nn as nn
 import torch.optim as optim
 import torch.optim.lr_scheduler as lr_scheduler
 from torch.utils.data import DataLoader, random_split
@@ -113,7 +114,9 @@ model = Conformer(
     decoder_n_layers=args.decoder_n_layers,
     decoder_dim=args.decoder_dim,
     dropout_rate=args.dropout_rate
-).to(device)
+)
+
+model = nn.DataParallel(model, device_ids=[0, 1, 2])
 
 # Optimizer Setup
 optimizer = optim.Adam(params=model.parameters(), lr=args.lr, weight_decay=1e-6, betas=[0.9, 0.98], eps=1e-9)

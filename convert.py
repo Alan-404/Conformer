@@ -15,7 +15,6 @@ def convert(path: str):
     assert ".mp3" in path
     try:
         dst = path.replace(".mp3", ".wav")
-        print(dst)
         sound = AudioSegment.from_mp3(path)
         sound.export(dst, format="wav")
         return True

@@ -15,21 +15,21 @@ def convert(path: str):
     assert ".mp3" in path
     try:
         dst = path.replace(".mp3", ".wav")
-
+        print(dst)
         sound = AudioSegment.from_mp3(path)
         sound.export(dst, format="wav")
     except Exception as e:
         print(str(e))
 
 files = glob(f"{args.folder_path}/*.mp3")
+print(files)
+# print("Converting All MP3 Files to Wave Format")
+# for item in tqdm(files, total=len(files)):
+#     convert(item)
 
-print("Converting All MP3 Files to Wave Format")
-for item in tqdm(files):
-    convert(item)
+# if args.remove:
+#     print("Deleting All MP3 Files")
+#     for item in tqdm(files, total=len(files)):
+#         os.remove(item)
 
-if args.remove:
-    print("Deleting All MP3 Files")
-    for item in tqdm(files):
-        os.remove(item)
-
-print("Finish")
+# print("Finish")

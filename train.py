@@ -88,7 +88,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
 num_gpus = torch.cuda.device_count()
 print(f"Num GPUs: {num_gpus}")
 
-batch_size = args.batch_size / num_gpus
+batch_size = args.batch_size
 
 scaler = GradScaler()
 

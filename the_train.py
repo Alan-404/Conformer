@@ -24,13 +24,6 @@ from typing import Tuple
 
 import wandb
 
-def get_batch(batch, processor: ConformerProcessor, augment: bool) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-    signals, transcripts = zip(*batch)
-    mels, mel_lengths = processor(signals, return_length=True, set_augment=augment)
-    tokens, token_lengths = processor.tokenize(transcripts)
-
-    return mels, tokens, mel_lengths, token_lengths
-
 def train(
         # Processor Config
         vocab_path: str, 
@@ -96,6 +89,13 @@ def train(
     optimizer = optim.Adam(params=model.parameters(), lr=lr, weight_decay=1e-6, betas=[0.9, 0.98], eps=1e-9)
     scheduler = lr_scheduler.CosineAnnealingLR(optimizer=optimizer, T_max=1000)
     scaler = GradScaler()
+    
+    def get_batch(batch, augment: bool) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        signals, transcripts = zip(*batch)
+        mels, mel_lengths = processor(signals, return_length=True, set_augment=augment)
+        tokens, token_lengths = processor.tokenize(transcripts)
+
+        return mels, tokens, mel_lengths, token_lengths
 
     train_dataset = ConformerDataset(manifest_path=train_path, processor=processor, num_examples=num_train)
     train_dataloader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True, collate_fn=lambda batch: get_batch(batch, True))

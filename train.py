@@ -90,6 +90,13 @@ print(f"Num GPUs: {num_gpus}")
 batch_size = args.batch_size
 
 def training(rank: int):
+    print(
+        idist.get_rank(),
+        "- backend=",
+        idist.backend(),
+        "- world size",
+        idist.get_world_size(),
+    )
     device = idist.device()
     scaler = GradScaler()
 
@@ -315,7 +322,7 @@ def training(rank: int):
 if __name__ == '__main__':
     if num_gpus > 1:
         spawn_kwargs = dict()
-        spawn_kwargs["nproc_per_node"] = 3
+        spawn_kwargs["nproc_per_node"] = num_gpus
         with idist.Parallel(backend='nccl', **spawn_kwargs) as parallel:
             parallel.run(training)
     else:

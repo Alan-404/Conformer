@@ -24,6 +24,7 @@ class ConformerDataset(Dataset):
             self.prompts['type'] = None
 
         self.processor = processor
+        print(self.prompts)
 
         if 'graphemes' not in self.prompts.columns or make_grapheme:
             print("Converting Text to Graphemes")
@@ -37,6 +38,8 @@ class ConformerDataset(Dataset):
 
             self.prompts['graphemes'] = graphemes
             self.prompts['grapheme_length'] = grapheme_lengths
+
+            print(self.prompts)
 
             self.prompts[['path', 'text',' start', 'end', 'type', 'graphememes']].to_csv(manifest_path, sep="\t", index=False)
 

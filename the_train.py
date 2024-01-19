@@ -84,7 +84,7 @@ def train(
         decoder_n_layers=decoder_n_layers,
         decoder_dim=decoder_dim,
         dropout_rate=dropout_rate
-    )
+    ).to(device)
 
     optimizer = optim.Adam(params=model.parameters(), lr=lr, weight_decay=1e-6, betas=[0.9, 0.98], eps=1e-9)
     scheduler = lr_scheduler.CosineAnnealingLR(optimizer=optimizer, T_max=1000)

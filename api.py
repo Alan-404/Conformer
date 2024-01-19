@@ -1,3 +1,5 @@
+import os
+os.environ['CUDA_MODULE_LOADING'] = 'LAZY'
 import torch
 from fastapi import FastAPI, UploadFile, File
 from src.conformer import Conformer
@@ -10,12 +12,15 @@ import uvicorn
 
 app = FastAPI()
 
+print(torch.cuda.is_available())
+
 processor = ConformerProcessor('./vocabulary/dictionary.json', lm_path='./lm/lm.arpa')
 
 def read_audio(data):
     audio = AudioSegment.from_file(BytesIO(data)).set_frame_rate(16000).get_array_of_samples()
     signal = np.array(audio)/ 32768
-    return torch.Tensor(signal)
+    print(len(signal) / 16000)
+    return torch.Tensor(signal).type(torch.float16)
 
 model = Conformer(
     vocab_size=len(processor.dictionary),
@@ -26,7 +31,7 @@ model = Conformer(
     kernel_size=31
 )
 
-model.load_state_dict(torch.load('./checkpoints/conformer.weight'))
+model.load_state_dict(torch.load('./checkpoints/conformer.weight', map_location='cpu'))
 model.to('cuda')
 model.eval()
 
@@ -46,7 +51,7 @@ async def s2t(file: UploadFile = File(...)):
         text = processor.decode_beam_search(logits[0].cpu().numpy())
 
         end_time = time.time()
-    
+
         return {
             "transcription": text,
             "processing_time": end_time - start_time
@@ -58,7 +63,7 @@ async def s2t(file: UploadFile = File(...)):
 # Start FastAPI App
 if __name__ == '__main__':
     from argparse import ArgumentParser
-    # Get Information about Server
+
     parser = ArgumentParser()
     parser.add_argument('--host', default='0.0.0.0', help='Host IP to bind to')
     parser.add_argument('--port', type=int, default=8000, help='Port to listen on')

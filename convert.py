@@ -16,7 +16,7 @@ def convert(path: str):
     try:
         dst = path.replace(".mp3", ".wav")
 
-        sound = AudioSegment.from_mp3(path, format='mp3')
+        sound = AudioSegment.from_mp3(path)
         sound.export(dst, format="wav")
     except Exception as e:
         print(str(e))

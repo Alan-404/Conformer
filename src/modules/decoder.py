@@ -15,7 +15,7 @@ class Decoder(nn.Module):
         if lengths is not None:
             x = nn.utils.rnn.pack_padded_sequence(x, lengths=lengths.cpu().numpy(), batch_first=True, enforce_sorted=False)
         
-        self.lstm.flatten_parameters()
+        # self.lstm.flatten_parameters()
         x, _ = self.lstm(x)
 
         if lengths is not None:

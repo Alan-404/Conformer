@@ -2,7 +2,7 @@ import os
 os.environ['CUDA_MODULE_LOADING'] = 'LAZY'
 import torch
 from fastapi import FastAPI, UploadFile, File
-from src.conformer import Conformer
+import onnxruntime as ort
 import numpy as np
 from pydub import AudioSegment
 from io import BytesIO
@@ -22,18 +22,7 @@ def read_audio(data):
     print(len(signal) / 16000)
     return torch.Tensor(signal)
 
-model = Conformer(
-    vocab_size=len(processor.dictionary),
-    n_mel_channels=80,
-    encoder_n_layers=17,
-    encoder_dim=512,
-    heads=8,
-    kernel_size=31
-)
-
-model.load_state_dict(torch.load('./checkpoints/conformer.weight', map_location='cpu'))
-model.to('cuda')
-model.eval()
+session = ort.InferenceSession('./onnx/conformer.onnx', providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
 
 @app.post("/s2t")
 async def s2t(file: UploadFile = File(...)):
@@ -43,12 +32,13 @@ async def s2t(file: UploadFile = File(...)):
         data = await file.read()
 
         signal = read_audio(data)
-        mel = processor.mel_spectrogram(signal).unsqueeze(0).to('cuda')
+        mel = processor.mel_spectrogram(signal).unsqueeze(0).numpy()
 
-        with torch.no_grad():
-            logits = model(mel)
+        logits = session.run(None, {
+            'input': mel
+        })[0]
 
-        text = processor.decode_beam_search(logits[0].cpu().numpy())
+        text = processor.decode_beam_search(logits[0])
 
         end_time = time.time()
 

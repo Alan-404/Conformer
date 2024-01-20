@@ -37,11 +37,11 @@ class RelativePositionalEncoding(nn.Module):
         self.extend_pe(torch.tensor(0.0).expand(1, max_len))
 
     def extend_pe(self, x: torch.Tensor) -> None:
-        if self.pe is not None:
-            if self.pe.size(1) >= x.size(1) * 2 - 1:
-                if self.pe.dtype != x.dtype or self.pe.device != x.device:
-                    self.pe = self.pe.to(dtype=x.dtype, device=x.device)
-                return
+        # if self.pe is not None:
+        #     if self.pe.size(1) >= x.size(1) * 2 - 1:
+        #         if self.pe.dtype != x.dtype or self.pe.device != x.device:
+        #             self.pe = self.pe.to(dtype=x.dtype, device=x.device)
+        #         return
 
         pe_positive = torch.zeros(x.size(1), self.d_model)
         pe_negative = torch.zeros(x.size(1), self.d_model)
@@ -60,9 +60,9 @@ class RelativePositionalEncoding(nn.Module):
         self.pe = pe.to(device=x.device, dtype=x.dtype)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        self.extend_pe(x)
+        # self.extend_pe(x)
         pos_emb = self.pe[
             :,
             self.pe.size(1) // 2 - x.size(1) + 1 : self.pe.size(1) // 2 + x.size(1),
         ]
-        return pos_emb
+        return pos_emb.to(x.device)

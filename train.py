@@ -205,8 +205,6 @@ def train(
         Checkpoint.load_objects(to_save, checkpoint=torch.load(checkpoint, map_location=device))
 
     trainer.run(train_dataloader, max_epochs=num_epochs)
-
-
-
+    
 if __name__ == '__main__':
     fire.Fire(train)

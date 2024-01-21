@@ -31,7 +31,7 @@ model = Conformer(
     kernel_size=31
 )
 
-model.load_state_dict(torch.load('./checkpoints/conformer.weight', map_location='cpu'))
+model.load_state_dict(torch.load('./checkpoints/checkpoint_3.pt', map_location='cpu')['model'])
 model.to('cuda')
 model.eval()
 

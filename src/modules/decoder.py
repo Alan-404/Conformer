@@ -15,13 +15,13 @@ class Decoder(nn.Module):
         if lengths is not None:
             x = nn.utils.rnn.pack_padded_sequence(x, lengths=lengths.cpu().numpy(), batch_first=True, enforce_sorted=False)
         
-        # self.lstm.flatten_parameters()
+        self.lstm.flatten_parameters()
         x, _ = self.lstm(x)
 
         if lengths is not None:
             x, _ = nn.utils.rnn.pad_packed_sequence(x, batch_first=True)
         
         x = self.activation(x)
-        x = self.norm(x.transpose(1,2)).transpose(1,2)
-        x = self.linear(x)
+        x = self.norm(x.transpose(1,2))
+        x = self.linear(x.transpose(1,2))
         return x

@@ -58,7 +58,12 @@ def train(
         num_epochs: int = 1,
         saved_checkpoint: str = './checkpoints',
         early_stopping_patience: int = 2,
-        set_lr: bool = False
+        set_lr: bool = False,
+        # Validation Config
+        use_validation: bool = False,
+        val_size: float = 0.1,
+        val_path: str = None,
+        val_batch_size: int = 1
     ):
 
     assert vocab_path is not None and train_path is not None and os.path.exists(vocab_path) and os.path.exists(train_path)
@@ -106,6 +111,15 @@ def train(
         return mels, tokens, mel_lengths, token_lengths
 
     train_dataset = ConformerDataset(manifest_path=train_path, processor=processor, num_examples=num_train)
+
+    if use_validation:
+        if val_path is not None:
+            val_dataset = ConformerDataset(manifest_path=val_path, processor=processor)
+        else:
+            train_dataset, val_dataset = random_split(train_dataset, lengths=[1 - val_size, val_size], generator=torch.Generator().manual_seed(41))
+        
+        val_dataloader = DataLoader(val_dataset, batch_size=val_batch_size, collate_fn=lambda batch: get_batch(batch, False))
+
     train_dataloader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True, collate_fn=lambda batch: get_batch(batch, True))
 
     def train_step(_: Engine, batch: Tuple[torch.Tensor]) -> float:
@@ -136,10 +150,46 @@ def train(
         
         return loss.item()
     
+    def val_step(_: Engine, batch: Tuple[torch.Tensor]) -> Tuple[float, float]:
+        inputs = batch[0].to(device)
+        labels = batch[1].to(device)
+
+        input_lengths = batch[2].to(device)
+        target_lengths = batch[3].to(device)
+
+        with torch.no_grad():
+            outputs, input_lengths = model(inputs, input_lengths)
+            loss = ctc_loss(
+                outputs,
+                labels,
+                input_lengths,
+                target_lengths,
+                blank_id=processor.pad_token,
+                zero_infinity=True
+            )
+
+        score = WER_score(
+            preds=processor.decode_batch(outputs),
+            labels=processor.decode_batch(labels, group_token=False)
+        )
+
+        return loss.item(), score
+    
     trainer = Engine(train_step)
     train_loss = RunningAverage(output_transform=lambda x: x)
     train_loss.attach(trainer, 'loss')
     ProgressBar().attach(trainer)
+
+    if use_validation:
+        def early_stopping_condition(engine: Engine):
+            return -engine.state.metrics['score']
+        validator = Engine(val_step)
+        val_loss = RunningAverage(output_transform=lambda x: x[0])
+        val_loss.attach(validator, 'loss')
+        val_score = RunningAverage(output_transform=lambda x: x[1])
+        val_score.attach(validator, 'score')
+        ProgressBar().attach(validator)
+        early_stopping_handler = EarlyStopping(patience=early_stopping_patience, score_function=early_stopping_condition, trainer=trainer)
 
     to_save = {
         'model': model,
@@ -167,12 +217,12 @@ def train(
         print(f"\tCurrent Learning Rate: {optimizer.param_groups[0]['lr']}")
         print("==========================================================\n")
 
-        # if args.use_validation:
-        #     print("================== Validation Information ==================")
-        #     print(f"\tNumber of Samples: {len(val_dataset)}")
-        #     print(f"\tBatch Size: {args.val_batch_size}")
-        #     print(f"\tNumber of Batches: {len(val_dataloader)}")
-        #     print("==========================================================\n")
+        if use_validation:
+            print("================== Validation Information ==================")
+            print(f"\tNumber of Samples: {len(val_dataset)}")
+            print(f"\tBatch Size: {val_batch_size}")
+            print(f"\tNumber of Batches: {len(val_dataloader)}")
+            print("==========================================================\n")
 
         model.train()
 
@@ -191,6 +241,9 @@ def train(
         
         scheduler.step()
         train_loss.reset()
+
+        if use_validation:
+            validator.run(val_dataloader, max_epochs=1)
         
         print(f"========== Done Epoch {engine.state.epoch} =============\n")
     
@@ -199,6 +252,27 @@ def train(
     @trainer.on(Events.COMPLETED)
     def _(_: Engine):
         print(f"\nLast Model Checkpoint is saved at {checkpoint_manager.last_checkpoint}\n")
+
+    
+    if use_validation:
+        @validator.on(Events.STARTED)
+        def _(_: Engine):
+            val_loss.reset()
+            val_score.reset()
+            print("Validating...")
+
+        validator.add_event_handler(Events.EPOCH_COMPLETED, early_stopping_handler)
+        
+        @validator.on(Events.COMPLETED)
+        def _(engine: Engine):
+            print(f"Val Loss: {(engine.state.metrics['loss']):.4f}")
+            print(f"Val Score: {(engine.state.metrics['score']):.4f}")
+
+            wandb.log({
+                "val_loss": engine.state.metrics['loss'], 
+                'val_score': engine.state.metrics['score']
+            }, step=trainer.state.epoch)
+
 
     if checkpoint is not None:
         assert os.path.exists(checkpoint), f"NOT FOUND CHECKPOINT AT {checkpoint}"

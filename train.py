@@ -5,10 +5,10 @@ import torch.optim.lr_scheduler as lr_scheduler
 from torch.utils.data import DataLoader, random_split
 from torch.cuda.amp import GradScaler, autocast
 
-from torch.multiprocessing import start_processes
-import torch.distributed as dist
-from torch.utils.data.distributed import DistributedSampler
-from torch.nn.parallel import DistributedDataParallel as DDP
+# from torch.multiprocessing import start_processes
+# import torch.distributed as dist
+# from torch.utils.data.distributed import DistributedSampler
+# from torch.nn.parallel import DistributedDataParallel as DDP
 
 from ignite.engine import Engine, Events
 from ignite.metrics import RunningAverage
@@ -34,8 +34,6 @@ wandb.init(project='conformer', name='trind18')
 def train(
         # Processor Config
         rank: int,
-        world_size: int,
-        backend: str,
         vocab_path: str = None, 
         train_path: str = None,
         pad_token: str = "<pad>", 
@@ -72,23 +70,12 @@ def train(
         val_path: str = None,
         val_batch_size: int = 1
     ):
-
-    print(rank)
-    print(world_size)
-    print(backend)
-
     assert vocab_path is not None and train_path is not None and os.path.exists(vocab_path) and os.path.exists(train_path)
 
-    # if torch.cuda.is_available():
-    #     device = torch.device(f'cuda:{rank}')
-    # else:
-    #     device = 'cpu'
-
-    dist.init_process_group(
-        backend=backend,
-        world_size=world_size,
-        rank=rank
-    )
+    if torch.cuda.is_available():
+        device = torch.device(f'cuda:{rank}')
+    else:
+        device = 'cpu'
 
     torch.cuda.set_device(rank)
 
@@ -118,7 +105,7 @@ def train(
         dropout_rate=dropout_rate
     ).cuda()
 
-    model = DDP(model, device_ids=[rank])
+    # model = DDP(model, device_ids=[rank])
 
     optimizer = optim.Adam(params=model.parameters(), lr=lr, weight_decay=1e-6, betas=[0.9, 0.98], eps=1e-9)
     scheduler = lr_scheduler.CosineAnnealingLR(optimizer=optimizer, T_max=1000)
@@ -141,8 +128,8 @@ def train(
         
         val_dataloader = DataLoader(val_dataset, batch_size=val_batch_size, collate_fn=lambda batch: get_batch(batch, False))
 
-    train_sampler = DistributedSampler(dataset=train_dataset)
-    train_dataloader = DataLoader(dataset=train_dataset, batch_size=batch_size / world_size, shuffle=False, sampler=train_sampler, collate_fn=lambda batch: get_batch(batch, True))
+    # train_sampler = DistributedSampler(dataset=train_dataset)
+    train_dataloader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=False, collate_fn=lambda batch: get_batch(batch, True))
     
     def train_step(_: Engine, batch: Tuple[torch.Tensor]) -> float:
         inputs = batch[0].cuda()
@@ -302,58 +289,5 @@ def train(
 
     trainer.run(train_dataloader, max_epochs=num_epochs)
 
-    dist.destroy_process_group()
-    
-
-def main(
-        vocab_path: str = None, 
-        train_path: str = None,
-        pad_token: str = "<pad>", 
-        unk_token: str = "<unk>", 
-        word_delim_token: str = "|", 
-        num_mels: int = 80, 
-        sampling_rate: int = 16000, 
-        fft_size: int = 400, 
-        hop_length: int = 160, 
-        win_length: int = 400, 
-        fmin: float = 0.0, 
-        fmax: float = 8000.0,
-        # Model Hyper - Params
-        encoder_n_layers: int = 17,
-        encoder_dim: int = 512,
-        heads: int = 8,
-        kernel_size: int = 31,
-        decoder_n_layers: int = 1,
-        decoder_dim: int = 640,
-        dropout_rate: float = 0.1,
-        # Optimizer
-        lr: float = 1e-4,
-        # Train config
-        checkpoint: str = None,
-        num_train: int = None,
-        batch_size: int = 1,
-        num_epochs: int = 1,
-        saved_checkpoint: str = './checkpoints',
-        early_stopping_patience: int = 2,
-        set_lr: bool = False,
-        # Validation Config
-        use_validation: bool = False,
-        val_size: float = 0.1,
-        val_path: str = None,
-        val_batch_size: int = 1
-    ):
-
-    args = (2, 'nccl', 
-            vocab_path, train_path, pad_token, unk_token, word_delim_token, num_mels, sampling_rate, fft_size, hop_length, win_length, fmin, fmax, 
-            encoder_n_layers, encoder_dim, heads, kernel_size, decoder_n_layers, decoder_dim, dropout_rate,
-            lr, checkpoint, num_train, batch_size, num_epochs, saved_checkpoint, early_stopping_patience, set_lr,
-            use_validation, val_size, val_path, val_batch_size)
-
-    start_processes(
-        fn=train,
-        args=args,
-        start_method='spawn'
-    )
-
 if __name__ == '__main__':
-    fire.Fire(main)
+    fire.Fire(train)

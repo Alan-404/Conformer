@@ -106,6 +106,6 @@ mel_input = processor.mel_spectrogram(processor.load_audio(args.audio_path)).uns
 with torch.no_grad():
     output = model(mel_input)
 
-transcript = processor.decode_beam_search(output.cpu().numpy())
+transcript = processor.decode_beam_search(output[0].cpu().numpy())
 
 print(f"Transcription: {transcript}")

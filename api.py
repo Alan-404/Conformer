@@ -3,69 +3,86 @@ os.environ['CUDA_MODULE_LOADING'] = 'LAZY'
 import torch
 from fastapi import FastAPI, UploadFile, File
 from src.conformer import Conformer
-import numpy as np
 from pydub import AudioSegment
 from io import BytesIO
 from preprocessing.processor import ConformerProcessor
 import time
 import uvicorn
 
-app = FastAPI()
+MAX_AUDIO_VALUE = 32768
 
-processor = ConformerProcessor('./vocabulary/dictionary.json', lm_path='./lm/lm.arpa')
+def create_app(checkpoint: str,
+               vocab_path: str,
+               arpa_path: str,
+               sampling_rate: int):
+    app = FastAPI()
 
-def read_audio(data: bytes):
-    audio = AudioSegment.from_file(BytesIO(data)).set_frame_rate(16000).get_array_of_samples()
-    signal = np.array(audio)/ 32768
-    return torch.Tensor(signal)
+    processor = ConformerProcessor(vocab_path, lm_path=arpa_path)
 
-model = Conformer(
-    vocab_size=len(processor.dictionary),
-    n_mel_channels=80,
-    encoder_n_layers=17,
-    encoder_dim=512,
-    heads=8,
-    kernel_size=31
-)
+    def read_audio(data: bytes):
+        audio = AudioSegment.from_file(BytesIO(data)).set_frame_rate(sampling_rate).get_array_of_samples()
+        signal = torch.Tensor(audio) / MAX_AUDIO_VALUE
+        return signal
 
-model.load_state_dict(torch.load('./checkpoints/checkpoint_3.pt', map_location='cpu')['model'])
-model.to('cuda')
-model.eval()
+    model = Conformer(
+        vocab_size=len(processor.dictionary),
+        n_mel_channels=80,
+        encoder_n_layers=17,
+        encoder_dim=512,
+        heads=8,
+        kernel_size=31
+    )
 
-@app.post("/s2t")
-async def s2t(file: UploadFile = File(...)):
-    try:
-        start_time = time.time()
+    model.load_state_dict(torch.load(checkpoint, map_location='cpu')['model'])
+    model.to('cuda')
+    model.eval()
 
-        data = await file.read()
+    @app.post("/s2t")
+    async def _(file: UploadFile = File(...)):
+        try:
+            start_time = time.time()
 
-        signal = read_audio(data)
-        mel = processor.mel_spectrogram(signal).unsqueeze(0).to('cuda')
+            data = await file.read()
 
-        with torch.no_grad():
-            logits = model(mel)
+            signal = read_audio(data)
+            mel = processor.mel_spectrogram(signal).unsqueeze(0).to('cuda')
 
-        text = processor.decode_beam_search(logits[0].cpu().numpy())
+            with torch.no_grad():
+                logits = model(mel)
 
-        end_time = time.time()
+            text = processor.decode_beam_search(logits[0].cpu().numpy())
 
-        return {
-            "transcription": text,
-            "processing_time": end_time - start_time
-        }
-    except Exception as e:
-        print(str(e))
-        return {'error': str(e)}
+            end_time = time.time()
+
+            return {
+                "transcription": text,
+                "processing_time": end_time - start_time
+            }
+        except Exception as e:
+            print(str(e))
+            return {'error': str(e)}
+        
+    return app
     
+
+def main(checkpoint: str,
+        vocab_path: str,
+        arpa_path: str,
+        sampling_rate: int = 16000,
+        host: str = '0.0.0.0', 
+        port: int = 8000):
+    
+    app = create_app(
+        checkpoint=checkpoint,
+        vocab_path=vocab_path,
+        arpa_path=arpa_path,
+        sampling_rate=sampling_rate
+    )
+    
+    uvicorn.run(app, host=host, port=port)
+
 # Start FastAPI App
 if __name__ == '__main__':
-    from argparse import ArgumentParser
+    import fire
 
-    parser = ArgumentParser()
-    parser.add_argument('--host', default='0.0.0.0', help='Host IP to bind to')
-    parser.add_argument('--port', type=int, default=8000, help='Port to listen on')
-
-    args = parser.parse_args()
-    
-    uvicorn.run(app, host=args.host, port=args.port)
-
+    fire.Fire(main)

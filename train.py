@@ -33,7 +33,6 @@ wandb.init(project='conformer', name='trind18')
 
 def train(
         # Processor Config
-        rank: int,
         vocab_path: str = None, 
         train_path: str = None,
         pad_token: str = "<pad>", 
@@ -71,13 +70,6 @@ def train(
         val_batch_size: int = 1
     ):
     assert vocab_path is not None and train_path is not None and os.path.exists(vocab_path) and os.path.exists(train_path)
-
-    if torch.cuda.is_available():
-        device = torch.device(f'cuda:{rank}')
-    else:
-        device = 'cpu'
-
-    torch.cuda.set_device(rank)
 
     processor = ConformerProcessor(
         vocab_path=vocab_path,

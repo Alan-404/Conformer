@@ -5,11 +5,6 @@ import torch.optim.lr_scheduler as lr_scheduler
 from torch.utils.data import DataLoader, random_split
 from torch.cuda.amp import GradScaler, autocast
 
-# from torch.multiprocessing import start_processes
-# import torch.distributed as dist
-# from torch.utils.data.distributed import DistributedSampler
-# from torch.nn.parallel import DistributedDataParallel as DDP
-
 from ignite.engine import Engine, Events
 from ignite.metrics import RunningAverage
 from ignite.handlers import Checkpoint, DiskSaver, EarlyStopping, global_step_from_engine
@@ -20,12 +15,13 @@ import fire
 import torchsummary
 
 from preprocessing.processor import ConformerProcessor
+from preprocessing.augment import SpecAugment
 from dataset import ConformerDataset
 from src.conformer import Conformer
 from src.loss import ctc_loss
 from src.metric import WER_score
 
-from typing import Tuple
+from typing import Tuple, Optional
 
 import wandb
 
@@ -33,8 +29,8 @@ wandb.init(project='conformer', name='trind18')
 
 def train(
         # Processor Config
-        vocab_path: str = None, 
-        train_path: str = None,
+        vocab_path: str,
+        train_path: str,
         pad_token: str = "<pad>", 
         unk_token: str = "<unk>", 
         word_delim_token: str = "|", 
@@ -56,20 +52,29 @@ def train(
         # Optimizer
         lr: float = 1e-4,
         # Train config
-        checkpoint: str = None,
-        num_train: int = None,
+        device: str = 'cuda',
+        checkpoint: Optional[str] = None,
+        num_train: Optional[int] = None,
         batch_size: int = 1,
         num_epochs: int = 1,
         saved_checkpoint: str = './checkpoints',
         early_stopping_patience: int = 2,
         set_lr: bool = False,
+        # Augment Config
+        freq_augment: int = 27,
+        time_augment: int = 10,
+        time_mask_ratio: float = 0.05,
         # Validation Config
         use_validation: bool = False,
         val_size: float = 0.1,
-        val_path: str = None,
+        val_path: Optional[str] = None,
         val_batch_size: int = 1
     ):
-    assert vocab_path is not None and train_path is not None and os.path.exists(vocab_path) and os.path.exists(train_path)
+    assert os.path.exists(vocab_path) and os.path.exists(train_path)
+
+    if device != 'cpu':
+        device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
+
 
     processor = ConformerProcessor(
         vocab_path=vocab_path,
@@ -95,17 +100,21 @@ def train(
         decoder_n_layers=decoder_n_layers,
         decoder_dim=decoder_dim,
         dropout_rate=dropout_rate
-    ).cuda()
-
-    # model = DDP(model, device_ids=[rank])
+    ).to(device)
 
     optimizer = optim.Adam(params=model.parameters(), lr=lr, weight_decay=1e-6, betas=[0.9, 0.98], eps=1e-9)
     scheduler = lr_scheduler.CosineAnnealingLR(optimizer=optimizer, T_max=1000)
     scaler = GradScaler()
+
+    augment_handler = SpecAugment(freq_augment=freq_augment, time_augment=time_augment, time_mask_ratio=time_mask_ratio)
     
     def get_batch(batch, augment: bool) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         signals, transcripts = zip(*batch)
-        mels, mel_lengths = processor(signals, return_length=True, set_augment=augment)
+        mels, mel_lengths = processor(signals, return_length=True)
+
+        if augment:
+            mels = augment_handler(mels)
+
         tokens, token_lengths = processor.tokenize(transcripts)
 
         return mels, tokens, mel_lengths, token_lengths
@@ -120,15 +129,14 @@ def train(
         
         val_dataloader = DataLoader(val_dataset, batch_size=val_batch_size, collate_fn=lambda batch: get_batch(batch, False))
 
-    # train_sampler = DistributedSampler(dataset=train_dataset)
     train_dataloader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=False, collate_fn=lambda batch: get_batch(batch, True))
     
     def train_step(_: Engine, batch: Tuple[torch.Tensor]) -> float:
-        inputs = batch[0].cuda()
-        labels = batch[1].cuda()
+        inputs = batch[0].to(device)
+        labels = batch[1].to(device)
 
-        input_lengths = batch[2].cuda()
-        target_lengths = batch[3].cuda()
+        input_lengths = batch[2].to(device)
+        target_lengths = batch[3].to(device)
 
         optimizer.zero_grad()
 
@@ -152,13 +160,13 @@ def train(
         return loss.item()
     
     def val_step(_: Engine, batch: Tuple[torch.Tensor]) -> Tuple[float, float]:
-        inputs = batch[0].cuda()
-        labels = batch[1].cuda()
+        inputs = batch[0].to(device)
+        labels = batch[1].to(device)
 
-        input_lengths = batch[2].cuda()
-        target_lengths = batch[3].cuda()
+        input_lengths = batch[2].to(device)
+        target_lengths = batch[3].to(device)
 
-        with torch.no_grad():
+        with torch.no_grad() and autocast():
             outputs, input_lengths = model(inputs, input_lengths)
             loss = ctc_loss(
                 outputs,

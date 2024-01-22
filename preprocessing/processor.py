@@ -19,7 +19,7 @@ class ConformerProcessor:
     def __init__(self, vocab_path: str, unk_token: str = "<unk>", pad_token: str = "<pad>", word_delim_token: str = "|", sampling_rate: int = 16000, num_mels: int = 80, n_fft: int = 400, hop_length: int = 160, win_length: int = 400, fmin: float = 0.0, fmax: float = 8000.0, puncs: str = r"([:./,?!@#$%^&=`~*\(\)\[\]\"\-\\])", lm_path: Optional[str] = None, beam_alpha: float = 2.1, beam_beta: float = 9.2) -> None:
         # Text
         self.replace_dict = dict()
-        self.dictionary = Vocab()
+        self.dictionary = None
         self.hotwords_dict = dict()
 
         self.create_vocab(vocab_path, pad_token=pad_token, word_delim_token=word_delim_token, unk_token=unk_token)

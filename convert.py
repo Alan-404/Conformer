@@ -28,9 +28,5 @@ print("Converting All MP3 Files to Wave Format")
 for item in tqdm(files, total=len(files)):
     convert(item)
 
-if args.remove:
-    print("Deleting All MP3 Files")
-    for item in tqdm(files, total=len(files)):
-        os.remove(item)
 
 print("Finish")

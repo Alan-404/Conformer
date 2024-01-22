@@ -73,6 +73,10 @@ def train(
         val_batch_size: int = 1
     ):
 
+    print(rank)
+    print(world_size)
+    print(backend)
+
     assert vocab_path is not None and train_path is not None and os.path.exists(vocab_path) and os.path.exists(train_path)
 
     # if torch.cuda.is_available():
@@ -82,7 +86,6 @@ def train(
 
     dist.init_process_group(
         backend=backend,
-        init_method='tcp://0.0.0.0.2233',
         world_size=world_size,
         rank=rank
     )

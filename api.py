@@ -14,10 +14,15 @@ MAX_AUDIO_VALUE = 32768
 def create_app(checkpoint: str,
                vocab_path: str,
                arpa_path: str,
-               sampling_rate: int):
+               beam_alpha: float = 2.1, 
+               beam_beta: float = 9.2,
+               sampling_rate: int = 16000) -> FastAPI:
     app = FastAPI()
 
-    processor = ConformerProcessor(vocab_path, lm_path=arpa_path)
+    processor = ConformerProcessor(vocab_path, 
+                                   lm_path=arpa_path,
+                                   beam_alpha=beam_alpha,
+                                   beam_beta=beam_beta)
 
     def read_audio(data: bytes):
         audio = AudioSegment.from_file(BytesIO(data)).set_frame_rate(sampling_rate).get_array_of_samples()
@@ -68,6 +73,8 @@ def create_app(checkpoint: str,
 def main(checkpoint: str,
         vocab_path: str,
         arpa_path: str,
+        beam_alpha: float = 2.1, 
+        beam_beta: float = 9.2,
         sampling_rate: int = 16000,
         host: str = '0.0.0.0', 
         port: int = 8000):
@@ -76,6 +83,8 @@ def main(checkpoint: str,
         checkpoint=checkpoint,
         vocab_path=vocab_path,
         arpa_path=arpa_path,
+        beam_alpha=beam_alpha,
+        beam_beta=beam_beta,
         sampling_rate=sampling_rate
     )
     

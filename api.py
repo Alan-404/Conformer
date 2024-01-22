@@ -12,14 +12,11 @@ import uvicorn
 
 app = FastAPI()
 
-print(torch.cuda.is_available())
-
 processor = ConformerProcessor('./vocabulary/dictionary.json', lm_path='./lm/lm.arpa')
 
-def read_audio(data):
+def read_audio(data: bytes):
     audio = AudioSegment.from_file(BytesIO(data)).set_frame_rate(16000).get_array_of_samples()
     signal = np.array(audio)/ 32768
-    print(len(signal) / 16000)
     return torch.Tensor(signal)
 
 model = Conformer(

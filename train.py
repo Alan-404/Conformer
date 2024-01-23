@@ -61,6 +61,7 @@ def train(
         early_stopping_patience: int = 2,
         set_lr: bool = False,
         # Augment Config
+        set_augment: bool = True,
         freq_augment: int = 27,
         time_augment: int = 10,
         time_mask_ratio: float = 0.05,
@@ -106,7 +107,8 @@ def train(
     scheduler = lr_scheduler.CosineAnnealingLR(optimizer=optimizer, T_max=1000)
     scaler = GradScaler()
 
-    augment_handler = SpecAugment(freq_augment=freq_augment, time_augment=time_augment, time_mask_ratio=time_mask_ratio)
+    if set_augment:
+        augment_handler = SpecAugment(freq_augment=freq_augment, time_augment=time_augment, time_mask_ratio=time_mask_ratio)
     
     def get_batch(batch, augment: bool) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         signals, transcripts = zip(*batch)
@@ -129,7 +131,7 @@ def train(
         
         val_dataloader = DataLoader(val_dataset, batch_size=val_batch_size, collate_fn=lambda batch: get_batch(batch, False))
 
-    train_dataloader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True, collate_fn=lambda batch: get_batch(batch, True))
+    train_dataloader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True, collate_fn=lambda batch: get_batch(batch, set_augment))
     
     def train_step(_: Engine, batch: Tuple[torch.Tensor]) -> float:
         inputs = batch[0].to(device)

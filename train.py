@@ -217,7 +217,7 @@ def train(
         if set_lr:
             optimizer.param_groups[0]['lr'] = lr
         print("\nModel Summary")
-        torchsummary.summary(model, depth=5)
+        torchsummary.summary(model)
         
         print("\n================== Training Information ==================")
         print(f"\tNumber of Samples: {len(engine.state.dataloader.dataset)}")

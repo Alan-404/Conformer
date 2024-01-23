@@ -18,12 +18,13 @@ class MultiHeadSelfAttentionModule(nn.Module):
         return x
 
 class RelativeMultiHeadAttention(nn.Module):
-    def __init__(self, d_model: int, heads: int, dropout_rate: float = 0.1):
+    def __init__(self, d_model: int, heads: int, dropout_rate: float = 0.0):
         super().__init__()
         assert d_model % heads == 0
         self.d_model = d_model
-        self.head_samples = int(d_model / heads)
         self.heads = heads
+        self.head_samples = int(d_model / heads)
+        
         self.sqrt_dim = math.sqrt(self.head_samples)
 
         self.query_proj = nn.Linear(in_features=d_model, out_features=d_model)
@@ -67,20 +68,20 @@ class RelativeMultiHeadAttention(nn.Module):
         return attention_context
     
     def forward(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, pos_embedding: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
-        batch_size = q.size(0)
+        batch_size, ctx, _ = q.size()
 
         # Project and Split Heads
-        q = self.query_proj(q).view(batch_size, -1, self.heads, self.head_samples)
-        k = self.key_proj(k).view(batch_size, -1, self.heads, self.head_samples).permute(0, 2, 1, 3)
-        v = self.value_proj(v).view(batch_size, -1, self.heads, self.head_samples).permute(0, 2, 1, 3)
-        pos_embedding = self.pos_proj(pos_embedding).view(batch_size, -1, self.heads, self.head_samples).permute(0, 2, 3, 1)
+        q = self.query_proj(q).view(batch_size, ctx, self.heads, self.head_samples)
+        k = self.key_proj(k).view(batch_size, ctx, self.heads, self.head_samples).permute(0, 2, 1, 3)
+        v = self.value_proj(v).view(batch_size, ctx, self.heads, self.head_samples).permute(0, 2, 1, 3)
+        pos_embedding = self.pos_proj(pos_embedding).view(batch_size, ctx, self.heads, self.head_samples).permute(0, 2, 3, 1)
 
         # Scaled - dot Product Attention with Relative Position
         attention_context = self.scaled_dot_product_relative_attention(q, k, v, pos_embedding, mask)
 
         # Concat Heads
         attention_context = attention_context.permute([0, 2, 1, 3])
-        attention_context = attention_context.reshape((batch_size, -1, self.d_model))
+        attention_context = attention_context.reshape((batch_size, ctx, self.d_model))
 
         attention_context = self.out_proj(attention_context)
 

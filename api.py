@@ -1,6 +1,7 @@
 import os
 os.environ['CUDA_MODULE_LOADING'] = 'LAZY'
 import torch
+from torch.cuda.amp import autocast
 from fastapi import FastAPI, UploadFile, File
 from src.conformer import Conformer
 from pydub import AudioSegment

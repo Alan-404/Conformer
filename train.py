@@ -92,7 +92,7 @@ def train(
     )
     
     model = Conformer(
-        vocab_size=len(processor.dictionary.get_itos()),
+        vocab_size=len(processor.dictionary),
         n_mel_channels=processor.num_mels,
         encoder_n_layers=encoder_n_layers,
         encoder_dim=encoder_dim,

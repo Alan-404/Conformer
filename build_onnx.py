@@ -28,8 +28,10 @@ def build_onnx(
         kernel_size: int = 31,
         decoder_n_layers: int = 1,
         decoder_dim: int = 640,
-        dropout_rate: float = 0.1
+        dropout_rate: float = 0.0
     ):
+
+    assert os.path.exists(checkpoint) and os.path.exists(vocab_path) and os.path.exists(audio_path)
 
     # Processor Setup
     processor = ConformerProcessor(
@@ -47,7 +49,7 @@ def build_onnx(
     )
 
     model = Conformer(
-        vocab_size=len(processor.dictionary.get_itos()),
+        vocab_size=len(processor.dictionary),
         n_mel_channels=processor.num_mels,
         encoder_n_layers=encoder_n_layers,
         encoder_dim=encoder_dim,
@@ -56,9 +58,10 @@ def build_onnx(
         decoder_n_layers=decoder_n_layers,
         decoder_dim=decoder_dim,
         dropout_rate=dropout_rate
-    ).to(device)
+    )
 
-    model.load_state_dict(torch.load(checkpoint, map_location=device)['model'])
+    model.load_state_dict(torch.load(checkpoint, map_location='cpu')['model'])
+    model.to(device)
     model.eval()
 
     dummy_input = processor.mel_spectrogram(processor.load_audio(audio_path)).unsqueeze(0).to(device)

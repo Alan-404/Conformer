@@ -40,11 +40,12 @@ class RelativePositionalEncoding(nn.Module):
         pe_negative = torch.zeros(x.size(1), self.d_model)
         
         position = torch.arange(0, x.size(1), dtype=torch.float32).unsqueeze(1)
+        angles = position * self.div_term
 
-        pe_positive[:, 0::2] = torch.sin(position * self.div_term)
-        pe_positive[:, 1::2] = torch.cos(position * self.div_term)
-        pe_negative[:, 0::2] = torch.sin(-1 * position * self.div_term)
-        pe_negative[:, 1::2] = torch.cos(-1 * position * self.div_term)
+        pe_positive[:, 0::2] = torch.sin(angles)
+        pe_positive[:, 1::2] = torch.cos(angles)
+        pe_negative[:, 0::2] = torch.sin(-1 * angles)
+        pe_negative[:, 1::2] = torch.cos(-1 * angles)
 
         pe_positive = torch.flip(pe_positive, [0]).unsqueeze(0)
         pe_negative = pe_negative[1:].unsqueeze(0)

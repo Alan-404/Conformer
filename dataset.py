@@ -18,7 +18,7 @@ class ConformerDataset(Dataset):
 
         if "start" in self.columns and "end" in self.columns:
             self.prompts['duration'] = self.prompts['end'] - self.prompts['start']
-            self.prompts = self.prompts[(self.prompts['duration'] >= 0.3) & (self.prompts['duration'] <= 30)]
+            self.prompts = self.prompts[(self.prompts['duration'] >= 0.3) & (self.prompts['duration'] <= 30)].reset_index(drop=True)
         
         if "type" not in self.columns:
             self.prompts['type'] = None

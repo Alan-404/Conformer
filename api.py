@@ -35,7 +35,8 @@ def create_app(checkpoint: str,
         encoder_n_layers=17,
         encoder_dim=512,
         heads=8,
-        kernel_size=31
+        kernel_size=31,
+        dropout_rate=0.1
     )
 
     model.load_state_dict(torch.load(checkpoint, map_location='cpu')['model'])

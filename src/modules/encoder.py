@@ -3,6 +3,7 @@ import torch.nn as nn
 from src.utils.convolution import ConvolutionSubsampling
 from src.utils.block import ConformerBlock
 from src.utils.masking import generate_mask
+from src.utils.position import RelativePositionalEncoding
 from typing import Optional
 
 class Encoder(nn.Module):
@@ -11,6 +12,7 @@ class Encoder(nn.Module):
         self.subsampling = ConvolutionSubsampling(channels=d_model)
         self.linear = nn.Linear(in_features=d_model * (((n_mel_channels - 1) // 2 - 1) // 2), out_features=d_model)
         self.dropout = nn.Dropout(p=dropout_rate)
+        self.pe = RelativePositionalEncoding(d_model=d_model)
         self.layers = nn.ModuleList([ConformerBlock(d_model=d_model, heads=heads, kernel_size=kernel_size, dropout_rate=dropout_rate) for _ in range(n)])
     
     def forward(self, x: torch.Tensor, lengths: Optional[torch.Tensor] = None) -> torch.Tensor:
@@ -25,7 +27,8 @@ class Encoder(nn.Module):
             mask = generate_mask(lengths).to(x.device)
             mask = (mask == 0).unsqueeze(1).unsqueeze(1)
         # Conformer Handling
+        rel_pos = self.pe(x)
         for layer in self.layers:
-            x = layer(x, mask)
+            x = layer(x, rel_pos, mask)
 
         return x, lengths

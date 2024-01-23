@@ -10,12 +10,10 @@ class MultiHeadSelfAttentionModule(nn.Module):
         super().__init__()
         self.layer_norm = nn.LayerNorm(normalized_shape=d_model)
         self.attention = RelativeMultiHeadAttention(d_model=d_model, heads=heads, dropout_rate=dropout_rate)
-        self.pe = RelativePositionalEncoding(d_model=d_model)
         self.dropout = nn.Dropout(p=dropout_rate)
 
-    def forward(self, x: torch.Tensor, mask: Optional[torch.Tensor] = None):
+    def forward(self, x: torch.Tensor, pos_embedding: torch.Tensor, mask: Optional[torch.Tensor] = None):
         x = self.layer_norm(x)
-        pos_embedding = self.pe(x).repeat((x.size(0), 1, 1))
         x = self.attention(x, x, x, pos_embedding, mask)
         x = self.dropout(x)
         return x

@@ -29,13 +29,11 @@ class PositionalEncoding(nn.Module):
         pos_angles = pos_angles.unsqueeze(0)
         return pos_angles
 
-
-
 class RelativePositionalEncoding(nn.Module):
     def __init__(self, d_model: int = 512) -> None:
         super().__init__()
         self.d_model = d_model
-        self.register_buffer('div_term', torch.exp(torch.arange(0, self.d_model, 2, dtype=torch.float32) * -(math.log(10000.0) / d_model))) 
+        self.div_term = torch.exp(torch.arange(0, self.d_model, 2, dtype=torch.float32) * -(math.log(10000.0) / d_model))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         pe_positive = torch.zeros(x.size(1), self.d_model)
@@ -52,36 +50,36 @@ class RelativePositionalEncoding(nn.Module):
         pe_negative = pe_negative[1:].unsqueeze(0)
         pe = torch.cat([pe_positive, pe_negative], dim=1)
         
-        return pe
+        return pe.to(x.device)
 
-class RelPositionalEncoding(nn.Module):
-    def __init__(self, d_model: int = 512, max_len: int = 5000) -> None:
-        super().__init__()
-        self.d_model = d_model
-        self.max_len = max_len
-        self.pe = None
-        self.extend_pe(torch.tensor(0.0).expand(1, max_len))
+# class RelPositionalEncoding(nn.Module):
+#     def __init__(self, d_model: int = 512, max_len: int = 5000) -> None:
+#         super().__init__()
+#         self.d_model = d_model
+#         self.max_len = max_len
+#         self.pe = None
+#         self.extend_pe(torch.tensor(0.0).expand(1, max_len))
 
-    def extend_pe(self, x: torch.Tensor) -> None:
-        pe_positive = torch.zeros(x.size(1), self.d_model)
-        pe_negative = torch.zeros(x.size(1), self.d_model)
-        position = torch.arange(0, x.size(1), dtype=torch.float32).unsqueeze(1)
-        div_term = torch.exp(
-            torch.arange(0, self.d_model, 2, dtype=torch.float32) * -(math.log(10000.0) / self.d_model)
-        )
-        pe_positive[:, 0::2] = torch.sin(position * div_term)
-        pe_positive[:, 1::2] = torch.cos(position * div_term)
-        pe_negative[:, 0::2] = torch.sin(-1 * position * div_term)
-        pe_negative[:, 1::2] = torch.cos(-1 * position * div_term)
+#     def extend_pe(self, x: torch.Tensor) -> None:
+#         pe_positive = torch.zeros(x.size(1), self.d_model)
+#         pe_negative = torch.zeros(x.size(1), self.d_model)
+#         position = torch.arange(0, x.size(1), dtype=torch.float32).unsqueeze(1)
+#         div_term = torch.exp(
+#             torch.arange(0, self.d_model, 2, dtype=torch.float32) * -(math.log(10000.0) / self.d_model)
+#         )
+#         pe_positive[:, 0::2] = torch.sin(position * div_term)
+#         pe_positive[:, 1::2] = torch.cos(position * div_term)
+#         pe_negative[:, 0::2] = torch.sin(-1 * position * div_term)
+#         pe_negative[:, 1::2] = torch.cos(-1 * position * div_term)
 
-        pe_positive = torch.flip(pe_positive, [0]).unsqueeze(0)
-        pe_negative = pe_negative[1:].unsqueeze(0)
-        pe = torch.cat([pe_positive, pe_negative], dim=1)
-        self.pe = pe.to(device=x.device, dtype=x.dtype)
+#         pe_positive = torch.flip(pe_positive, [0]).unsqueeze(0)
+#         pe_negative = pe_negative[1:].unsqueeze(0)
+#         pe = torch.cat([pe_positive, pe_negative], dim=1)
+#         self.pe = pe.to(device=x.device, dtype=x.dtype)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        pos_emb = self.pe[
-            :,
-            self.pe.size(1) // 2 - x.size(1) + 1 : self.pe.size(1) // 2 + x.size(1),
-        ]
-        return pos_emb.to(x.device)
+#     def forward(self, x: torch.Tensor) -> torch.Tensor:
+#         pos_emb = self.pe[
+#             :,
+#             self.pe.size(1) // 2 - x.size(1) + 1 : self.pe.size(1) // 2 + x.size(1),
+#         ]
+#         return pos_emb.to(x.device)

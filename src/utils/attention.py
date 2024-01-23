@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from src.utils.position import RelativePositionalEncoding
 import math
 from typing import Optional
 

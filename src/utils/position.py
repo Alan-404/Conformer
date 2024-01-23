@@ -30,7 +30,7 @@ class PositionalEncoding(nn.Module):
         return pos_angles
 
 class RelativePositionalEncoding(nn.Module):
-    def __init__(self, d_model: int = 512) -> None:
+    def __init__(self, d_model: int) -> None:
         super().__init__()
         self.d_model = d_model
         self.div_term = torch.exp(torch.arange(0, self.d_model, 2, dtype=torch.float32) * -(math.log(10000.0) / d_model))

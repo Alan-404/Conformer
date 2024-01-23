@@ -129,7 +129,7 @@ def train(
         
         val_dataloader = DataLoader(val_dataset, batch_size=val_batch_size, collate_fn=lambda batch: get_batch(batch, False))
 
-    train_dataloader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=False, collate_fn=lambda batch: get_batch(batch, True))
+    train_dataloader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True, collate_fn=lambda batch: get_batch(batch, True))
     
     def train_step(_: Engine, batch: Tuple[torch.Tensor]) -> float:
         inputs = batch[0].to(device)

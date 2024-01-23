@@ -1,7 +1,6 @@
 import os
 os.environ['CUDA_MODULE_LOADING'] = 'LAZY'
 import torch
-from torch.cuda.amp import autocast
 from fastapi import FastAPI, UploadFile, File
 from src.conformer import Conformer
 from pydub import AudioSegment
@@ -40,7 +39,7 @@ def create_app(checkpoint: str,
         dropout_rate=0.1
     )
 
-    model.load_state_dict(torch.load(checkpoint, map_location='cpu')['model'])
+    model.load_state_dict(torch.load(checkpoint, map_location='cpu'))
     model.to('cuda')
     model.eval()
 

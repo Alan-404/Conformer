@@ -7,6 +7,7 @@ import lightning as L
 from preprocessing.processor import ConformerProcessor
 from dataset import ConformerDataset
 
+from ignite.engine import Engine
 
 processor = ConformerProcessor(
     vocab_path='./vocabulary/dictionary.json'
@@ -23,7 +24,8 @@ model = ConformerModule(
     dropout_rate=0.1
 )
 
-trainer = L.Trainer(num_nodes=torch.cuda.device_count(), max_epochs=5, default_root_dir='./checkpoints/root', precision='bf16', logger=[])
+trainer = L.Trainer(num_nodes=torch.cuda.device_count(), max_epochs=3, default_root_dir='./checkpoints/root')
+
 
 def get_batch(batch) -> [torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         signals, transcripts = zip(*batch)

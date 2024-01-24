@@ -13,7 +13,7 @@ from src.loss import ctc_loss
 class ConformerModule(L.LightningModule):
     def __init__(self, processor: ConformerProcessor, encoder_n_layers: int, encoder_dim: int, heads: int, kernel_size: int, decoder_n_layers: int, decoder_dim: int, dropout_rate: float, lr: float = 1e-4) -> None:
         super().__init__()
-
+        self.save_hyperparameters()
         self.processor = processor
 
         self.model = Conformer(
@@ -56,3 +56,6 @@ class ConformerModule(L.LightningModule):
         optimizer = Adam(params=self.parameters(), lr=self.lr)
         scheduler = lr_scheduler.CosineAnnealingLR(optimizer=optimizer, T_max=1000)
         return [optimizer], [{'scheduler': scheduler, 'interval': "epoch"}]
+
+    def training_epoch_end(self, outputs):
+        print(f"Train Loss: {(outputs[0]):.4f}")

@@ -3,7 +3,6 @@ from torch.utils.data import DataLoader
 from module import ConformerModule
 
 import lightning as L
-from lightning.pytorch.callbacks import EarlyStopping
 
 from preprocessing.processor import ConformerProcessor
 from dataset import ConformerDataset
@@ -24,9 +23,9 @@ model = ConformerModule(
     dropout_rate=0.1
 )
 
-trainer = L.Trainer(num_nodes=torch.cuda.device_count(), max_epochs=5, default_root_dir='./checkpoints/root', precision='bf16')
+trainer = L.Trainer(num_nodes=torch.cuda.device_count(), max_epochs=5, default_root_dir='./checkpoints/root', precision='bf16', logger=[])
 
-def get_batch(batch) ->[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+def get_batch(batch) -> [torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         signals, transcripts = zip(*batch)
         mels, mel_lengths = processor(signals, return_length=True)
 

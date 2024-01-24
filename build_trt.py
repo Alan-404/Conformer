@@ -75,7 +75,7 @@ def build_engine(
         gpu_fallback: bool = False,
         verbose: bool = True
     ):
-    assert os.path.exists(engine_path) and os.path.exists(onnx_path)
+    assert os.path.exists(onnx_path)
     builder = TRTEngineBuilder(
         onnx_file_path=onnx_path,
         min_shapes=(1, 80, min_time),

@@ -76,7 +76,6 @@ def train(
     if device != 'cpu':
         device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
 
-
     processor = ConformerProcessor(
         vocab_path=vocab_path,
         unk_token=unk_token,

@@ -17,8 +17,7 @@ class Decoder(nn.Module):
             x = nn.utils.rnn.pack_padded_sequence(x, lengths=lengths.cpu().numpy(), batch_first=True, enforce_sorted=False)
         
         self.lstm.flatten_parameters()
-        init = torch.zeros((1, x.size(0), self.hidden_dim)).to(x.device)
-        x, _ = self.lstm(x, (init, init))
+        x, _ = self.lstm(x)
 
         if lengths is not None:
             x, _ = nn.utils.rnn.pad_packed_sequence(x, batch_first=True)

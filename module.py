@@ -14,9 +14,9 @@ from typing import Any, List, Tuple
 import statistics
 
 class ConformerModule(L.LightningModule):
-    def __init__(self, processor: ConformerProcessor, encoder_n_layers: int, encoder_dim: int, heads: int, kernel_size: int, decoder_n_layers: int, decoder_dim: int, dropout_rate: float, lr: float = 1e-4) -> None:
+    def __init__(self, processor: ConformerProcessor, encoder_n_layers: int, encoder_dim: int, heads: int, kernel_size: int, decoder_n_layers: int, decoder_dim: int, dropout_rate: float) -> None:
         super().__init__()
-        self.save_hyperparameters(ignore=[processor, lr])
+        self.save_hyperparameters(ignore=[processor])
         self.processor = processor
 
         self.model = Conformer(
@@ -30,9 +30,6 @@ class ConformerModule(L.LightningModule):
             decoder_dim=decoder_dim,
             dropout_rate=dropout_rate
         )
-
-        self.optimizer = Adam(params=self.parameters(), lr=lr)
-        self.scheduler = lr_scheduler.CosineAnnealingLR(optimizer=self.optimizer, T_max=1000)
 
         self.train_loss = []
         self.val_loss = []
@@ -73,11 +70,13 @@ class ConformerModule(L.LightningModule):
         self.val_score.append(score.item())
         
     def configure_optimizers(self):
-        return [self.optimizer], [{'scheduler': self.scheduler, 'interval': "epoch"}]
+        optimizer = Adam(params=self.parameters(), lr=1e-4, weight_decay=1e-6, betas=[0.9, 0.98], eps=1e-9)
+        scheduler = lr_scheduler.CosineAnnealingLR(optimizer=optimizer, T_max=1000)
+        return [optimizer], [{'scheduler': scheduler, 'interval': "epoch"}]
 
     def on_train_epoch_end(self):
         print(f"Train Loss: {(statistics.mean(self.train_loss)):.4f}")
-        print(f"Current Learning Rate: {self.optimizer.param_groups[0]['lr']}")
+        print(f"Current Learning Rate: {self.optimizers().param_groups[0]['lr']}")
         
         self.train_loss.clear()
 

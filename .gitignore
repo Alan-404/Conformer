@@ -25,3 +25,4 @@
 /onnx
 /weights
 /engines
+/lightning_logs

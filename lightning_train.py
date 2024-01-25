@@ -1,10 +1,10 @@
 import os
 import torch
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, random_split
 from module import ConformerModule
 
 import lightning as L
-from lightning.pytorch.callbacks import ModelCheckpoint
+from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping
 
 from preprocessing.processor import ConformerProcessor
 from dataset import ConformerDataset
@@ -15,6 +15,8 @@ from typing import Optional
 from preprocessing.augment import SpecAugment
 
 from ignite.engine import Engine
+
+import torchsummary
 
 def train(
         # Processor Config
@@ -46,7 +48,7 @@ def train(
         batch_size: int = 1,
         num_epochs: int = 1,
         saved_checkpoint: str = './checkpoints/root',
-        early_stopping_patience: int = 2,
+        early_stopping_patience: int = 3,
         set_lr: bool = False,
         # Augment Config
         set_augment: bool = True,
@@ -57,7 +59,8 @@ def train(
         use_validation: bool = False,
         val_size: float = 0.1,
         val_path: Optional[str] = None,
-        val_batch_size: int = 1
+        num_val: Optional[int] = None,
+        val_batch_size: Optional[int] = None
     ):
 
     assert os.path.exists(train_path)
@@ -85,8 +88,7 @@ def train(
             kernel_size=kernel_size,
             decoder_n_layers=decoder_n_layers,
             decoder_dim=decoder_dim,
-            dropout_rate=dropout_rate,
-            lr=lr
+            dropout_rate=dropout_rate
         )
     else: 
         module = ConformerModule.load_from_checkpoint(checkpoint)
@@ -108,12 +110,25 @@ def train(
     callbacks = []
     callbacks.append(ModelCheckpoint(dirpath=saved_checkpoint, filename="conformer_{epoch}", save_on_train_epoch_end=True, save_top_k=-1))
 
+    if use_validation:
+        callbacks.append(EarlyStopping(monitor='val_score', verbose=True, mode='min', patience=early_stopping_patience))
+
     trainer = L.Trainer(num_nodes=torch.cuda.device_count(), max_epochs=num_epochs, callbacks=callbacks)
 
-    dataset = ConformerDataset(train_path, processor=processor, num_examples=50)
+    dataset = ConformerDataset(train_path, processor=processor, num_examples=num_train)
+    
+    if use_validation:
+        if val_batch_size is None:
+            val_batch_size = batch_size
+        if val_path is not None:
+            val_dataset = ConformerDataset(val_path, processor=processor, num_examples=num_val)
+        else:
+            dataset, val_dataset = random_split(dataset, lengths=[1 - val_size, val_size], generator=torch.Generator().manual_seed(41))
+        val_dataloader = DataLoader(val_dataset, batch_size=val_batch_size, collate_fn=lambda batch: get_batch(batch, False))
+    
     dataloader = DataLoader(dataset, batch_size=batch_size, collate_fn=lambda batch: get_batch(batch, set_augment))
 
-    trainer.fit(module, dataloader)
+    trainer.fit(module, train_dataloaders=dataloader, val_dataloaders=val_dataloader if use_validation else None)
 
 if __name__ == '__main__':
     fire.Fire(train)

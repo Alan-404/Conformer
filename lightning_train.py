@@ -5,6 +5,7 @@ from module import ConformerModule
 
 from lightning import Trainer
 from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping
+from lightning.pytorch.strategies import DDPStrategy
 
 from preprocessing.processor import ConformerProcessor
 from dataset import ConformerDataset
@@ -127,7 +128,7 @@ def train(
 
     num_epochs += module.current_epoch
 
-    trainer = Trainer(max_epochs=num_epochs, callbacks=callbacks, precision=16)
+    trainer = Trainer(max_epochs=num_epochs, callbacks=callbacks, precision=16, strategy=DDPStrategy(process_group_backend='gloo'))
     trainer.fit(module, train_dataloaders=dataloader, val_dataloaders=val_dataloader if use_validation else None, ckpt_path=checkpoint)
 
 if __name__ == '__main__':

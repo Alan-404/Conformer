@@ -79,11 +79,6 @@ class ConformerModule(L.LightningModule):
         
         self.train_loss.clear()
 
-        print(f"\n============= Done Epoch {self.current_epoch} =============")
-
-    def on_train_epoch_start(self):
-        print(f"============= Epoch {self.current_epoch} =============\n")
-
     def on_validation_epoch_end(self):
         print(f"Validation Loss: {(statistics.mean(self.val_loss)):.4f}")
         print(f"Validation Score: {(statistics.mean(self.val_score)):.4f}")

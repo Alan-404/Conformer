@@ -8,14 +8,15 @@ from lightning.pytorch.strategies import DDPStrategy
 
 import fire
 
+import torchsummary
+
 from module import ConformerModule
 from preprocessing.processor import ConformerProcessor
 from dataset import ConformerDataset
 
-from typing import Optional
 from preprocessing.augment import SpecAugment
 
-import torchsummary
+from typing import Optional
 
 def train(
         # Processor Config
@@ -107,7 +108,7 @@ def train(
         return mels, tokens, mel_lengths, token_lengths
     
     callbacks = []
-    callbacks.append(ModelCheckpoint(dirpath=saved_checkpoint, filename="conformer_{epoch}", save_on_train_epoch_end=True, save_top_k=-1))
+    callbacks.append(ModelCheckpoint(dirpath=saved_checkpoint, filename="{epoch}", save_on_train_epoch_end=True, save_top_k=5))
 
     if use_validation:
         callbacks.append(EarlyStopping(monitor='val_score', verbose=True, mode='min', patience=early_stopping_patience))
@@ -125,13 +126,12 @@ def train(
     
     dataloader = DataLoader(dataset, batch_size=batch_size, collate_fn=lambda batch: get_batch(batch, set_augment))
 
-    num_epochs += module.current_epoch
-
     strategy = 'auto'
     if torch.cuda.device_count() > 1:
         strategy = DDPStrategy(process_group_backend='gloo', find_unused_parameters=True)
 
     trainer = Trainer(max_epochs=num_epochs, callbacks=callbacks, precision='16-mixed', strategy=strategy)
+    
     trainer.fit(module, train_dataloaders=dataloader, val_dataloaders=val_dataloader if use_validation else None, ckpt_path=checkpoint)
 
 if __name__ == '__main__':

@@ -13,18 +13,30 @@ from ignite.contrib.handlers.tqdm_logger import ProgressBar
 import fire
 
 import torchsummary
+import torch.nn.functional as F
+import torchmetrics.functional as F
 
 from preprocessing.char_processor import ConformerProcessor
 from dataset import CharDataset
-from src.conformer import Conformer
-from src.loss import ctc_loss
-from src.metric import WER_score
+from model.conformer import Conformer
+
 
 from typing import Tuple
 
 import wandb
 
 wandb.init(project='conformer', name='trind18')
+
+def ctc_loss(outputs: torch.Tensor, targets: torch.Tensor, output_lengths: torch.Tensor, target_lengths: torch.Tensor, blank_id: int, reduction: str = 'mean', zero_infinity: bool = True) -> torch.Tensor:
+    return F.ctc_loss(
+        log_probs=outputs.log_softmax(dim=-1).transpose(0,1),
+        targets=targets,
+        input_lengths=output_lengths,
+        target_lengths=target_lengths,
+        blank=blank_id,
+        reduction=reduction,
+        zero_infinity=zero_infinity
+    )
 
 def train(
         # Processor Config
@@ -168,7 +180,7 @@ def train(
                 zero_infinity=True
             )
 
-        score = WER_score(
+        score = F.word_error_rate(
             preds=processor.decode_batch(outputs),
             labels=processor.decode_batch(labels, group_token=False)
         )

@@ -1,9 +1,9 @@
 import torch
 import torch.nn as nn
-from src.utils.convolution import ConvolutionSubsampling
-from src.utils.block import ConformerBlock
-from src.utils.masking import generate_mask
-from src.utils.position import RelativePositionalEncoding
+from model.utils.convolution import ConvolutionSubsampling
+from model.utils.block import ConformerBlock
+from model.utils.masking import generate_mask
+from model.utils.position import RelativePositionalEncoding
 from typing import Optional
 
 class Encoder(nn.Module):

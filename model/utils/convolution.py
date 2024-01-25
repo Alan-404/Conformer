@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from src.utils.activation import GLU, Swish
+from model.utils.activation import GLU, Swish
 from typing import Optional
 
 class ConvolutionModule(nn.Module):

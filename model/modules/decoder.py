@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from typing import Optional
-from src.utils.activation import Swish
+from model.utils.activation import Swish
 
 class Decoder(nn.Module):
     def __init__(self, vocab_size: int, d_model: int, n: int = 1, hidden_dim: int = 640) -> None:

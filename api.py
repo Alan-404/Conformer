@@ -2,7 +2,7 @@ import os
 os.environ['CUDA_MODULE_LOADING'] = 'LAZY'
 import torch
 from fastapi import FastAPI, UploadFile, File
-from src.conformer import Conformer
+from model.conformer import Conformer
 from pydub import AudioSegment
 from io import BytesIO
 from preprocessing.processor import ConformerProcessor

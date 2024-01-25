@@ -9,7 +9,7 @@ import torch.optim.lr_scheduler as lr_scheduler
 from torchmetrics.text import WordErrorRate
 
 from preprocessing.processor import ConformerProcessor
-from src.conformer import Conformer
+from model.conformer import Conformer
 
 from typing import Any, List, Tuple
 import statistics

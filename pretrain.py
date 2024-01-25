@@ -1,7 +1,7 @@
 import torch
 from pretraining.byol import BYOL
 import torchsummary
-from src.loss import l2_distance
+import torch.nn.functional as F
 from preprocessing.processor import ConformerProcessor
 import pandas as pd
 from argparse import ArgumentParser
@@ -22,7 +22,11 @@ args = parser.parse_args()
 df = pd.read_csv(args.data_path, sep="\t")
 
 processor = ConformerProcessor('./vocabulary/grapheme.json')
-
+def l2_distance(x, y):
+    # L2 normalization
+    x = F.normalize(x, dim=-1, p=2)
+    y = F.normalize(y, dim=-1, p=2)
+    return (2 - 2 * (x * y).sum(dim=-1)).mean()
 model = BYOL(
     n_mel_channels=args.n_mel_channels,
     n=args.n,

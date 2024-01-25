@@ -6,7 +6,7 @@ import fire
 import torchsummary
 
 from preprocessing.processor import ConformerProcessor
-from src.conformer import Conformer
+from model.conformer import Conformer
 
 import pickle
 

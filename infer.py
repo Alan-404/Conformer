@@ -1,6 +1,6 @@
 import os
 import torch
-from conformer import Conformer
+from model.conformer import Conformer
 from preprocessing.processor import ConformerProcessor
 
 ########################################

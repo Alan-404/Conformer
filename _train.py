@@ -4,7 +4,7 @@ import torch.optim as optim
 import torch.optim.lr_scheduler as lr_scheduler
 from torch.utils.data import DataLoader, random_split
 from torch.cuda.amp import GradScaler, autocast
-
+import torch.nn.functional as F
 from ignite.engine import Engine, Events
 from ignite.metrics import RunningAverage
 from ignite.handlers import Checkpoint, DiskSaver, EarlyStopping, global_step_from_engine
@@ -14,18 +14,28 @@ import fire
 
 import torchsummary
 
+import torchmetrics.functional as F
+
 from preprocessing.processor import ConformerProcessor
 from preprocessing.augment import SpecAugment
 from dataset import ConformerDataset
-from src.conformer import Conformer
-from src.loss import ctc_loss
-from src.metric import WER_score
-
+from model.conformer import Conformer
 from typing import Tuple, Optional
 
 import wandb
 
 wandb.init(project='conformer', name='trind18')
+
+def ctc_loss(outputs: torch.Tensor, targets: torch.Tensor, output_lengths: torch.Tensor, target_lengths: torch.Tensor, blank_id: int, reduction: str = 'mean', zero_infinity: bool = True) -> torch.Tensor:
+    return F.ctc_loss(
+        log_probs=outputs.log_softmax(dim=-1).transpose(0,1),
+        targets=targets,
+        input_lengths=output_lengths,
+        target_lengths=target_lengths,
+        blank=blank_id,
+        reduction=reduction,
+        zero_infinity=zero_infinity
+    )
 
 def train(
         # Processor Config
@@ -178,7 +188,7 @@ def train(
                 zero_infinity=True
             )
 
-        score = WER_score(
+        score = F.word_error_rate(
             preds=processor.decode_batch(outputs),
             labels=processor.decode_batch(labels, group_token=False)
         )

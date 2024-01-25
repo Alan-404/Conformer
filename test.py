@@ -2,10 +2,10 @@ import os
 import torch
 import fire
 from preprocessing.processor import ConformerProcessor
-from src.conformer import Conformer
+from model.conformer import Conformer
 from tqdm import tqdm
 import pandas as pd
-from src.metric import WER_score
+from module import ConformerMetric
 
 def test(result_folder: str,
          test_path: str,
@@ -70,6 +70,8 @@ def test(result_folder: str,
     model.to(device)
     model.eval()
 
+    metric = ConformerMetric()
+
     df = pd.read_csv(test_path, sep="\t")
     if num_examples is not None:
         df = df[:num_examples]
@@ -100,7 +102,7 @@ def test(result_folder: str,
         preds.append(processor.decode_beam_search(logits[0].cpu().numpy()))
     print(f"=============== Finish Testing ====================\n")
 
-    print(f"WER Score: {WER_score(preds, labels)}")
+    print(f"WER Score: {metric.wer_score(preds, labels).item()}")
 
     if saved_name is not None:
         saved_filename = saved_name

@@ -128,7 +128,11 @@ def train(
 
     num_epochs += module.current_epoch
 
-    trainer = Trainer(max_epochs=num_epochs, callbacks=callbacks, precision='16-mixed', strategy=DDPStrategy(process_group_backend='gloo', find_unused_parameters=True))
+    strategy = 'auto'
+    if torch.cuda.device_count() > 1:
+        strategy = DDPStrategy(process_group_backend='gloo', find_unused_parameters=True)
+
+    trainer = Trainer(max_epochs=num_epochs, callbacks=callbacks, precision='16-mixed', strategy=strategy)
     trainer.fit(module, train_dataloaders=dataloader, val_dataloaders=val_dataloader if use_validation else None, ckpt_path=checkpoint)
 
 if __name__ == '__main__':

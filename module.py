@@ -16,7 +16,7 @@ import statistics
 class ConformerModule(L.LightningModule):
     def __init__(self, processor: ConformerProcessor, encoder_n_layers: int, encoder_dim: int, heads: int, kernel_size: int, decoder_n_layers: int, decoder_dim: int, dropout_rate: float, lr: float = 1e-4) -> None:
         super().__init__()
-        self.save_hyperparameters()
+        self.save_hyperparameters(ignore=[processor])
         self.processor = processor
 
         self.model = Conformer(
@@ -32,6 +32,9 @@ class ConformerModule(L.LightningModule):
         )
 
         self.lr = lr
+
+        self.optimizer = Adam(params=self.parameters(), lr=self.lr)
+        self.scheduler = lr_scheduler.CosineAnnealingLR(optimizer=self.optimizer, T_max=1000)
 
         self.train_loss = []
         self.val_loss = []
@@ -78,12 +81,12 @@ class ConformerModule(L.LightningModule):
         self.val_score.append(score.item())
         
     def configure_optimizers(self):
-        optimizer = Adam(params=self.parameters(), lr=self.lr)
-        scheduler = lr_scheduler.CosineAnnealingLR(optimizer=optimizer, T_max=1000)
-        return [optimizer], [{'scheduler': scheduler, 'interval': "epoch"}]
+        return [self.optimizer], [{'scheduler': self.scheduler, 'interval': "epoch"}]
 
     def on_train_epoch_end(self):
         print(f"Train Loss: {(statistics.mean(self.train_loss)):.4f}")
+        print(f"Current Learning Rate: {self.optimizer.param_groups[0]['lr']}")
+        
         self.train_loss.clear()
 
     def on_validation_epoch_end(self):

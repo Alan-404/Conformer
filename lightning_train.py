@@ -1,21 +1,19 @@
 import os
 import torch
 from torch.utils.data import DataLoader, random_split
-from module import ConformerModule
 
 from lightning import Trainer
 from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping
 from lightning.pytorch.strategies import DDPStrategy
 
+import fire
+
+from module import ConformerModule
 from preprocessing.processor import ConformerProcessor
 from dataset import ConformerDataset
 
-import fire
-
 from typing import Optional
 from preprocessing.augment import SpecAugment
-
-from ignite.engine import Engine
 
 import torchsummary
 
@@ -41,8 +39,6 @@ def train(
         decoder_n_layers: int = 1,
         decoder_dim: int = 640,
         dropout_rate: float = 0.1,
-        # Optimizer
-        lr: float = 1e-4,
         # Train config
         checkpoint: Optional[str] = None,
         num_train: Optional[int] = None,
@@ -93,6 +89,9 @@ def train(
     else: 
         module = ConformerModule.load_from_checkpoint(checkpoint)
 
+    torchsummary.summary(module.model)
+    module.model.train()
+
     if set_augment:
         spec_augment = SpecAugment(freq_augment=freq_augment, time_augment=time_augment, time_mask_ratio=time_mask_ratio)
     
@@ -130,7 +129,7 @@ def train(
 
     strategy = 'auto'
     if torch.cuda.device_count() > 1:
-        strategy = DDPStrategy(process_group_backend='gloo', find_unused_parameters=True)
+        strategy = DDPStrategy(process_group_backend='nccl', find_unused_parameters=True)
 
     trainer = Trainer(max_epochs=num_epochs, callbacks=callbacks, precision='16-mixed', strategy=strategy)
     trainer.fit(module, train_dataloaders=dataloader, val_dataloaders=val_dataloader if use_validation else None, ckpt_path=checkpoint)

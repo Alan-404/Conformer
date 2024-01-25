@@ -128,7 +128,7 @@ def train(
     
     dataloader = DataLoader(dataset, batch_size=batch_size, collate_fn=lambda batch: get_batch(batch, set_augment))
 
-    trainer.fit(module, train_dataloaders=dataloader, val_dataloaders=val_dataloader if use_validation else None)
+    trainer.fit(module, train_dataloaders=dataloader, val_dataloaders=val_dataloader if use_validation else None, ckpt_path=checkpoint)
 
 if __name__ == '__main__':
     fire.Fire(train)

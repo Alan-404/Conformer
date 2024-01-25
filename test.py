@@ -1,7 +1,9 @@
 import os
 import torch
+from torch.utils.data import DataLoader
 
 from ignite.engine import Engine, Events
+from ignite.contrib.handlers.tqdm_logger import ProgressBar
 
 from dataset import ConformerTestDataset
 
@@ -9,9 +11,10 @@ import fire
 
 from preprocessing.processor import ConformerProcessor
 from model.conformer import Conformer
-from tqdm import tqdm
-import pandas as pd
-from module import ConformerMetric, map_weights
+
+from typing import Tuple
+from module import ConformerMetric
+from common import map_weights
 
 def test(result_folder: str,
          test_path: str,
@@ -35,6 +38,7 @@ def test(result_folder: str,
          decoder_n_layers: int = 1,
          decoder_dim: int = 640,
          dropout_rate: float = 0.0,
+         batch_size: int  = 1,
          num_examples: int = None,
          saved_name: str = None):
     if os.path.exists(result_folder) == False:
@@ -78,16 +82,37 @@ def test(result_folder: str,
 
     metric = ConformerMetric()
 
+    def get_batch(batch) -> [torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        signals = zip(*batch)
+        mels, mel_lengths = processor(signals, return_length=True)
+
+        return mels, mel_lengths
+
     dataset = ConformerTestDataset(test_path, processor, num_examples=num_examples)
+    dataloader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=True, collate_fn=get_batch)
 
+    labels = dataset.prompts['text'].to_list()
+    preds = []
 
-    def test_step(_: Engine):
+    def test_step(_: Engine, batch: Tuple[torch.Tensor]):
+        inputs = batch[0].to(device)
+        input_lengths = batch[1].to(device)
         
-        pass
+        with torch.no_grad():
+            outputs, output_lengths = model(inputs, input_lengths)
 
+        for logit, index in enumerate(outputs):
+            preds.append(processor.decode_beam_search(logit[:output_lengths[index]]))
+
+    
     tester = Engine(test_step)
+    ProgressBar().attach(tester)
 
+    @tester.on(Events.COMPLETED)
+    def _ (_: Engine):
+        print(f"WER score: {metric.wer_score(preds, labels)}")
 
+    tester.run(dataloader, max_epochs=1)
 
     if saved_name is not None:
         saved_filename = saved_name
@@ -95,18 +120,10 @@ def test(result_folder: str,
         test_name = os.path.basename(test_path)
         saved_filename = f"result_{test_name}"
 
-    result = {
-        'path': df['path'].to_list(),
-    }
-    if time_segment:
-        result['start'] = df['start'].to_list()
-        result['end'] = df['end'].to_list()
-    if use_type:
-        result['type'] = df['type'].to_list()
-    result['text'] = labels
-    result['predict'] = preds
+    df = dataset.prompts
+    df['pred'] = preds
 
-    pd.DataFrame(result).to_csv(f"{result_folder}/{saved_filename}", sep="\t", index=False)
+    df.to_csv(f"{result_folder}/{saved_filename}", sep="\t", index=False)
 
 if __name__ == '__main__':
     fire.Fire(test)

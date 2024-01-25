@@ -12,7 +12,6 @@ from preprocessing.processor import ConformerProcessor
 from model.conformer import Conformer
 
 from typing import Any, List, Tuple
-from collections import OrderedDict
 import statistics
 
 class ConformerModule(L.LightningModule):
@@ -112,6 +111,3 @@ class ConformerMetric:
 
     def wer_score(self, pred: List[str] | str, label: List[str] | str) -> Any:
         return self.assesor(pred, label)
-    
-def map_weights(checkpoint: OrderedDict):
-    checkpoint = OrderedDict((key.replace("model.", ""), value) for key, value in checkpoint['state_dict'].items())

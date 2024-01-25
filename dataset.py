@@ -71,12 +71,13 @@ class ConformerTestDataset(Dataset):
     def __init__(self, manifest_path: str, processor: ConformerProcessor, num_examples: Optional[int] = None) -> None:
         super().__init__()
         self.prompts = pd.read_csv(manifest_path, sep="\t")
-
+    
         if num_examples is not None:
             self.prompts = self.prompts[:num_examples]
 
+        self.prompts['text'] = self.prompts['text'].fillna('')
+
         self.processor = processor
-        self.preds = []
 
     def __len__(self):
         return len(self.prompts)

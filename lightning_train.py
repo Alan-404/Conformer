@@ -112,14 +112,6 @@ def train(
     if use_validation:
         callbacks.append(EarlyStopping(monitor='val_score', verbose=True, mode='min', patience=early_stopping_patience))
 
-    num_epochs += module.current_epoch
-
-    trainer = L.Trainer(max_epochs=num_epochs, callbacks=callbacks, precision=16)
-    # if num_gpus > 1:
-    #     trainer = L.Trainer(devices=num_gpus, max_epochs=num_epochs, callbacks=callbacks, strategy='ddp', precision=16)
-    # else:
-    #     trainer = L.Trainer(devices=1, max_epochs=num_epochs, callbacks=callbacks, precision=16)
-
     dataset = ConformerDataset(train_path, processor=processor, num_examples=num_train)
     
     if use_validation:
@@ -132,6 +124,14 @@ def train(
         val_dataloader = DataLoader(val_dataset, batch_size=val_batch_size, collate_fn=lambda batch: get_batch(batch, False))
     
     dataloader = DataLoader(dataset, batch_size=batch_size, collate_fn=lambda batch: get_batch(batch, set_augment))
+
+    num_epochs += module.current_epoch
+
+    trainer = L.Trainer(max_epochs=num_epochs, callbacks=callbacks, precision=16)
+    # if num_gpus > 1:
+    #     trainer = L.Trainer(devices=num_gpus, max_epochs=num_epochs, callbacks=callbacks, strategy='ddp', precision=16)
+    # else:
+    #     trainer = L.Trainer(devices=1, max_epochs=num_epochs, callbacks=callbacks, precision=16)
 
     trainer.fit(module, train_dataloaders=dataloader, val_dataloaders=val_dataloader if use_validation else None, ckpt_path=checkpoint)
 

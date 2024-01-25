@@ -113,7 +113,11 @@ def train(
     if use_validation:
         callbacks.append(EarlyStopping(monitor='val_score', verbose=True, mode='min', patience=early_stopping_patience))
 
-    trainer = L.Trainer(num_nodes=torch.cuda.device_count(), max_epochs=num_epochs, callbacks=callbacks)
+    num_gpus = torch.cuda.device_count()
+    if num_gpus > 1:
+        trainer = L.Trainer(num_nodes=num_gpus, max_epochs=num_epochs, callbacks=callbacks, strategy='ddp')
+    else:
+        trainer = L.Trainer(num_nodes=1, max_epochs=num_epochs, callbacks=callbacks)
 
     dataset = ConformerDataset(train_path, processor=processor, num_examples=num_train)
     

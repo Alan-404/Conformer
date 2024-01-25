@@ -3,7 +3,7 @@ import torch
 from torch.utils.data import DataLoader, random_split
 from module import ConformerModule
 
-import lightning as L
+from lightning import Trainer
 from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping
 
 from preprocessing.processor import ConformerProcessor
@@ -47,7 +47,7 @@ def train(
         num_train: Optional[int] = None,
         batch_size: int = 1,
         num_epochs: int = 1,
-        saved_checkpoint: str = './checkpoints/root',
+        saved_checkpoint: str = './checkpoints/',
         early_stopping_patience: int = 3,
         # Augment Config
         set_augment: bool = True,
@@ -127,12 +127,7 @@ def train(
 
     num_epochs += module.current_epoch
 
-    trainer = L.Trainer(max_epochs=num_epochs, callbacks=callbacks, precision=16)
-    # if num_gpus > 1:
-    #     trainer = L.Trainer(devices=num_gpus, max_epochs=num_epochs, callbacks=callbacks, strategy='ddp', precision=16)
-    # else:
-    #     trainer = L.Trainer(devices=1, max_epochs=num_epochs, callbacks=callbacks, precision=16)
-
+    trainer = Trainer(max_epochs=num_epochs, callbacks=callbacks, precision=16)
     trainer.fit(module, train_dataloaders=dataloader, val_dataloaders=val_dataloader if use_validation else None, ckpt_path=checkpoint)
 
 if __name__ == '__main__':

@@ -49,7 +49,6 @@ def train(
         num_epochs: int = 1,
         saved_checkpoint: str = './checkpoints/root',
         early_stopping_patience: int = 3,
-        set_lr: bool = False,
         # Augment Config
         set_augment: bool = True,
         freq_augment: int = 27,
@@ -118,7 +117,7 @@ def train(
     if num_gpus > 1:
         trainer = Trainer(devices=num_gpus, max_epochs=num_epochs, callbacks=callbacks, strategy='ddp')
     else:
-        trainer = Trainer(devices=1, max_epochs=num_epochs, callbacks=callbacks)
+        trainer = L.Trainer(num_nodes=1, max_epochs=num_epochs, callbacks=callbacks, precision=16)
 
     dataset = ConformerDataset(train_path, processor=processor, num_examples=num_train)
     

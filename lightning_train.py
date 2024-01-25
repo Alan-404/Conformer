@@ -1,13 +1,11 @@
 import os
 import torch
 from torch.utils.data import DataLoader, random_split
+from module import ConformerModule
 
-from lightning import Trainer
+import lightning as L
 from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping
 
-from ignite.engine import Engine, Events
-
-from module import ConformerModule
 from preprocessing.processor import ConformerProcessor
 from dataset import ConformerDataset
 
@@ -15,6 +13,8 @@ import fire
 
 from typing import Optional
 from preprocessing.augment import SpecAugment
+
+from ignite.engine import Engine
 
 import torchsummary
 
@@ -49,7 +49,6 @@ def train(
         num_epochs: int = 1,
         saved_checkpoint: str = './checkpoints/root',
         early_stopping_patience: int = 3,
-        set_lr: bool = False,
         # Augment Config
         set_augment: bool = True,
         freq_augment: int = 27,
@@ -116,9 +115,9 @@ def train(
     num_gpus = torch.cuda.device_count()
     num_epochs += module.current_epoch
     if num_gpus > 1:
-        trainer = Trainer(devices=num_gpus, max_epochs=num_epochs, callbacks=callbacks, strategy='ddp')
+        trainer = L.Trainer(num_nodes=num_gpus, max_epochs=num_epochs, callbacks=callbacks, strategy='ddp', precision=16)
     else:
-        trainer = Trainer(devices=1, max_epochs=num_epochs, callbacks=callbacks)
+        trainer = L.Trainer(num_nodes=1, max_epochs=num_epochs, callbacks=callbacks, precision=16)
 
     dataset = ConformerDataset(train_path, processor=processor, num_examples=num_train)
     
@@ -133,17 +132,7 @@ def train(
     
     dataloader = DataLoader(dataset, batch_size=batch_size, collate_fn=lambda batch: get_batch(batch, set_augment))
 
-
-    # Engine Setup
-    def training(_: Engine):
-        print("Start Training")
-        trainer.fit(module, train_dataloaders=dataloader, val_dataloaders=val_dataloader if use_validation else None, ckpt_path=checkpoint)
-
-    engine = Engine(training)
-
-    @engine.on(Events.STARTED)
-    def _ (_: Engine):
-        torchsummary.summary(module.model)
+    trainer.fit(module, train_dataloaders=dataloader, val_dataloaders=val_dataloader if use_validation else None, ckpt_path=checkpoint)
 
 if __name__ == '__main__':
     fire.Fire(train)

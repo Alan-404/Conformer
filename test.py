@@ -1,11 +1,17 @@
 import os
 import torch
+
+from ignite.engine import Engine, Events
+
+from dataset import ConformerTestDataset
+
 import fire
+
 from preprocessing.processor import ConformerProcessor
 from model.conformer import Conformer
 from tqdm import tqdm
 import pandas as pd
-from module import ConformerMetric
+from module import ConformerMetric, map_weights
 
 def test(result_folder: str,
          test_path: str,
@@ -66,43 +72,22 @@ def test(result_folder: str,
         dropout_rate=dropout_rate
     ).to(device)
 
-    model.load_state_dict(torch.load(checkpoint, map_location='cpu')['model'])
+    model.load_state_dict(map_weights(torch.load(checkpoint, map_location='cpu')['state_dict']))
     model.to(device)
     model.eval()
 
     metric = ConformerMetric()
 
-    df = pd.read_csv(test_path, sep="\t")
-    if num_examples is not None:
-        df = df[:num_examples]
-    df['text'] = df['text'].fillna('')
+    dataset = ConformerTestDataset(test_path, processor, num_examples=num_examples)
 
-    time_segment = True
-    if "start" not in df.columns or "end" not in df.columns:
-        time_segment = False
-        df['start'] = None
-        df['end'] = None
 
-    use_type = True
-    if "type" not in df.columns:
-        use_type = False
-        df['type'] = None
-
-    labels = df['text'].to_list()
-    preds = []
-
-    print('=============== Start Testing ====================')
-    for _, row in tqdm(df.iterrows(), total=df.shape[0]):
-        path = row['path']
-        start, end, role = row['start'], row['end'], row['type']
-        mel = processor.mel_spectrogram(processor.load_audio(path, start, end, role)).unsqueeze(0).to(device)
-        with torch.no_grad():
-            logits = model(mel)
+    def test_step(_: Engine):
         
-        preds.append(processor.decode_beam_search(logits[0].cpu().numpy()))
-    print(f"=============== Finish Testing ====================\n")
+        pass
 
-    print(f"WER Score: {metric.wer_score(preds, labels).item()}")
+    tester = Engine(test_step)
+
+
 
     if saved_name is not None:
         saved_filename = saved_name

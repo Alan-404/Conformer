@@ -114,6 +114,7 @@ def train(
         callbacks.append(EarlyStopping(monitor='val_score', verbose=True, mode='min', patience=early_stopping_patience))
 
     num_gpus = torch.cuda.device_count()
+    num_epochs += module.current_epoch
     if num_gpus > 1:
         trainer = L.Trainer(num_nodes=num_gpus, max_epochs=num_epochs, callbacks=callbacks, strategy='ddp')
     else:

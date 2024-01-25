@@ -11,7 +11,7 @@ from torchmetrics.text import WordErrorRate
 from preprocessing.processor import ConformerProcessor
 from model.conformer import Conformer
 
-from typing import Any, List, Tuple
+from typing import Any, List, Tuple, Union
 import statistics
 
 class ConformerModule(L.LightningModule):
@@ -107,5 +107,5 @@ class ConformerMetric:
     def __init__(self) -> None:
         self.assesor = WordErrorRate()
 
-    def wer_score(self, pred: List[str] | str, label: List[str] | str) -> Any:
+    def wer_score(self, pred: Union[List[str], str], label: Union[List[str], str]) -> Any:
         return self.assesor(pred, label)

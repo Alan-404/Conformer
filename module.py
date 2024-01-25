@@ -10,13 +10,13 @@ from torchmetrics.text import WordErrorRate
 
 from preprocessing.processor import ConformerProcessor
 from src.conformer import Conformer
-from typing import List, Tuple
+from typing import Any, List, Tuple
 import statistics
 
 class ConformerModule(L.LightningModule):
     def __init__(self, processor: ConformerProcessor, encoder_n_layers: int, encoder_dim: int, heads: int, kernel_size: int, decoder_n_layers: int, decoder_dim: int, dropout_rate: float, lr: float = 1e-4) -> None:
         super().__init__()
-        self.save_hyperparameters(ignore=[processor])
+        self.save_hyperparameters(ignore=[processor, lr])
         self.processor = processor
 
         self.model = Conformer(
@@ -31,20 +31,15 @@ class ConformerModule(L.LightningModule):
             dropout_rate=dropout_rate
         )
 
-        self.lr = lr
-
-        self.optimizer = Adam(params=self.parameters(), lr=self.lr)
+        self.optimizer = Adam(params=self.parameters(), lr=lr)
         self.scheduler = lr_scheduler.CosineAnnealingLR(optimizer=self.optimizer, T_max=1000)
 
         self.train_loss = []
         self.val_loss = []
         self.val_score = []
 
-        self.criterion = nn.CTCLoss(blank=processor.pad_token, reduction='mean', zero_infinity=True)
-        self.assessor = WordErrorRate()
-
-    def ctc_loss(self, outputs: torch.Tensor, targets: torch.Tensor, input_lengths: torch.Tensor, target_lengths: torch.Tensor) -> torch.Tensor:
-        return self.criterion(outputs.log_softmax(dim=-1).transpose(0,1), targets, input_lengths, target_lengths)
+        self.criterion = ConformerCriterion(blank_id=processor.pad_token)
+        self.metric = ConformerMetric()
     
     def training_step(self, batch: Tuple[torch.Tensor], _: int):
         inputs = batch[0]
@@ -55,14 +50,11 @@ class ConformerModule(L.LightningModule):
 
         outputs, input_lengths = self.model(inputs, input_lengths)
 
-        loss = self.ctc_loss(outputs, labels, input_lengths, target_lengths)
+        loss = self.criterion.ctc_loss(outputs, labels, input_lengths, target_lengths)
 
         self.train_loss.append(loss.item())
 
         return loss
-    
-    def wer_score(self, preds: List[str] | str, labels: List[str] | str):
-        return self.assessor(preds, labels)
     
     def validation_step(self, batch: Tuple[torch.Tensor], _: int):
         inputs = batch[0]
@@ -73,9 +65,9 @@ class ConformerModule(L.LightningModule):
 
         outputs, input_lengths = self.model(inputs, input_lengths)
 
-        loss = self.ctc_loss(outputs, labels, input_lengths, target_lengths)
+        loss = self.criterion.ctc_loss(outputs, labels, input_lengths, target_lengths)
         
-        score = self.wer_score(self.processor.decode_batch(outputs.cpu().numpy()), self.processor.decode_batch(labels.cpu().numpy()))
+        score = self.metric.wer_score(self.processor.decode_batch(outputs.cpu().numpy()), self.processor.decode_batch(labels.cpu().numpy()))
 
         self.val_loss.append(loss.item())
         self.val_score.append(score.item())
@@ -95,3 +87,22 @@ class ConformerModule(L.LightningModule):
 
         self.val_loss.clear()
         self.val_score.clear()
+
+
+class ConformerCriterion:
+    def __init__(self, blank_id: int) -> None:
+        self.criterion = nn.CTCLoss(
+            blank=blank_id,
+            zero_infinity=True,
+            reduction='mean'
+        )
+
+    def ctc_loss(self, outputs: torch.Tensor, targets: torch.Tensor, input_lengths: torch.Tensor, target_lengths: torch.Tensor) -> Any:
+        return self.criterion(outputs.log_softmax(dim=-1).transpose(0,1), targets, input_lengths, target_lengths)
+
+class ConformerMetric:
+    def __init__(self) -> None:
+        self.assesor = WordErrorRate()
+
+    def wer_score(self, pred: List[str] | str, label: List[str] | str) -> Any:
+        return self.assesor(pred, label)

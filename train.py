@@ -33,12 +33,10 @@ def train(
         fmin: float = 0.0, 
         fmax: float = 8000.0,
         # Model Hyper - Params
-        encoder_n_layers: int = 17,
-        encoder_dim: int = 512,
+        n_layers: int = 17,
+        d_model: int = 512,
         heads: int = 8,
         kernel_size: int = 31,
-        decoder_n_layers: int = 1,
-        decoder_dim: int = 640,
         dropout_rate: float = 0.1,
         # Train config
         checkpoint: Optional[str] = None,
@@ -79,12 +77,10 @@ def train(
     if checkpoint is None:
         module = ConformerModule(
             processor=processor,
-            encoder_n_layers=encoder_n_layers,
-            encoder_dim=encoder_dim,
+            n_layers=n_layers,
+            d_model=d_model,
             heads=heads,
             kernel_size=kernel_size,
-            decoder_n_layers=decoder_n_layers,
-            decoder_dim=decoder_dim,
             dropout_rate=dropout_rate
         )
     else: 

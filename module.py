@@ -15,7 +15,7 @@ from typing import Any, List, Tuple
 import statistics
 
 class ConformerModule(L.LightningModule):
-    def __init__(self, processor: ConformerProcessor, encoder_n_layers: int, encoder_dim: int, heads: int, kernel_size: int, decoder_n_layers: int, decoder_dim: int, dropout_rate: float) -> None:
+    def __init__(self, processor: ConformerProcessor, n_layers: int, d_model: int, heads: int, kernel_size: int, dropout_rate: float) -> None:
         super().__init__()
         self.save_hyperparameters(ignore=[processor])
         self.processor = processor
@@ -23,12 +23,10 @@ class ConformerModule(L.LightningModule):
         self.model = Conformer(
             vocab_size=len(processor.dictionary),
             n_mel_channels=processor.num_mels,
-            encoder_n_layers=encoder_n_layers,
-            encoder_dim=encoder_dim,
+            n_layers=n_layers,
+            d_model=d_model,
             heads=heads,
             kernel_size=kernel_size,
-            decoder_n_layers=decoder_n_layers,
-            decoder_dim=decoder_dim,
             dropout_rate=dropout_rate
         )
 

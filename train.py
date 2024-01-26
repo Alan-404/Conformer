@@ -104,7 +104,7 @@ def train(
         return mels, tokens, mel_lengths, token_lengths
     
     callbacks = []
-    callbacks.append(ModelCheckpoint(dirpath=saved_checkpoint, filename="{epoch}", save_on_train_epoch_end=True, save_top_k=5))
+    callbacks.append(ModelCheckpoint(dirpath=saved_checkpoint, filename="{epoch}", save_on_train_epoch_end=True, save_top_k=-1))
 
     if use_validation:
         callbacks.append(EarlyStopping(monitor='val_score', verbose=True, mode='min', patience=early_stopping_patience))

@@ -95,11 +95,12 @@ def test(result_folder: str,
         
         with torch.no_grad():
             outputs, output_lengths = model(inputs, input_lengths)
-            
+        
+        outputs = outputs.cpu().numpy()
         output_lengths = output_lengths.cpu().numpy()
 
         for logit, index in enumerate(outputs):
-            preds.append(processor.decode_beam_search(logit[:output_lengths[index]].cpu().numpy()))
+            preds.append(processor.decode_beam_search(logit[:output_lengths[index]]))
 
     
     tester = Engine(test_step)

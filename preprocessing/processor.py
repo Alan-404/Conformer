@@ -118,7 +118,7 @@ class ConformerProcessor:
         return signal[int(start * self.sampling_rate) : int(end * self.sampling_rate)]
 
     def load_audio(self, path: str, start: Optional[float] = None, end: Optional[float] = None, role: Optional[int] = None) -> torch.Tensor:
-        if self.tmp_path is None and self.tmp_path != path:
+        if self.tmp_path is None or self.tmp_path != path:
             if ".pickle" in path:
                 signal = self.read_pickle(path)
             elif ".pcm" in path:

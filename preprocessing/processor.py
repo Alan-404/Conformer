@@ -287,6 +287,7 @@ class ConformerProcessor:
             mels.append(self.mel_spectrogram(padded_signal))
             mel_lengths.append((signal_length // self.hop_length) + 1)
 
+        print(mels)
         mels = torch.stack(mels).type(torch.FloatTensor)
 
         if return_length:

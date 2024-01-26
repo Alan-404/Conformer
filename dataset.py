@@ -101,7 +101,7 @@ class ConformerTestDataset(Dataset):
                 role = 1
 
         signal = self.processor.load_audio(audio_path, start=start, end=end, role=role)
-        print(signal.shape)
+
         return signal
 
 class CharDataset(Dataset):

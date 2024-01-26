@@ -95,8 +95,6 @@ def test(result_folder: str,
         
         with torch.no_grad():
             outputs, output_lengths = model(inputs, input_lengths)
-
-            print(outputs.shape)
         
         outputs = outputs.cpu().numpy()
         output_lengths = output_lengths.type(torch.int).cpu().numpy()

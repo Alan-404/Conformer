@@ -89,7 +89,7 @@ def test(result_folder: str,
         return mels, mel_lengths
 
     dataset = ConformerTestDataset(test_path, processor, num_examples=num_examples)
-    dataloader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=True, collate_fn=get_batch)
+    dataloader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=False, collate_fn=get_batch)
 
     labels = dataset.prompts['text'].to_list()
     preds = []

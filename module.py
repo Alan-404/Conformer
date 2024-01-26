@@ -69,7 +69,7 @@ class ConformerModule(L.LightningModule):
         self.val_score.append(score.item())
         
     def configure_optimizers(self):
-        optimizer = Adam(params=self.parameters(), lr=1e-4, weight_decay=1e-6, betas=[0.9, 0.98], eps=1e-9)
+        optimizer = Adam(params=self.parameters(), lr=3e-5, weight_decay=1e-6, betas=[0.9, 0.98], eps=1e-9)
         scheduler = lr_scheduler.CosineAnnealingLR(optimizer=optimizer, T_max=1000)
         return [optimizer], [{'scheduler': scheduler, 'interval': "epoch"}]
 

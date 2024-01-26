@@ -97,12 +97,12 @@ def test(result_folder: str,
             outputs, output_lengths = model(inputs, input_lengths)
         
         outputs = outputs.cpu().numpy()
-        output_lengths = output_lengths.type(torch.int32).cpu().numpy()
+        output_lengths = output_lengths.type(torch.int).cpu().numpy()
 
         for logit, index in enumerate(outputs):
-            preds.append(processor.decode_beam_search(logit[:output_lengths[index]]))
+            print(logit.shape)
+            preds.append(processor.decode_beam_search(logit[:output_lengths[index], :]))
 
-    
     tester = Engine(test_step)
     ProgressBar().attach(tester)
 

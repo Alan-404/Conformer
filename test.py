@@ -78,8 +78,7 @@ def test(result_folder: str,
 
     metric = ConformerMetric()
 
-    def get_batch(batch) -> [torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-        signals = zip(*batch)
+    def get_batch(signals) -> [torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         mels, mel_lengths = processor(signals, return_length=True)
 
         return mels, mel_lengths

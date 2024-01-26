@@ -58,6 +58,9 @@ class ConformerProcessor:
             n_mels=num_mels
         )
 
+        self.tmp_path = None
+        self.tmp_signal = None
+
     def create_vocab(self, vocab_path: str, pad_token: str, word_delim_token: str, unk_token: str) -> Vocab:
         data = json.load(open(vocab_path, encoding='utf8'))
 
@@ -110,17 +113,26 @@ class ConformerProcessor:
         mel_spec = self.mel_transform(signal)
         log_mel = self.spectral_normalize(mel_spec)
         return log_mel
+    
+    def split_segment(self, signal: torch.Tensor, start: float, end: float):
+        return signal[int(start * self.sampling_rate) : int(end * self.sampling_rate)]
 
     def load_audio(self, path: str, start: Optional[float] = None, end: Optional[float] = None, role: Optional[int] = None) -> torch.Tensor:
-        if ".pickle" in path:
-            signal = self.read_pickle(path)
-        elif ".pcm" in path:
-            signal = self.read_pcm(path)
+        if self.tmp_path is None and self.tmp_path != path:
+            if ".pickle" in path:
+                signal = self.read_pickle(path)
+            elif ".pcm" in path:
+                signal = self.read_pcm(path)
+            else:
+                signal = self.read_audio(path, role)
+            
+            self.tmp_path = path
+            self.tmp_signal = signal
         else:
-            signal = self.read_audio(path, role)
+            signal = self.tmp_signal
 
         if start is not None and end is not None:
-            signal = signal[int(start * self.sampling_rate) : int(end * self.sampling_rate)]
+            signal = self.split_segment(signal, start, end)
 
         signal = torch.FloatTensor(signal)
 

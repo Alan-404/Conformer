@@ -100,7 +100,9 @@ class ConformerTestDataset(Dataset):
             elif index_df['type'] == "down":
                 role = 1
 
-        return self.processor.load_audio(audio_path, start=start, end=end, role=role)
+        signal = self.processor.load_audio(audio_path, start=start, end=end, role=role)
+        print(signal.shape)
+        return signal
 
 class CharDataset(Dataset):
     def __init__(self, manifest_path: str, processor: ConformerProcessor, num_examples: Optional[int] = None, make_grapheme: bool = False) -> None:

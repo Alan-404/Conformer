@@ -93,13 +93,13 @@ def test(result_folder: str,
         inputs = batch[0].to(device)
         input_lengths = batch[1].to(device)
         
-        # with torch.no_grad():
-        outputs, output_lengths = model(inputs, input_lengths)
+        with torch.no_grad():
+            outputs, output_lengths = model(inputs, input_lengths)
             
         output_lengths = output_lengths.cpu().numpy()
 
         for logit, index in enumerate(outputs):
-            preds.append(processor.decode_beam_search(logit[:output_lengths[index]]))
+            preds.append(processor.decode_beam_search(logit[:output_lengths[index]].cpu().numpy()))
 
     
     tester = Engine(test_step)

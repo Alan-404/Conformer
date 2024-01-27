@@ -118,9 +118,9 @@ def train(
             val_dataset = ConformerDataset(val_path, processor=processor, num_examples=num_val)
         else:
             dataset, val_dataset = random_split(dataset, lengths=[1 - val_size, val_size], generator=torch.Generator().manual_seed(41))
-        val_dataloader = DataLoader(val_dataset, batch_size=val_batch_size, collate_fn=lambda batch: get_batch(batch, False))
+        val_dataloader = DataLoader(val_dataset, batch_size=val_batch_size, shuffle=True, collate_fn=lambda batch: get_batch(batch, False))
     
-    dataloader = DataLoader(dataset, batch_size=batch_size, collate_fn=lambda batch: get_batch(batch, set_augment))
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, collate_fn=lambda batch: get_batch(batch, set_augment))
 
     strategy = 'auto'
     if torch.cuda.device_count() > 1:

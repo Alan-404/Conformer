@@ -5,6 +5,8 @@ from torch.utils.data import DataLoader
 from ignite.engine import Engine, Events
 from ignite.contrib.handlers.tqdm_logger import ProgressBar
 
+import torchsummary
+
 from dataset import ConformerTestDataset
 
 import fire
@@ -74,7 +76,6 @@ def test(result_folder: str,
 
     model.load_state_dict(map_weights(torch.load(checkpoint, map_location='cpu')['state_dict']))
     model.to(device)
-    model.eval()
 
     metric = ConformerMetric()
 
@@ -104,6 +105,11 @@ def test(result_folder: str,
 
     tester = Engine(test_step)
     ProgressBar().attach(tester)
+
+    @tester.on(Events.STARTED)
+    def _ (_: Engine):
+        torchsummary.summary(model)
+        model.eval()
 
     @tester.on(Events.COMPLETED)
     def _ (_: Engine):

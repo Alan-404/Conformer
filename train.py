@@ -11,7 +11,7 @@ import fire
 import torchsummary
 
 from module import ConformerModule
-from preprocessing.processor import ConformerProcessor
+from preprocessing.char_processor import ConformerProcessor
 from dataset import ConformerDataset
 
 from preprocessing.augment import SpecAugment
@@ -20,8 +20,10 @@ from typing import Optional
 
 def train(
         # Processor Config
-        vocab_path: str,
         train_path: str,
+        checkpoint: Optional[str] = None,
+        saved_checkpoint: str = './checkpoints/',
+        vocab_path: str = './vocabulary/dictionary.json',
         pad_token: str = "<pad>", 
         unk_token: str = "<unk>", 
         word_delim_token: str = "|", 
@@ -39,11 +41,9 @@ def train(
         kernel_size: int = 31,
         dropout_rate: float = 0.1,
         # Train config
-        checkpoint: Optional[str] = None,
         num_train: Optional[int] = None,
         batch_size: int = 1,
         num_epochs: int = 1,
-        saved_checkpoint: str = './checkpoints/',
         early_stopping_patience: int = 3,
         # Augment Config
         set_augment: bool = True,

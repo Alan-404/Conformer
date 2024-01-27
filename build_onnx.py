@@ -1,5 +1,5 @@
 import os
-from src.conformer import Conformer
+from model.conformer import Conformer
 from preprocessing.processor import ConformerProcessor
 import torch
 

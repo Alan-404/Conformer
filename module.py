@@ -11,7 +11,7 @@ from torchmetrics.text import WordErrorRate
 from preprocessing.processor import ConformerProcessor
 from model.conformer import Conformer
 
-from typing import Any, List, Tuple, Union
+from typing import List, Tuple, Union
 import statistics
 
 class ConformerModule(L.LightningModule):
@@ -89,18 +89,18 @@ class ConformerModule(L.LightningModule):
 
 class ConformerCriterion:
     def __init__(self, blank_id: int) -> None:
-        self.criterion = nn.CTCLoss(
+        self.ctc_criterion = nn.CTCLoss(
             blank=blank_id,
             zero_infinity=True,
             reduction='mean'
         )
 
-    def ctc_loss(self, outputs: torch.Tensor, targets: torch.Tensor, input_lengths: torch.Tensor, target_lengths: torch.Tensor) -> Any:
-        return self.criterion(outputs.log_softmax(dim=-1).transpose(0,1), targets, input_lengths, target_lengths)
+    def ctc_loss(self, outputs: torch.Tensor, targets: torch.Tensor, input_lengths: torch.Tensor, target_lengths: torch.Tensor) -> torch.Tensor:
+        return self.ctc_criterion(outputs.log_softmax(dim=-1).transpose(0,1), targets, input_lengths, target_lengths)
 
 class ConformerMetric:
     def __init__(self) -> None:
-        self.assesor = WordErrorRate()
+        self.wer_metric = WordErrorRate()
 
-    def wer_score(self, pred: Union[List[str], str], label: Union[List[str], str]) -> Any:
-        return self.assesor(pred, label)
+    def wer_score(self, pred: Union[List[str], str], label: Union[List[str], str]) -> torch.Tensor:
+        return self.wer_metric(pred, label)

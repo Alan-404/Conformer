@@ -126,7 +126,7 @@ def train(
     if torch.cuda.device_count() > 1:
         strategy = DDPStrategy(process_group_backend='gloo', find_unused_parameters=True)
 
-    trainer = Trainer(max_epochs=num_epochs, callbacks=callbacks, precision='16-mixed', strategy=strategy)
+    trainer = Trainer(max_epochs=num_epochs, callbacks=callbacks, precision='16-mixed', strategy=strategy, logger=False)
     
     trainer.fit(module, train_dataloaders=dataloader, val_dataloaders=val_dataloader if use_validation else None, ckpt_path=checkpoint)
 

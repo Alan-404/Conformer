@@ -1,12 +1,11 @@
 import os
-import comet_ml
 import torch
 from torch.utils.data import DataLoader, random_split
 
 from lightning import Trainer
 from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping
 from lightning.pytorch.strategies import DDPStrategy
-from lightning.pytorch.loggers import CometLogger
+from lightning.pytorch.loggers.wandb import WandbLogger
 
 import fire
 
@@ -40,10 +39,12 @@ def train(
         fmin: float = 0.0, 
         fmax: float = 8000.0,
         # Model Hyper - Params
-        n_layers: int = 17,
+        n_blocks: int = 17,
         d_model: int = 512,
         heads: int = 8,
         kernel_size: int = 31,
+        n_layers: int = 1,
+        hidden_dim: int = 640,
         dropout_rate: float = 0.1,
         # Train config
         num_train: Optional[int] = None,
@@ -61,7 +62,9 @@ def train(
         val_size: float = 0.1,
         val_path: Optional[str] = None,
         num_val: Optional[int] = None,
-        val_batch_size: Optional[int] = None
+        val_batch_size: Optional[int] = None,
+        # Tracking Config
+        project_name: str = 'speech_to_text_conformer'
     ):
 
     assert os.path.exists(train_path)
@@ -83,23 +86,26 @@ def train(
     if checkpoint is None:
         module = ConformerModule(
             processor=processor,
-            n_layers=n_layers,
+            n_blocks=n_blocks,
             d_model=d_model,
             heads=heads,
             kernel_size=kernel_size,
-            dropout_rate=dropout_rate
+            n_layers=n_layers,
+            hidden_dim=hidden_dim,
+            dropout_rate=dropout_rate,
+            pad_token=processor.pad_token,
+            metric_fx=processor.decode_batch
         )
     else: 
         module = ConformerModule.load_from_checkpoint(checkpoint)
 
     torchsummary.summary(module.model)
     module.model.train()
-
-    logger = CometLogger(
-        api_key=os.environ.get("COMET_API_KEY"),
-        project_name='conformer',
-        save_dir=os.environ.get("COMET_WORKDIR"),
-        experiment_name='trind18'
+    
+    logger = WandbLogger(
+        project=project_name,
+        name=os.environ.get("WANDB_USERNAME"),
+        save_dir=os.environ.get("WANDB_SAVE_DIR"),
     )
 
     if set_augment:

@@ -8,25 +8,25 @@ import torch.optim.lr_scheduler as lr_scheduler
 
 from torchmetrics.text import WordErrorRate
 
-from preprocessing.processor import ConformerProcessor
 from model.conformer import Conformer
 
-from typing import List, Tuple, Union
+from typing import List, Tuple, Union, Callable
 import statistics
 
 class ConformerModule(L.LightningModule):
-    def __init__(self, processor: ConformerProcessor, n_layers: int, d_model: int, heads: int, kernel_size: int, dropout_rate: float) -> None:
+    def __init__(self, vocab_size: int, n_mel_channels: int, n_blocks: int, d_model: int, heads: int, kernel_size: int, n_layers: int, hidden_dim: int, dropout_rate: float, pad_token: int, metric_fx: Callable[[str, bool], torch.Tensor]) -> None:
         super().__init__()
-        self.save_hyperparameters(ignore=[processor])
-        self.processor = processor
+        self.metric_fx = metric_fx
 
         self.model = Conformer(
-            vocab_size=len(processor.dictionary),
-            n_mel_channels=processor.num_mels,
-            n_layers=n_layers,
+            vocab_size=vocab_size,
+            n_mel_channels=n_mel_channels,
+            n_blocks=n_blocks,
             d_model=d_model,
             heads=heads,
             kernel_size=kernel_size,
+            n_layers=n_layers,
+            hidden_dim=hidden_dim,
             dropout_rate=dropout_rate
         )
 
@@ -34,8 +34,10 @@ class ConformerModule(L.LightningModule):
         self.val_loss = []
         self.val_score = []
 
-        self.criterion = ConformerCriterion(blank_id=processor.pad_token)
+        self.criterion = ConformerCriterion(blank_id=pad_token)
         self.metric = ConformerMetric()
+
+        self.save_hyperparameters(ignore=[pad_token, metric_fx])
     
     def training_step(self, batch: Tuple[torch.Tensor], _: int):
         inputs = batch[0]
@@ -62,8 +64,7 @@ class ConformerModule(L.LightningModule):
         outputs, input_lengths = self.model(inputs, input_lengths)
 
         loss = self.criterion.ctc_loss(outputs, labels, input_lengths, target_lengths)
-        
-        score = self.metric.wer_score(self.processor.decode_batch(outputs.cpu().numpy()), self.processor.decode_batch(labels.cpu().numpy()))
+        score = self.metric.wer_score(self.metric_fx(outputs.cpu().numpy()), self.metric_fx(labels.cpu().numpy(), False))
 
         self.val_loss.append(loss.item())
         self.val_score.append(score.item())
@@ -78,8 +79,8 @@ class ConformerModule(L.LightningModule):
         print(f"Train Loss: {(loss):.4f}")
         print(f"Current Learning Rate: {self.optimizers().param_groups[0]['lr']}")
 
-        self.log("train_loss", loss, rank_zero_only=True, on_epoch=True)
-        self.log('learning_rate', self.optimizers().param_groups[0]['lr'], rank_zero_only=True, on_epoch=True)
+        self.log("train_loss", loss, rank_zero_only=True)
+        self.log('learning_rate', self.optimizers().param_groups[0]['lr'], rank_zero_only=True)
         
         self.train_loss.clear()
 

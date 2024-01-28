@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from src.conformer import Encoder
+from model.conformer import Encoder
 import copy
 import torchaudio
 

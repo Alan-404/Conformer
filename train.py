@@ -9,8 +9,6 @@ from lightning.pytorch.loggers.wandb import WandbLogger
 
 import fire
 
-import torchsummary
-
 from module import ConformerModule
 from preprocessing.processor import ConformerProcessor
 from dataset import ConformerDataset
@@ -99,15 +97,6 @@ def train(
     else: 
         module = ConformerModule.load_from_checkpoint(checkpoint)
 
-    torchsummary.summary(module.model)
-    module.model.train()
-    
-    logger = WandbLogger(
-        project=project_name,
-        name=os.environ.get("WANDB_USERNAME"),
-        save_dir=os.environ.get("WANDB_SAVE_DIR"),
-    )
-
     if set_augment:
         spec_augment = SpecAugment(freq_augment=freq_augment, time_augment=time_augment, time_mask_ratio=time_mask_ratio)
     
@@ -144,6 +133,12 @@ def train(
     strategy = 'auto'
     if torch.cuda.device_count() > 1:
         strategy = DDPStrategy(process_group_backend='gloo', find_unused_parameters=True)
+
+    logger = WandbLogger(
+        project=project_name,
+        name=os.environ.get("WANDB_USERNAME"),
+        save_dir=os.environ.get("WANDB_SAVE_DIR"),
+    )
 
     trainer = Trainer(max_epochs=num_epochs, callbacks=callbacks, precision='16-mixed', strategy=strategy, logger=logger)
     

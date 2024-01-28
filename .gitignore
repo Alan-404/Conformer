@@ -29,3 +29,4 @@
 /lightning_logs
 /.env
 /tracking
+/.vscode

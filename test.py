@@ -11,12 +11,18 @@ from dataset import ConformerTestDataset
 
 import fire
 
+from comet_ml import Experiment
+
 from preprocessing.processor import ConformerProcessor
 from model.conformer import Conformer
 
 from typing import Tuple
 from module import ConformerMetric
 from common import map_weights
+
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def test(result_folder: str,
          test_path: str,
@@ -40,7 +46,8 @@ def test(result_folder: str,
          dropout_rate: float = 0.0,
          batch_size: int  = 1,
          num_examples: int = None,
-         saved_name: str = None):
+         saved_name: str = None,
+         logging: bool = False):
     if os.path.exists(result_folder) == False:
         os.mkdir(result_folder)
 
@@ -79,7 +86,7 @@ def test(result_folder: str,
 
     metric = ConformerMetric()
 
-    def get_batch(signals) -> [torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    def get_batch(signals: torch.Tensor) -> [torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         mels, mel_lengths = processor(signals, return_length=True)
 
         return mels, mel_lengths
@@ -101,7 +108,8 @@ def test(result_folder: str,
         output_lengths = output_lengths.type(torch.int).cpu().numpy()
 
         for index, logit in enumerate(outputs):
-            preds.append(processor.decode_beam_search(logit[:output_lengths[index], :]))
+            pred = processor.decode_beam_search(logit[:output_lengths[index], :])
+            preds.append(pred)
 
     tester = Engine(test_step)
     ProgressBar().attach(tester)

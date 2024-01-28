@@ -27,3 +27,5 @@
 /engines
 /_checkpoints
 /lightning_logs
+/.env
+/tracking

@@ -74,8 +74,12 @@ class ConformerModule(L.LightningModule):
         return [optimizer], [{'scheduler': scheduler, 'interval': "epoch"}]
 
     def on_train_epoch_end(self):
-        print(f"Train Loss: {(statistics.mean(self.train_loss)):.4f}")
+        loss = statistics.mean(self.train_loss)
+        print(f"Train Loss: {(loss):.4f}")
         print(f"Current Learning Rate: {self.optimizers().param_groups[0]['lr']}")
+
+        self.log("train_loss", loss, rank_zero_only=True, on_epoch=True)
+        self.log('learning_rate', self.optimizers().param_groups[0]['lr'], rank_zero_only=True, on_epoch=True)
         
         self.train_loss.clear()
 

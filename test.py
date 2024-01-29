@@ -18,10 +18,6 @@ from typing import Tuple
 from module import ConformerMetric
 from common import map_weights
 
-from dotenv import load_dotenv
-
-load_dotenv()
-
 def test(result_folder: str,
          test_path: str,
          vocab_path: str,

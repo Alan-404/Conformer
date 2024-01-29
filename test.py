@@ -11,8 +11,6 @@ from dataset import ConformerTestDataset
 
 import fire
 
-from comet_ml import Experiment
-
 from preprocessing.processor import ConformerProcessor
 from model.conformer import Conformer
 

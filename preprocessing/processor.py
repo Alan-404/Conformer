@@ -137,6 +137,17 @@ class ConformerProcessor:
         signal = torch.FloatTensor(signal)
 
         return signal
+    
+    def split_signal(self, signal: np.ndarray, threshold_length_segment_max: int = 60, threshold_length_segment_min: float = 0.1):
+        intervals = []
+
+        for top_db in range(30, 5, -5):
+            intervals = librosa.effects.split(
+            signal, top_db=top_db, frame_length=4096, hop_length=1024)
+            if len(intervals) != 0 and max((intervals[:, 1] - intervals[:, 0]) / self.sampling_rate) <= threshold_length_segment_max:
+                break
+            
+        return np.array([i for i in intervals if threshold_length_segment_min < (i[1] - i[0]) / self.sampling_rate <= threshold_length_segment_max])
 
     def load_vocab(self, path: str) -> List[str]:
         if os.path.exists(path):

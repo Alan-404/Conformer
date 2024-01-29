@@ -10,7 +10,7 @@ from torchmetrics.text import WordErrorRate
 
 from model.conformer import Conformer
 
-from typing import List, Tuple, Union, Callable
+from typing import List, Tuple, Union, Callable, Optional
 import statistics
 
 class ConformerModule(L.LightningModule):
@@ -90,7 +90,6 @@ class ConformerModule(L.LightningModule):
 
         self.val_loss.clear()
         self.val_score.clear()
-
 
 class ConformerCriterion:
     def __init__(self, blank_id: int) -> None:

@@ -46,8 +46,7 @@ def test(result_folder: str,
          dropout_rate: float = 0.0,
          batch_size: int  = 1,
          num_examples: int = None,
-         saved_name: str = None,
-         logging: bool = False):
+         saved_name: str = None):
     if os.path.exists(result_folder) == False:
         os.mkdir(result_folder)
 
@@ -81,14 +80,17 @@ def test(result_folder: str,
         dropout_rate=dropout_rate
     ).to(device)
 
-    model.load_state_dict(map_weights(torch.load(checkpoint, map_location='cpu')['state_dict']))
+    checkpoint = torch.load(checkpoint, map_location='cpu')
+    if 'state_dict' in checkpoint.keys():
+        model.load_state_dict(map_weights(checkpoint['state_dict']))
+    else:
+        model.load_state_dict(checkpoint['model'])
     model.to(device)
 
     metric = ConformerMetric()
 
-    def get_batch(signals: torch.Tensor) -> [torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    def get_batch(signals: torch.Tensor) -> [torch.Tensor, torch.Tensor, torch.Tensor]:
         mels, mel_lengths = processor(signals, return_length=True)
-
         return mels, mel_lengths
 
     dataset = ConformerTestDataset(test_path, processor, num_examples=num_examples)

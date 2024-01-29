@@ -16,7 +16,7 @@ from dataset import ConformerDataset
 from preprocessing.augment import SpecAugment
 
 from dotenv import load_dotenv
-from typing import Optional
+from typing import Optional, Union
 
 load_dotenv()
 
@@ -57,7 +57,7 @@ def train(
         time_mask_ratio: float = 0.05,
         # Validation Config
         use_validation: bool = False,
-        val_size: float = 0.1,
+        val_size: Union[float, int] = 0.1,
         val_path: Optional[str] = None,
         num_val: Optional[int] = None,
         val_batch_size: Optional[int] = None,
@@ -83,7 +83,8 @@ def train(
 
     if checkpoint is None:
         module = ConformerModule(
-            processor=processor,
+            vocab_size=len(processor.dictionary),
+            n_mel_channels=processor.num_mels,
             n_blocks=n_blocks,
             d_model=d_model,
             heads=heads,
@@ -112,7 +113,7 @@ def train(
         return mels, tokens, mel_lengths, token_lengths
     
     callbacks = []
-    callbacks.append(ModelCheckpoint(dirpath=saved_checkpoint, filename="{epoch}", save_on_train_epoch_end=True, save_top_k=-1))
+    callbacks.append(ModelCheckpoint(dirpath=saved_checkpoint, filename="{epoch}", save_on_train_epoch_end=True, save_last=True))
 
     if use_validation:
         callbacks.append(EarlyStopping(monitor='val_score', verbose=True, mode='min', patience=early_stopping_patience))
@@ -125,7 +126,11 @@ def train(
         if val_path is not None:
             val_dataset = ConformerDataset(val_path, processor=processor, num_examples=num_val)
         else:
-            dataset, val_dataset = random_split(dataset, lengths=[1 - val_size, val_size], generator=torch.Generator().manual_seed(41))
+            if type(val_size) == int:
+                data_lengths = [dataset.__len__() - val_size, val_size]
+            else:
+                data_lengths = [1 - val_size, val_size]
+            dataset, val_dataset = random_split(dataset, lengths=data_lengths, generator=torch.Generator().manual_seed(41))
         val_dataloader = DataLoader(val_dataset, batch_size=val_batch_size, shuffle=True, collate_fn=lambda batch: get_batch(batch, False), num_workers=num_workers)
     
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, collate_fn=lambda batch: get_batch(batch, set_augment), num_workers=num_workers)

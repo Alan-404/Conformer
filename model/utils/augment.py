@@ -1,3 +1,4 @@
+from typing import Any
 import torch
 from torchaudio.transforms import TimeMasking, FrequencyMasking
 
@@ -11,4 +12,12 @@ class SpecAugment:
         x = self.freq_masker(x)
         x = self.time_masker(x)
 
+        return x
+    
+class TimeAugment:
+    def __init__(self, time_augment: int = 100, time_mask_ratio: float = 0.5) -> None:
+        self.masker = TimeMasking(time_mask_param=time_augment, p=time_mask_ratio)
+
+    def __call__(self, x: torch.Tensor):
+        x = self.masker(x)
         return x

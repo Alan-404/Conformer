@@ -13,7 +13,7 @@ from module import ConformerModule
 from preprocessing.processor import ConformerProcessor
 from dataset import ConformerDataset
 
-from preprocessing.augment import SpecAugment
+from model.utils.augment import SpecAugment
 
 from dotenv import load_dotenv
 from typing import Optional, Union

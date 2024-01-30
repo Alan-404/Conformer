@@ -25,3 +25,4 @@ class Conformer(nn.Module):
         if lengths is not None:
             return x, lengths
         return x
+

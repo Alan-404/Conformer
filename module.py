@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch.optim import Adam
 
 import lightning as L
@@ -7,8 +8,15 @@ import lightning as L
 import torch.optim.lr_scheduler as lr_scheduler
 
 from torchmetrics.text import WordErrorRate
+from torchaudio.transforms import TimeMasking
 
 from model.conformer import Conformer
+
+from model.utils.convolution import ConvolutionSubsampling
+from model.utils.block import ConformerBlock
+from model.modules.quantization import Quantization
+from model.utils.position import RelativePositionalEncoding
+from model.utils.masking import generate_mask
 
 from typing import List, Tuple, Union, Callable, Optional
 import statistics
@@ -91,16 +99,100 @@ class ConformerModule(L.LightningModule):
         self.val_loss.clear()
         self.val_score.clear()
 
+    def freeze_features(self):
+        for params in self.model.encoder.subsampling.parameters():
+            params.requires_grad = False
+
+class UnsupervisedConformerModule(L.LightningModule):
+    def __init__(self, n_mel_channels: int, n_blocks: int, d_model: int, heads: int, kernel_size: int) -> None:
+        super().__init__()
+        self.subsampling = ConvolutionSubsampling(channels=d_model)
+        self.linear = nn.Linear(in_features=d_model * (((n_mel_channels - 1) // 2 - 1) // 2), out_features=d_model)
+        self.rel_pe = RelativePositionalEncoding(d_model=d_model)
+        self.layers = nn.ModuleList([ConformerBlock(d_model=d_model, heads=heads, kernel_size=kernel_size, dropout_rate=0.0) for _ in range(n_blocks)])
+        
+        self.masking = TimeMasking(time_mask_param=100, p=0.5)
+        self.quantizer = Quantization(n_mel_channels=n_mel_channels, d_model=d_model)
+
+        self.criterion = ConformerCriterion()
+
+        self.train_loss = []
+
+    def forward(self, x: torch.Tensor, lengths: Optional[torch.Tensor] = None):
+        x = self.subsampling(x)
+
+        target = self.quantizer(x)
+
+        context = self.masking(x.transpose(1,2)).transpose(1,2)    
+        context = self.linear(context)
+
+        # Mask Generation
+        mask = None
+        if lengths is not None:
+            mask = generate_mask(lengths).to(x.device)
+            mask = (mask == 0).unsqueeze(1).unsqueeze(1)
+        rel_pos = self.rel_pe(x)
+        for layer in self.layers:
+            context = layer(context, rel_pos, mask)
+
+        return context, target
+    
+    def training_step(self, batch: Tuple[torch.Tensor], _: int):
+        inputs = batch[0]
+
+        input_lengths = batch[1]
+
+        context, target = self(inputs, input_lengths)
+
+        loss = self.criterion.contrastive_loss(context, target)
+
+        self.train_loss.append(loss.item())
+
+        return loss
+    
+    def configure_optimizers(self):
+        optimizer = Adam(params=self.parameters(), lr=3e-5, weight_decay=1e-6, betas=[0.9, 0.98], eps=1e-9)
+        scheduler = lr_scheduler.CosineAnnealingLR(optimizer=optimizer, T_max=1000)
+        return [optimizer], [{'scheduler': scheduler, 'interval': "epoch"}]
+    
+    def on_train_epoch_end(self):
+        loss = statistics.mean(self.train_loss)
+        print(f"Train Loss: {(loss):.4f}")
+        print(f"Current Learning Rate: {self.optimizers().param_groups[0]['lr']}")
+
+        self.log("train_loss", loss, rank_zero_only=True)
+        self.log('learning_rate', self.optimizers().param_groups[0]['lr'], rank_zero_only=True)
+        
+        self.train_loss.clear()
+
 class ConformerCriterion:
-    def __init__(self, blank_id: int) -> None:
-        self.ctc_criterion = nn.CTCLoss(
-            blank=blank_id,
-            zero_infinity=True,
-            reduction='mean'
-        )
+    def __init__(self, blank_id: Optional[int] = None) -> None:
+        if blank_id is not None:
+            self.ctc_criterion = nn.CTCLoss(
+                blank=blank_id,
+                zero_infinity=True,
+                reduction='mean'
+            )
 
     def ctc_loss(self, outputs: torch.Tensor, targets: torch.Tensor, input_lengths: torch.Tensor, target_lengths: torch.Tensor) -> torch.Tensor:
         return self.ctc_criterion(outputs.log_softmax(dim=-1).transpose(0,1), targets, input_lengths, target_lengths)
+    
+    def contrastive_loss(self, context: torch.Tensor, target: torch.Tensor):
+        k = context.size(0)
+
+        context = context.flatten(start_dim=1)
+        target = context.flatten(start_dim=1)
+
+        loss = 0.0
+
+        for i in range(k):
+            similaries = []
+            for j in range(k):
+                similaries.append(F.cosine_similarity(context[i], target[j], dim=-1))
+            
+            loss += similaries[i] / torch.sum(torch.tensor(similaries))
+
+        return -loss
 
 class ConformerMetric:
     def __init__(self) -> None:

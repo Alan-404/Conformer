@@ -27,7 +27,7 @@ class UnsupervisedConformer(nn.Module):
         self.rel_pe = RelativePositionalEncoding(d_model=d_model)
         self.layers = nn.ModuleList([ConformerBlock(d_model=d_model, heads=heads, kernel_size=kernel_size, dropout_rate=0.0) for _ in range(n_blocks)])
         
-        self.masking = TimeMasking(time_mask_param=100, p=0.5)
+        self.masking = TimeMasking(time_mask_param=10, p=0.065)
         self.quantizer = Quantization(n_mel_channels=n_mel_channels, d_model=d_model)
 
     def forward(self, x: torch.Tensor, lengths: Optional[torch.Tensor] = None):

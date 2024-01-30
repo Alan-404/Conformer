@@ -38,7 +38,7 @@ class ConformerModule(L.LightningModule):
         self.criterion = ConformerCriterion(blank_id=pad_token)
         self.metric = ConformerMetric()
 
-        self.save_hyperparameters(ignore=[pad_token, metric_fx])
+        self.save_hyperparameters(ignore=["pad_token", "metric_fx"])
     
     def training_step(self, batch: Tuple[torch.Tensor], _: int):
         inputs = batch[0]

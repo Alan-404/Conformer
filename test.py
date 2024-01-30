@@ -11,7 +11,7 @@ from dataset import ConformerTestDataset
 
 import fire
 
-from preprocessing.processor import ConformerProcessor
+from processing.processor import ConformerProcessor
 from model.conformer import Conformer
 
 from typing import Tuple

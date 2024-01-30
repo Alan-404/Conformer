@@ -5,7 +5,7 @@ from fastapi import FastAPI, UploadFile, File
 from model.conformer import Conformer
 from pydub import AudioSegment
 from io import BytesIO
-from preprocessing.processor import ConformerProcessor
+from processing.processor import ConformerProcessor
 import time
 import uvicorn
 import fire

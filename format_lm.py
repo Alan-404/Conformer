@@ -1,4 +1,4 @@
-from preprocessing.processor import ConformerProcessor
+from processing.processor import ConformerProcessor
 from typing import Optional
 import os
 import io

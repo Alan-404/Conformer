@@ -88,12 +88,8 @@ def test(result_folder: str,
     metric = ConformerMetric()
 
     def get_batch(signals: torch.Tensor) -> [torch.Tensor, torch.Tensor, torch.Tensor]:
-        if len(signals) > 1:
-            mels, mel_lengths = processor(signals, return_length=True)
-            return mels, mel_lengths
-
-        mels = processor(signals, return_length=False)
-        return mels, None
+        mels, mel_lengths = processor(signals, return_length=True)
+        return mels, mel_lengths
 
     dataset = ConformerTestDataset(test_path, processor, num_examples=num_examples)
     dataloader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=False, collate_fn=get_batch)
@@ -103,13 +99,11 @@ def test(result_folder: str,
 
     def test_step(_: Engine, batch: Tuple[torch.Tensor]):
         inputs = batch[0].to(device)
-
-        input_lengths = batch[1]
-        if input_lengths is not None:
-            input_lengths = input_lengths.to(device)
+        input_lengths = batch[1].to(device)
         
         with torch.no_grad():
-            outputs, output_lengths = model(inputs, input_lengths)
+            if input_lengths is None:
+                outputs = model(inputs, input_lengths)
         
         outputs = outputs.cpu().numpy()
         output_lengths = output_lengths.type(torch.int).cpu().numpy()

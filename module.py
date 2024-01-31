@@ -97,12 +97,7 @@ class ConformerModule(L.LightningModule):
 
 class ConformerCriterion:
     def __init__(self, blank_id: Optional[int] = None) -> None:
-        if blank_id is not None:
-            self.ctc_criterion = nn.CTCLoss(
-                blank=blank_id,
-                zero_infinity=True,
-                reduction='mean'
-            )
+        self.ctc_criterion = nn.CTCLoss(blank=blank_id, zero_infinity=True)
 
     def ctc_loss(self, outputs: torch.Tensor, targets: torch.Tensor, input_lengths: torch.Tensor, target_lengths: torch.Tensor) -> torch.Tensor:
         return self.ctc_criterion(outputs.log_softmax(dim=-1).transpose(0,1), targets, input_lengths, target_lengths)

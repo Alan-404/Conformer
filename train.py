@@ -96,7 +96,7 @@ def train(
             metric_fx=processor.decode_batch
         )
     else: 
-        module = ConformerModule.load_from_checkpoint(checkpoint, pad_token=pad_token, metric_fx=processor.decode_batch)
+        module = ConformerModule.load_from_checkpoint(checkpoint, pad_token=processor.pad_token, metric_fx=processor.decode_batch)
 
     if set_augment:
         spec_augment = SpecAugment(freq_augment=freq_augment, time_augment=time_augment, time_mask_ratio=time_mask_ratio)

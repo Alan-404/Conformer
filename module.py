@@ -48,6 +48,10 @@ class ConformerModule(L.LightningModule):
 
         outputs, input_lengths = self.model(inputs, input_lengths)
 
+        print(outputs.shape)
+        print(labels.shape)
+        print(input_lengths)
+        print(target_lengths)
         loss = self.criterion.ctc_loss(outputs, labels, input_lengths, target_lengths)
 
         self.train_loss.append(loss.item())

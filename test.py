@@ -103,7 +103,8 @@ def test(result_folder: str,
 
     def test_step(_: Engine, batch: Tuple[torch.Tensor]):
         inputs = batch[0].to(device)
-        input_lengths = batch[1].to(device)
+        if batch[1] is not None:
+            input_lengths = batch[1].to(device)
         
         with torch.no_grad():
             outputs, output_lengths = model(inputs, input_lengths)

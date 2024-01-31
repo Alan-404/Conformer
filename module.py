@@ -48,10 +48,6 @@ class ConformerModule(L.LightningModule):
 
         outputs, input_lengths = self.model(inputs, input_lengths)
 
-        print(outputs.shape)
-        print(labels.shape)
-        print(input_lengths)
-        print(target_lengths)
         loss = self.criterion.ctc_loss(outputs, labels, input_lengths, target_lengths)
 
         self.train_loss.append(loss.item())
@@ -102,14 +98,19 @@ class ConformerModule(L.LightningModule):
 class ConformerCriterion:
     def __init__(self, blank_id: Optional[int] = None) -> None:
         if blank_id is not None:
-            self.ctc_criterion = nn.CTCLoss(
-                blank=blank_id,
-                zero_infinity=True,
-                reduction='mean'
-            )
+            self.blank_id = blank_id
 
     def ctc_loss(self, outputs: torch.Tensor, targets: torch.Tensor, input_lengths: torch.Tensor, target_lengths: torch.Tensor) -> torch.Tensor:
-        return self.ctc_criterion(outputs.log_softmax(dim=-1).transpose(0,1), targets, input_lengths, target_lengths)
+        # return self.ctc_criterion(outputs.log_softmax(dim=-1).transpose(0,1), targets, input_lengths, target_lengths)
+        return F.ctc_loss(
+            outputs.log_softmax(dim=-1).transpose(0,1),
+            targets,
+            input_lengths,
+            target_lengths,
+            blank=self.blank_id,
+            reduction='mean',
+            zero_infinity=True
+        )
     
     def contrastive_loss(self, context: torch.Tensor, target: torch.Tensor):
         k = context.size(0)

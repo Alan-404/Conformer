@@ -1,15 +1,12 @@
 import os
 import torch
 
-import fire
-
 import torchsummary
 
 from processing.processor import ConformerProcessor
 from model.conformer import Conformer
 
 import pickle
-
 
 def build_model(
         saved_folder: str,

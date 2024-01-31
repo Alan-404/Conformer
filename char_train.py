@@ -11,7 +11,7 @@ import fire
 import torchsummary
 
 from module import ConformerModule
-from preprocessing.char_processor import ConformerProcessor
+from processing.char_processor import ConformerProcessor
 from dataset import CharDataset
 
 from model.utils.augment import SpecAugment

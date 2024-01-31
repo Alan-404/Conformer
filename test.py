@@ -102,8 +102,7 @@ def test(result_folder: str,
         input_lengths = batch[1].to(device)
         
         with torch.no_grad():
-            if input_lengths is None:
-                outputs = model(inputs, input_lengths)
+            outputs, output_lengths = model(inputs, input_lengths)
         
         outputs = outputs.cpu().numpy()
         output_lengths = output_lengths.type(torch.int).cpu().numpy()

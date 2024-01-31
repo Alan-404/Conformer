@@ -88,8 +88,12 @@ def test(result_folder: str,
     metric = ConformerMetric()
 
     def get_batch(signals: torch.Tensor) -> [torch.Tensor, torch.Tensor, torch.Tensor]:
-        mels, mel_lengths = processor(signals, return_length=True)
-        return mels, mel_lengths
+        if len(signals) > 1:
+            mels, mel_lengths = processor(signals, return_length=True)
+            return mels, mel_lengths
+
+        mels = processor(signals, return_length=False)
+        return mels, None
 
     dataset = ConformerTestDataset(test_path, processor, num_examples=num_examples)
     dataloader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=False, collate_fn=get_batch)

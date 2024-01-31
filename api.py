@@ -10,6 +10,8 @@ import time
 import uvicorn
 import fire
 
+from common import map_weights
+
 MAX_AUDIO_VALUE = 32768
 
 def read_audio(data: bytes, sampling_rate: int):
@@ -33,12 +35,12 @@ def create_app(checkpoint: str,
                fmax: float = 8000.0,
                beam_alpha: float = 2.1, 
                beam_beta: float = 9.2,
-               encoder_n_layers: int = 17,
-               encoder_dim: int = 512,
+               n_blocks: int = 17,
+               d_model: int = 512,
                heads: int = 8,
                kernel_size: int = 31,
-               decoder_n_layers: int = 1,
-               decoder_dim: int = 640,
+               n_layers: int = 1,
+               hidden_dim: int = 640,
                dropout_rate: float = 0.0,
                device: str = "cuda") -> FastAPI:
     
@@ -67,16 +69,17 @@ def create_app(checkpoint: str,
     model = Conformer(
         vocab_size=len(processor.dictionary.get_itos()),
         n_mel_channels=processor.num_mels,
-        encoder_n_layers=encoder_n_layers,
-        encoder_dim=encoder_dim,
+        n_blocks=n_blocks,
+        d_model=d_model,
         heads=heads,
         kernel_size=kernel_size,
-        decoder_n_layers=decoder_n_layers,
-        decoder_dim=decoder_dim,
+        n_layers=n_layers,
+        hidden_dim=hidden_dim,
         dropout_rate=dropout_rate
     )
 
-    model.load_state_dict(torch.load(checkpoint, map_location='cpu')['model'])
+    checkpoint = torch.load(checkpoint, map_location='cpu')['state_dict']
+    model.load_state_dict(map_weights(checkpoint))
     model.to(device)
     model.eval()
 
@@ -124,12 +127,12 @@ def main(checkpoint: str,
         fmax: float = 8000.0,
         beam_alpha: float = 2.1, 
         beam_beta: float = 9.2,
-        encoder_n_layers: int = 17,
-        encoder_dim: int = 512,
+        n_blocks: int = 17,
+        d_model: int = 512,
         heads: int = 8,
         kernel_size: int = 31,
-        decoder_n_layers: int = 1,
-        decoder_dim: int = 640,
+        n_layers: int = 1,
+        hidden_dim: int = 640,
         dropout_rate: float = 0.0,
         device: str = "cuda",
         # API Config
@@ -152,12 +155,12 @@ def main(checkpoint: str,
         win_length=win_length,
         fmin=fmin,
         fmax=fmax,
-        encoder_n_layers=encoder_n_layers,
-        encoder_dim=encoder_dim,
+        n_blocks=n_blocks,
+        d_model=d_model,
         heads=heads,
         kernel_size=kernel_size,
-        decoder_n_layers=decoder_n_layers,
-        decoder_dim=decoder_dim,
+        n_layers=n_layers,
+        hidden_dim=hidden_dim,
         dropout_rate=dropout_rate,
         device=device
     )

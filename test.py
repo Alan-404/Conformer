@@ -40,6 +40,7 @@ def test(result_folder: str,
          n_layers: int = 1,
          hidden_dim: int = 640,
          dropout_rate: float = 0.0,
+         batch_size: int = 1,
          num_examples: int = None,
          saved_name: str = None):
     if os.path.exists(result_folder) == False:
@@ -86,9 +87,9 @@ def test(result_folder: str,
 
     metric = ConformerMetric()
 
-    def get_data(signal: torch.Tensor) -> torch.Tensor:
-        mel = processor.mel_spectrogram(signal)
-        return mel
+    def get_data(signals: torch.Tensor) -> torch.Tensor:
+        mels, lengths = processor(signals, return_length=True)
+        return mels, lengths
 
     dataset = ConformerTestDataset(test_path, processor, num_examples=num_examples)
     dataloader = DataLoader(dataset=dataset, batch_size=1, shuffle=False, collate_fn=get_data)
@@ -97,17 +98,21 @@ def test(result_folder: str,
     preds = []
 
     def test_step(_: Engine, batch: Tuple[torch.Tensor]):
-        inputs = batch[0].unsqueeze(0).to(device)
+        inputs = batch[0].to(device)
+        lengths = batch[1].to(device)
         
         with torch.no_grad():
-            outputs = model(inputs)
+            outputs, output_lengths = model(inputs, lengths)
         
-        pred = processor.decode_beam_search(outputs[0].cpu().numpy())
-        preds.append(pred)
+        # pred = processor.decode_beam_search(outputs[0].cpu().numpy())
+        # preds.append(pred)
+            
+        outputs = outputs.cpu().numpy()
+        output_lengths = output_lengths.cpu().numpy()
 
-        # for index, logit in enumerate(outputs):
-        #     pred = processor.decode_beam_search(logit[:output_lengths[index], :])
-        #     preds.append(pred)
+        for index, logit in enumerate(outputs):
+            pred = processor.decode_beam_search(logit[:output_lengths[index], :])
+            preds.append(pred)
 
     tester = Engine(test_step)
     ProgressBar().attach(tester)

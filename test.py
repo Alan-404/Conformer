@@ -87,29 +87,30 @@ def test(result_folder: str,
 
     metric = ConformerMetric()
 
-    def get_batch(signals: torch.Tensor) -> [torch.Tensor, torch.Tensor, torch.Tensor]:
-        mels, mel_lengths = processor(signals, return_length=True)
-        return mels, mel_lengths
+    def get_data(signals: torch.Tensor) -> torch.Tensor:
+        mel = processor(signals, return_length=False)
+        return mel
 
     dataset = ConformerTestDataset(test_path, processor, num_examples=num_examples)
-    dataloader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=False, collate_fn=get_batch)
+    dataloader = DataLoader(dataset=dataset, batch_size=1, shuffle=False, collate_fn=get_data)
 
     labels = dataset.prompts['text'].to_list()
     preds = []
 
     def test_step(_: Engine, batch: Tuple[torch.Tensor]):
         inputs = batch[0].to(device)
-        input_lengths = batch[1].to(device)
         
         with torch.no_grad():
-            outputs, output_lengths = model(inputs, input_lengths)
+            outputs = model(inputs)
         
         outputs = outputs.cpu().numpy()
-        output_lengths = output_lengths.type(torch.int).cpu().numpy()
+        
+        pred = processor.decode_beam_search(outputs[0].cpu().numpy())
+        preds.append(pred)
 
-        for index, logit in enumerate(outputs):
-            pred = processor.decode_beam_search(logit[:output_lengths[index], :])
-            preds.append(pred)
+        # for index, logit in enumerate(outputs):
+        #     pred = processor.decode_beam_search(logit[:output_lengths[index], :])
+        #     preds.append(pred)
 
     tester = Engine(test_step)
     ProgressBar().attach(tester)

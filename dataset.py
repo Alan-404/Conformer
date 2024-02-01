@@ -146,7 +146,7 @@ class ConformerTestDataset(Dataset):
         return signal
 
 class CharDataset(Dataset):
-    def __init__(self, manifest_path: str, processor: ConformerProcessor, num_examples: Optional[int] = None, make_grapheme: bool = False) -> None:
+    def __init__(self, manifest_path: str, processor: ConformerProcessor, num_examples: Optional[int] = None) -> None:
         super().__init__()
         self.prompts = pd.read_csv(manifest_path, sep="\t")
         self.columns = self.prompts.columns

@@ -16,7 +16,12 @@ from pyctcdecode import build_ctcdecoder
 MAX_AUDIO_VALUE = 32768
 
 class ConformerProcessor:
-    def __init__(self, vocab_path: str, unk_token: str = "<unk>", pad_token: str = "<pad>", word_delim_token: str = "|", sampling_rate: int = 16000, num_mels: int = 80, n_fft: int = 400, hop_length: int = 160, win_length: int = 400, fmin: float = 0.0, fmax: float = 8000.0, puncs: str = r"([:./,?!@#$%^&=`~*\(\)\[\]\"\-\\])", lm_path: Optional[str] = None, beam_alpha: float = 2.1, beam_beta: float = 9.2) -> None:
+    def __init__(self, vocab_path: str, unk_token: str = "<unk>", pad_token: str = "<pad>", word_delim_token: str = "|", sampling_rate: int = 16000, num_mels: int = 80, n_fft: int = 400, hop_length: int = 160, win_length: int = 400, fmin: float = 0.0, fmax: float = 8000.0, puncs: str = r"([:./,?!@#$%^&=`~*\(\)\[\]\"\-\\])", lm_path: Optional[str] = None, beam_alpha: float = 2.1, beam_beta: float = 9.2, device: str = 'cpu') -> None:
+        if device != 'cpu':
+            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        else:
+            self.device = device
+        
         # Text
         self.replace_dict = dict()
         self.dictionary = None
@@ -56,7 +61,7 @@ class ConformerProcessor:
             f_min=fmin,
             f_max=fmax,
             n_mels=num_mels
-        )
+        ).to(self.device)
 
     def create_vocab(self, vocab_path: str, pad_token: str, word_delim_token: str, unk_token: str) -> Vocab:
         data = json.load(open(vocab_path, encoding='utf8'))
@@ -107,7 +112,7 @@ class ConformerProcessor:
         return torch.log(torch.clamp(x, min=clip_val) * C)
 
     def mel_spectrogram(self, signal: torch.Tensor) -> torch.Tensor:
-        mel_spec = self.mel_transform(signal)
+        mel_spec = self.mel_transform(signal.to(self.device))
         log_mel = self.spectral_normalize(mel_spec)
         return log_mel
     

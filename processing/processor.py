@@ -134,7 +134,7 @@ class ConformerProcessor:
 
         return signal
     
-    def split_signal(self, signal: np.ndarray, threshold_length_segment_max: int = 60, threshold_length_segment_min: float = 0.1):
+    def split_signal(self, signal: np.ndarray, threshold_length_segment_max: float = 60.0, threshold_length_segment_min: float = 0.1):
         intervals = []
 
         for top_db in range(30, 5, -5):
@@ -289,24 +289,24 @@ class ConformerProcessor:
         graphemes = []
         for index, word in enumerate(words):
             graphemes += self.word2graphemes(word)
-            if index != len(words) -1:
-                graphemes.append("|")
+            if index != len(words) - 1:
+                graphemes.append(self.word_delim_item)
         return graphemes
     
-    def __call__(self, signals: List[torch.Tensor], max_len: Optional[int] = None, return_length: bool = False) -> torch.Tensor:
-        if max_len is None:
-            max_len = np.max([len(signal) for signal in signals])
+    def __call__(self, signals: List[torch.Tensor], return_length: bool = False) -> torch.Tensor:
+        lengths = torch.tensor([len(signal) for signal in signals])
+        max_len = torch.max(lengths)
+            
+        padded_signals = []
 
-        mels = []
         mel_lengths = []
 
-        for signal in signals:
-            signal_length = len(signal)
-            padded_signal = F.pad(signal, (0, max_len - signal_length), mode='constant', value=0.0)
-            mels.append(self.mel_spectrogram(padded_signal))
-            mel_lengths.append((signal_length // self.hop_length) + 1)
+        for index, signal in enumerate(signals):
+            padded_signals.append(F.pad(signal, (0, max_len - lengths[index]), mode='constant', value=0.0))
+            if return_length:
+                mel_lengths.append(lengths[index] // self.hop_length + 1)
 
-        mels = torch.stack(mels).type(torch.FloatTensor)
+        mels = self.mel_spectrogram(torch.stack(padded_signals)).type(torch.FloatTensor)
 
         if return_length:
             return mels, torch.tensor(mel_lengths)

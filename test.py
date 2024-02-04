@@ -1,13 +1,9 @@
 import os
 import torch
-from torch.utils.data import DataLoader
-
-from ignite.engine import Engine, Events
-from ignite.contrib.handlers.tqdm_logger import ProgressBar
 
 import torchsummary
 
-from dataset import ConformerTestDataset
+import pandas as pd
 
 import fire
 
@@ -17,6 +13,7 @@ from model.conformer import Conformer
 from typing import Tuple
 from module import ConformerMetric
 from common import map_weights
+from tqdm import tqdm
 
 def test(result_folder: str,
          test_path: str,
@@ -40,9 +37,10 @@ def test(result_folder: str,
          n_layers: int = 1,
          hidden_dim: int = 640,
          dropout_rate: float = 0.0,
-         batch_size: int = 1,
-         num_examples: int = None,
-         saved_name: str = None):
+         num_examples: int = None):
+    
+    assert os.path.exists(test_path) and os.path.exists(checkpoint)
+
     if os.path.exists(result_folder) == False:
         os.mkdir(result_folder)
 
@@ -78,66 +76,50 @@ def test(result_folder: str,
         dropout_rate=dropout_rate
     ).to(device)
 
+    torchsummary.summary(model)
+
     checkpoint = torch.load(checkpoint, map_location='cpu')
     if 'state_dict' in checkpoint.keys():
         model.load_state_dict(map_weights(checkpoint['state_dict']))
     else:
         model.load_state_dict(checkpoint['model'])
     model.to(device)
+    model.eval()
 
     metric = ConformerMetric()
 
-    def get_data(signals: torch.Tensor) -> torch.Tensor:
-        mels, lengths = processor(signals, return_length=True)
-        return mels, lengths
+    df = pd.read_csv(test_path, sep="\t")
+    if num_examples is not None:
+        df = df[:num_examples]
+    df['text'] = df['text'].fillna('')
 
-    dataset = ConformerTestDataset(test_path, processor, num_examples=num_examples)
-    dataloader = DataLoader(dataset=dataset, batch_size=1, shuffle=False, collate_fn=get_data)
-
-    labels = dataset.prompts['text'].to_list()
+    answers = df['text'].to_list()
+    
     preds = []
-
-    def test_step(_: Engine, batch: Tuple[torch.Tensor]):
-        inputs = batch[0].to(device)
-        lengths = batch[1].to(device)
+    for _, row in tqdm(df.iterrows(), total=df.shape[0]):
+        start, end = None, None
+        if 'start' in df.columns and 'end' in df.columns:
+            start = row['start']
+            end = row['end']
         
+        role = None
+        if 'type' in df.columns:
+            if row['type'] == 'up':
+                role = 0
+            elif row['type'] == 'down':
+                role = 1
+
+        mel = processor.mel_spectrogram(processor.load_audio(row['path'], start, end, role))
+
         with torch.no_grad():
-            outputs, output_lengths = model(inputs, lengths)
+            logits = model(mel)
         
-        # pred = processor.decode_beam_search(outputs[0].cpu().numpy())
-        # preds.append(pred)
-            
-        outputs = outputs.cpu().numpy()
-        output_lengths = output_lengths.cpu().numpy()
+        preds.append(processor.decode_beam_search(logits[0].cpu().numpy()))
 
-        for index, logit in enumerate(outputs):
-            pred = processor.decode_beam_search(logit[:output_lengths[index], :])
-            preds.append(pred)
+    print(f"WER Score: {metric.wer_score(preds, answers)}")
 
-    tester = Engine(test_step)
-    ProgressBar().attach(tester)
-
-    @tester.on(Events.STARTED)
-    def _ (_: Engine):
-        torchsummary.summary(model)
-        model.eval()
-
-    @tester.on(Events.COMPLETED)
-    def _ (_: Engine):
-        print(f"WER score: {metric.wer_score(preds, labels)}")
-
-    tester.run(dataloader, max_epochs=1)
-
-    if saved_name is not None:
-        saved_filename = saved_name
-    else:
-        test_name = os.path.basename(test_path)
-        saved_filename = f"result_{test_name}"
-
-    df = dataset.prompts
-    df['pred'] = preds
-
-    df.to_csv(f"{result_folder}/{saved_filename}", sep="\t", index=False)
-
+    filename = os.path.basename(test_path)
+    df.to_csv(f"{result_folder}/{filename}", sep="\t", index=False)
+        
 if __name__ == '__main__':
     fire.Fire(test)

@@ -109,7 +109,7 @@ def test(result_folder: str,
             elif row['type'] == 'down':
                 role = 1
 
-        mel = processor.mel_spectrogram(processor.load_audio(row['path'], start, end, role))
+        mel = processor.mel_spectrogram(processor.load_audio(row['path'], start, end, role)).unsqueeze(0).to(device)
 
         with torch.no_grad():
             logits = model(mel)
@@ -117,6 +117,7 @@ def test(result_folder: str,
         preds.append(processor.decode_beam_search(logits[0].cpu().numpy()))
 
     print(f"WER Score: {metric.wer_score(preds, answers)}")
+    df['pred'] = preds
 
     filename = os.path.basename(test_path)
     df.to_csv(f"{result_folder}/{filename}", sep="\t", index=False)

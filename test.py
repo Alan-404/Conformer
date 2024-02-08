@@ -10,7 +10,6 @@ import fire
 from processing.processor import ConformerProcessor
 from model.conformer import Conformer
 
-from typing import Tuple
 from module import ConformerMetric
 from common import map_weights
 from tqdm import tqdm
@@ -97,6 +96,7 @@ def test(result_folder: str,
     
     preds = []
     for _, row in tqdm(df.iterrows(), total=df.shape[0]):
+        path = row['path']
         start, end = None, None
         if 'start' in df.columns and 'end' in df.columns:
             start = row['start']
@@ -109,7 +109,7 @@ def test(result_folder: str,
             elif row['type'] == 'down':
                 role = 1
 
-        mel = processor.mel_spectrogram(processor.load_audio(row['path'], start, end, role)).unsqueeze(0).to(device)
+        mel = processor.mel_spectrogram(processor.load_audio(path, start, end, role)).unsqueeze(0).to(device)
 
         with torch.no_grad():
             logits = model(mel)

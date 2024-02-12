@@ -16,7 +16,7 @@ from dataset import ConformerDataset
 from processing.noise import SpecAugment
 
 from dotenv import load_dotenv
-from typing import Optional, Union
+from typing import Optional, Union, Tuple
 
 load_dotenv()
 
@@ -101,7 +101,7 @@ def train(
     if set_augment:
         spec_augment = SpecAugment(freq_augment=freq_augment, time_augment=time_augment, time_mask_ratio=time_mask_ratio)
     
-    def get_batch(batch, augment: bool) -> [torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    def get_batch(batch, augment: bool) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         signals, transcripts = zip(*batch)
         mels, mel_lengths = processor(signals, return_length=True)
 
@@ -137,7 +137,7 @@ def train(
 
     strategy = 'auto'
     if torch.cuda.device_count() > 1:
-        strategy = DDPStrategy(process_group_backend='gloo', find_unused_parameters=True)
+        strategy = DDPStrategy(process_group_backend='gloo')
 
     logger = WandbLogger(
         project=project_name,

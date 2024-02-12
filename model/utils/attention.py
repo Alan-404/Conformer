@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import math
-from typing import Optional
+from typing import Optional, Tuple
 
 class MultiHeadSelfAttentionModule(nn.Module):
     def __init__(self, d_model: int, heads: int, dropout_rate: float = 0.0) -> None:
@@ -113,7 +113,7 @@ class MultiHeadAttention(nn.Module):
 
         self.linear_output = nn.Linear(in_features=d_model, out_features=d_model)
 
-    def scaled_dot_product_attention(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: Optional[torch.Tensor] = None) -> [torch.Tensor, torch.Tensor]:
+    def scaled_dot_product_attention(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: Optional[torch.Tensor] = None) -> Tuple[torch.Tensor, torch.Tensor]:
         attention_scores = torch.matmul(q, k.transpose(-1, -2))
         attention_scores = attention_scores/self.sqrt_sample
 
@@ -135,7 +135,7 @@ class MultiHeadAttention(nn.Module):
         
         return x
     
-    def forward(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: Optional[torch.Tensor] = None) -> [torch.Tensor, torch.Tensor]:
+    def forward(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: Optional[torch.Tensor] = None) -> Tuple[torch.Tensor, torch.Tensor]:
         qw = self.linear_q(q)
         kw = self.linear_k(k)
         vw = self.linear_v(v)

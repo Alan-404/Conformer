@@ -6,13 +6,13 @@ class RelativePositionalEncoding(nn.Module):
     def __init__(self, d_model: int) -> None:
         super().__init__()
         self.d_model = d_model
-        self.register_buffer('div_term', torch.exp(torch.arange(0, self.d_model, 2, dtype=torch.float32) * -(math.log(10000.0) / d_model)).unsqueeze(0))
+        self.register_buffer('div_term', torch.exp(torch.arange(0, self.d_model, 2) * -(math.log(10000.0) / d_model)).unsqueeze(0))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         pe_positive = torch.zeros(x.size(1), self.d_model, device=x.device)
         pe_negative = torch.zeros(x.size(1), self.d_model, device=x.device)
         
-        position = torch.arange(0, x.size(1), dtype=torch.float32, device=x.device).unsqueeze(1)
+        position = torch.arange(0, x.size(1), dtype=x.dtype, device=x.device).unsqueeze(1)
         angles = torch.matmul(position, self.div_term)
 
         pe_positive[:, 0::2] = torch.sin(angles)

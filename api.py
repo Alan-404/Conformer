@@ -2,15 +2,12 @@ import os
 os.environ['CUDA_MODULE_LOADING'] = 'LAZY'
 import torch
 from fastapi import FastAPI, UploadFile, File
-from model.conformer import Conformer
 from pydub import AudioSegment
 from io import BytesIO
 from processing.processor import ConformerProcessor
 import time
 import uvicorn
 import fire
-
-from common import map_weights
 
 MAX_AUDIO_VALUE = 32768
 
@@ -35,13 +32,6 @@ def create_app(checkpoint: str,
                fmax: float = 8000.0,
                beam_alpha: float = 2.1, 
                beam_beta: float = 9.2,
-               n_blocks: int = 17,
-               d_model: int = 512,
-               heads: int = 8,
-               kernel_size: int = 31,
-               n_layers: int = 1,
-               hidden_dim: int = 640,
-               dropout_rate: float = 0.0,
                device: str = "cuda") -> FastAPI:
     
     if device != "cpu":
@@ -65,44 +55,42 @@ def create_app(checkpoint: str,
         beam_alpha=beam_alpha,
         beam_beta=beam_beta
     )
-    
-    model = Conformer(
-        vocab_size=len(processor.dictionary.get_itos()),
-        n_mel_channels=processor.num_mels,
-        n_blocks=n_blocks,
-        d_model=d_model,
-        heads=heads,
-        kernel_size=kernel_size,
-        n_layers=n_layers,
-        hidden_dim=hidden_dim,
-        dropout_rate=dropout_rate
-    )
 
-    checkpoint = torch.load(checkpoint, map_location='cpu')['state_dict']
-    model.load_state_dict(map_weights(checkpoint))
-    model.to(device)
+    model = torch.jit.load(checkpoint, map_location=device)
     model.eval()
 
     @app.post("/s2t")
     async def _(file: UploadFile = File(...)):
         try:
-            start_time = time.time()
+            read_audio_start = time.time()
 
             data = await file.read()
 
             signal = read_audio(data, sampling_rate)
             mel = processor.mel_spectrogram(signal).unsqueeze(0).to(device)
 
-            with torch.no_grad():
+            read_audio_end = time.time()
+
+            infer_start = time.time()
+
+            with torch.inference_mode():
                 logits = model(mel)
+                torch.cuda.synchronize()
+
+            infer_end = time.time()
+
+            beam_start = time.time()
 
             text = processor.decode_beam_search(logits[0].cpu().numpy())
 
-            end_time = time.time()
+            beam_end = time.time()
 
             return {
                 "transcription": text,
-                "processing_time": end_time - start_time
+                "audio_time": len(signal) / sampling_rate,
+                "read_audio": read_audio_end - read_audio_start,
+                "inference": infer_end - infer_start,
+                "beam_search": beam_end - beam_start
             }
         except Exception as e:
             print(str(e))
@@ -111,7 +99,7 @@ def create_app(checkpoint: str,
     return app
     
 
-def main(checkpoint: str,
+def main(model: str,
         # Processor Config
         vocab_path: str,
         arpa_path: str,
@@ -127,20 +115,20 @@ def main(checkpoint: str,
         fmax: float = 8000.0,
         beam_alpha: float = 2.1, 
         beam_beta: float = 9.2,
-        n_blocks: int = 17,
-        d_model: int = 512,
-        heads: int = 8,
-        kernel_size: int = 31,
-        n_layers: int = 1,
-        hidden_dim: int = 640,
-        dropout_rate: float = 0.0,
+        # n_blocks: int = 17,
+        # d_model: int = 512,
+        # heads: int = 8,
+        # kernel_size: int = 31,
+        # n_layers: int = 1,
+        # hidden_dim: int = 640,
+        # dropout_rate: float = 0.0,
         device: str = "cuda",
         # API Config
         host: str = "0.0.0.0",
         port: int = 8000):
     
     app = create_app(
-        checkpoint=checkpoint,
+        checkpoint=model,
         vocab_path=vocab_path,
         pad_token=pad_token,
         unk_token=unk_token,
@@ -155,13 +143,6 @@ def main(checkpoint: str,
         win_length=win_length,
         fmin=fmin,
         fmax=fmax,
-        n_blocks=n_blocks,
-        d_model=d_model,
-        heads=heads,
-        kernel_size=kernel_size,
-        n_layers=n_layers,
-        hidden_dim=hidden_dim,
-        dropout_rate=dropout_rate,
         device=device
     )
     

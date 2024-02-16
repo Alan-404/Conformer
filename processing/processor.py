@@ -112,7 +112,7 @@ class ConformerProcessor:
         return torch.log(torch.clamp(x, min=clip_val) * C)
 
     def mel_spectrogram(self, signal: torch.Tensor) -> torch.Tensor:
-        mel_spec = self.mel_transform(signal.to(self.device))
+        mel_spec = self.mel_transform(signal)
         log_mel = self.spectral_normalize(mel_spec)
         return log_mel
     
@@ -131,7 +131,7 @@ class ConformerProcessor:
             signal = self.split_segment(signal, start, end)
 
         signal = torch.FloatTensor(signal)
-
+        signal = signal.to(self.device)
         return signal
     
     def split_signal(self, signal: np.ndarray, threshold_length_segment_max: float = 60.0, threshold_length_segment_min: float = 0.1):

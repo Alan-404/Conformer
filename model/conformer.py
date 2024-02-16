@@ -21,16 +21,9 @@ class Conformer(nn.Module):
 
     def forward(self, x: torch.Tensor, lengths: Optional[torch.Tensor] = None) -> torch.Tensor:
         x, lengths = self.encoder(x, lengths)
-        torch.jit.annotate(str, "Done Encoder")
         x = self.decoder(x, lengths)
-        torch.jit.annotate(str, "Done Decoder")
         
         if lengths is not None:
             return x, lengths
             
-        return x
-    
-    def inference(self, x: torch.Tensor):
-        x, _ = self.encoder(x)
-        x = self.decoder(x)
         return x

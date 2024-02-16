@@ -26,8 +26,7 @@ class Encoder(nn.Module):
         # Mask Generation
         mask = None
         if lengths is not None:
-            mask = generate_mask(lengths).to(x.device)
-            mask = (mask == 0).unsqueeze(1).unsqueeze(1)
+            mask = (generate_mask(lengths).to(x.device) == 0)[:, None, None, :]
         
         # Conformer Handling
         rel_pos = self.rel_pe(x)

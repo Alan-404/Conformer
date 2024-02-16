@@ -13,10 +13,8 @@ MAX_AUDIO_VALUE = 32768
 
 def read_audio(data: bytes, sampling_rate: int):
     audio = AudioSegment.from_file(BytesIO(data)).set_frame_rate(sampling_rate).get_array_of_samples()
-    signal = torch.Tensor(audio) / MAX_AUDIO_VALUE
+    signal = torch.tensor(audio) / MAX_AUDIO_VALUE
     return signal
-
-model = torch.jit.load('./onnx/conformer.jit', map_location='cuda')
 
 def create_app(checkpoint: str,
                # Processor Config
@@ -57,7 +55,10 @@ def create_app(checkpoint: str,
         beam_alpha=beam_alpha,
         beam_beta=beam_beta
     )
-    
+
+    model = torch.jit.load(checkpoint, map_location=device)
+    model.eval()
+    model.to(device)
 
     @app.post("/s2t")
     async def _(file: UploadFile = File(...)):
@@ -85,9 +86,12 @@ def create_app(checkpoint: str,
 
             beam_end = time.time()
 
+            del mel
+            del logits
+            torch.cuda.empty_cache()
+
             return {
                 "transcription": text,
-                "audio_time": len(signal) / sampling_rate,
                 "read_audio": read_audio_end - read_audio_start,
                 "inference": infer_end - infer_start,
                 "beam_search": beam_end - beam_start
@@ -115,13 +119,6 @@ def main(model: str,
         fmax: float = 8000.0,
         beam_alpha: float = 2.1, 
         beam_beta: float = 9.2,
-        # n_blocks: int = 17,
-        # d_model: int = 512,
-        # heads: int = 8,
-        # kernel_size: int = 31,
-        # n_layers: int = 1,
-        # hidden_dim: int = 640,
-        # dropout_rate: float = 0.0,
         device: str = "cuda",
         # API Config
         host: str = "0.0.0.0",

@@ -20,11 +20,7 @@ class Conformer(nn.Module):
         self.decoder = Decoder(vocab_size=vocab_size, d_model=d_model, n=n_layers, hidden_dim=hidden_dim)
 
     def forward(self, x: torch.Tensor, lengths: Optional[torch.Tensor] = None) -> torch.Tensor:
-        if lengths is not None:
-            x, lengths = self.encoder(x, lengths)
-        else:
-            x = self.encoder(x)
-        
+        x, lengths = self.encoder(x, lengths)
         x = self.decoder(x, lengths)
         
         if lengths is not None:

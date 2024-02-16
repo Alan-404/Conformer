@@ -16,6 +16,8 @@ def read_audio(data: bytes, sampling_rate: int):
     signal = torch.Tensor(audio) / MAX_AUDIO_VALUE
     return signal
 
+model = torch.jit.load('./onnx/conformer.jit', map_location='cuda')
+
 def create_app(checkpoint: str,
                # Processor Config
                vocab_path: str,
@@ -55,9 +57,7 @@ def create_app(checkpoint: str,
         beam_alpha=beam_alpha,
         beam_beta=beam_beta
     )
-
-    model = torch.jit.load(checkpoint, map_location=device)
-    model.eval()
+    
 
     @app.post("/s2t")
     async def _(file: UploadFile = File(...)):

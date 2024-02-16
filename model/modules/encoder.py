@@ -17,10 +17,7 @@ class Encoder(nn.Module):
     
     def forward(self, x: torch.Tensor, lengths: Optional[torch.Tensor] = None) -> torch.Tensor:
         # Subsampling Mel - Spectrogram
-        if lengths is not None:
-            x, lengths = self.subsampling(x, lengths)
-        else:
-            x, _ = self.subsampling(x, None)
+        x, lengths = self.subsampling(x, lengths)
         
         # Pre - Project
         x = self.linear(x)
@@ -37,7 +34,4 @@ class Encoder(nn.Module):
         for layer in self.layers:
             x = layer(x, rel_pos, mask)
         
-        if lengths is not None:
-            return x, lengths
-        
-        return x
+        return x, lengths

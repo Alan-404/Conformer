@@ -17,6 +17,8 @@ MAX_AUDIO_VALUE = 32768
 
 class ConformerProcessor:
     def __init__(self, vocab_path: str, unk_token: str = "<unk>", pad_token: str = "<pad>", word_delim_token: str = "|", sampling_rate: int = 16000, num_mels: int = 80, n_fft: int = 400, hop_length: int = 160, win_length: int = 400, fmin: float = 0.0, fmax: float = 8000.0, puncs: str = r"([:./,?!@#$%^&=`~*\(\)\[\]\"\-\\])", lm_path: Optional[str] = None, beam_alpha: float = 2.1, beam_beta: float = 9.2, device: str = 'cpu') -> None:
+        self.params = {k: v for k, v in locals().items() if k != 'self'}
+        
         if device != 'cpu':
             self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         else:

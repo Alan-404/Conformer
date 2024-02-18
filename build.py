@@ -1,15 +1,16 @@
 import os
 import torch
+import fire
 
 import torchsummary
 
 from processing.processor import ConformerProcessor
 from model.conformer import Conformer
 
-import pickle
+from common import map_weights
 
 def build_model(
-        saved_folder: str,
+        saved_path: str,
         checkpoint: str,
         vocab_path: str = None, 
         lm_path: str = None,
@@ -24,16 +25,15 @@ def build_model(
         fmin: float = 0.0, 
         fmax: float = 8000.0,
         # Model Hyper - Params
-        encoder_n_layers: int = 17,
-        encoder_dim: int = 512,
+        n_blocks: int = 17,
+        d_model: int = 512,
         heads: int = 8,
         kernel_size: int = 31,
-        decoder_n_layers: int = 1,
-        decoder_dim: int = 640,
+        n_layers: int = 1,
+        hidden_dim: int = 640,
         dropout_rate: float = 0.1,
     ):
     assert os.path.exists(checkpoint)
-    device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
 
     processor = ConformerProcessor(
         vocab_path=vocab_path,
@@ -53,25 +53,38 @@ def build_model(
     model = Conformer(
         vocab_size=len(processor.dictionary.get_itos()),
         n_mel_channels=processor.num_mels,
-        encoder_n_layers=encoder_n_layers,
-        encoder_dim=encoder_dim,
+        n_blocks=n_blocks,
+        d_model=d_model,
         heads=heads,
         kernel_size=kernel_size,
-        decoder_n_layers=decoder_n_layers,
-        decoder_dim=decoder_dim,
+        n_layers=n_layers,
+        hidden_dim=hidden_dim,
         dropout_rate=dropout_rate
-    ).to(device)
+    )
+
+    hyper_params = {
+        'vocab_size': len(processor.dictionary.get_itos()),
+        'n_mel_channels': processor.num_mels,
+        'n_blocks': n_blocks,
+        'd_model': d_model,
+        'heads': heads,
+        'kernel_size': kernel_size,
+        'n_layers': n_layers,
+        'hidden_dim': hidden_dim,
+        'dropout_rate': dropout_rate
+    }
 
     torchsummary.summary(model)
 
-    model.load_state_dict(torch.load(checkpoint, map_location=device)['model'])
+    model.load_state_dict(map_weights(torch.load(checkpoint, map_location='cpu')['state_dict']))
     model.eval()
 
-    if os.path.exists(saved_folder) == False:
-        os.mkdir(saved_folder)
+    torch.save({
+        'hyper_params': hyper_params,
+        'processor_params': processor.params,
+        'state_dict': model.state_dict() 
+    }, saved_path)
 
-    with open(f"{saved_folder}/model.bin", 'wb') as file:
-        pickle.dump(model, file, protocol=pickle.HIGHEST_PROTOCOL)
 
-    
-
+if __name__ == '__main__':
+    fire.Fire(build_model)

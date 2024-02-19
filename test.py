@@ -6,7 +6,7 @@ import torchsummary
 
 import io
 
-from ignite.engine import Engine
+from ignite.engine import Engine, Events
 from ignite.contrib.handlers.tqdm_logger import ProgressBar
 
 import fire
@@ -20,7 +20,6 @@ from evaluation import ConformerMetric
 from common import map_weights
 from typing import Tuple
 
-import time
 
 def test(result_folder: str,
          test_path: str,
@@ -89,8 +88,6 @@ def test(result_folder: str,
         dropout_rate=dropout_rate
     ).to(device)
 
-    torchsummary.summary(model)
-
     checkpoint = torch.load(checkpoint, map_location='cpu')
     if 'state_dict' in checkpoint.keys():
         model.load_state_dict(map_weights(checkpoint['state_dict']))
@@ -128,19 +125,24 @@ def test(result_folder: str,
     engine = Engine(infer_step)
     ProgressBar().attach(engine)
 
+    @engine.on(Events.STARTED)
+    def _ (_: Engine):
+        torchsummary.summary(model)
+
+    @engine.on(Events.COMPLETED)
+    def _(_: Engine):
+        answers = io.open(result_path).read().strip().split("\n")
+        answers = io.open(result_path).read().strip().split("\n")
+        print(f"WER Score: {metric.wer_score(predicts, answers)}")
+        
+        df = dataset.prompts
+        df['pred'] = predicts
+
+        filename = os.path.basename(test_path)
+        df.to_csv(f"{result_folder}/{filename}", index=False, sep="\t")
+
     engine.run(dataloader, max_epochs=1)
-
     print("Done Inference")
-    
-    answers = io.open(result_path).read().strip().split("\n")
-
-    print(f"WER Score: {metric.wer_score(predicts, answers)}")
-    
-    df = dataset.prompts
-    df['pred'] = predicts
-
-    filename = os.path.basename(test_path)
-    df.to_csv(f"{result_folder}/{filename}", index=False, sep="\t")
         
 if __name__ == '__main__':
     fire.Fire(test)

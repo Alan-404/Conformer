@@ -14,9 +14,9 @@ from module import ConformerModule
 from processing.char_processor import ConformerProcessor
 from dataset import CharDataset
 
-from model.utils.augment import SpecAugment
+from processing.noise import SpecAugment
 
-from typing import Optional
+from typing import Optional, Tuple
 
 def train(
         # Processor Config
@@ -92,7 +92,7 @@ def train(
     if set_augment:
         spec_augment = SpecAugment(freq_augment=freq_augment, time_augment=time_augment, time_mask_ratio=time_mask_ratio)
     
-    def get_batch(batch, augment: bool) -> [torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    def get_batch(batch, augment: bool) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         signals, transcripts = zip(*batch)
         mels, mel_lengths = processor(signals, return_length=True)
 

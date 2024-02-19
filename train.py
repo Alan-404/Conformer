@@ -4,7 +4,7 @@ from torch.utils.data import DataLoader, random_split
 
 from lightning import Trainer
 from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping
-from lightning.pytorch.strategies import DDPStrategy
+from lightning.pytorch.strategies import SingleDeviceStrategy ,DDPStrategy
 from lightning.pytorch.loggers.wandb import WandbLogger
 
 import fire
@@ -49,6 +49,7 @@ def train(
         batch_size: int = 1,
         num_epochs: int = 1,
         early_stopping_patience: int = 3,
+        device: str = "cuda",
         num_workers: int = 1,
         # Augment Config
         set_augment: bool = True,
@@ -141,9 +142,13 @@ def train(
     
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, collate_fn=lambda batch: get_batch(batch, set_augment), num_workers=num_workers)
 
-    strategy = 'auto'
-    if torch.cuda.device_count() > 1:
-        strategy = DDPStrategy(process_group_backend='gloo')
+    if device == 'cpu' and torch.cuda.is_available():
+        strategy = SingleDeviceStrategy(device='cpu')
+    else:
+        if torch.cuda.device_count() == 1:
+            strategy = SingleDeviceStrategy(device='cuda')
+        else:
+            strategy = DDPStrategy(process_group_backend='gloo')
 
     logger = WandbLogger(
         project=project_name,

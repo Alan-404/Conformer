@@ -73,7 +73,7 @@ def train(
     callbacks.append(ModelCheckpoint(saved_folder, filename="{epoch}", save_on_train_epoch_end=True, save_last=True))
 
     if device == 'cpu':
-        strategy = SingleDeviceStrategy(device=device)
+        strategy = SingleDeviceStrategy()
     else:
         if torch.cuda.device_count() == 1:
             strategy = SingleDeviceStrategy(device='cuda')

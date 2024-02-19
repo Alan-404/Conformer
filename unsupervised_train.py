@@ -11,6 +11,8 @@ from processing.processor import ConformerProcessor
 from module import BYOLConformerModule
 from dataset import UnsupervisedConformerDataset
 
+import fire
+
 from typing import Tuple
 
 def train(
@@ -86,3 +88,6 @@ def train(
 
     trainer = Trainer(max_epochs=num_epochs, callbacks=callbacks, precision='16-mixed', strategy=strategy, logger=logger)
     trainer.fit(module, train_dataloaders=dataloader, ckpt_path=checkpoint)
+
+if __name__ == '__main__':
+    fire.Fire(train)

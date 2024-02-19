@@ -5,7 +5,7 @@ import copy
 import torchaudio
 
 class BYOL(nn.Module):
-    def __init__(self, n_mel_channels: int, n: int, d_model: int, heads: int, kernel_size: int, eps: float, alpha: float=0.99) -> None:
+    def __init__(self, n_mel_channels: int, n: int, d_model: int, heads: int, kernel_size: int, dropout_rate: float, alpha: float=0.99) -> None:
         super().__init__()
         self.online_network = Network(
             n_mel_channels=n_mel_channels,
@@ -13,7 +13,7 @@ class BYOL(nn.Module):
             d_model=d_model,
             heads=heads,
             kernel_size=kernel_size,
-            eps=eps
+            dropout_rate=dropout_rate
         )
 
         self.target_network = self.copy_network()
@@ -24,8 +24,8 @@ class BYOL(nn.Module):
         self.freeze_target()
 
         self.spec_augment = nn.Sequential(
-            torchaudio.transforms.FrequencyMasking(freq_mask_param=27),
-            torchaudio.transforms.TimeMasking(time_mask_param=10, p=0.05)
+            torchaudio.transforms.FrequencyMasking(freq_mask_param=35),
+            torchaudio.transforms.TimeMasking(time_mask_param=20, p=0.1)
         )
 
     def freeze_target(self):
@@ -45,9 +45,9 @@ class BYOL(nn.Module):
     def gaussion_noise(self, x: torch.Tensor):
         return (x - x.mean()) / (x.var() + 1e-7)
 
-    def forward(self, online_item: torch.Tensor, target_item: torch.Tensor):
-        online_item = self.spec_augment(online_item)
-        target_item = self.gaussion_noise(target_item)
+    def forward(self, mel: torch.Tensor):
+        online_item = self.spec_augment(mel)
+        target_item = self.gaussion_noise(mel)
 
         online_output = self.online_network(online_item)
         online_output = self.predictor(online_output)
@@ -80,7 +80,7 @@ class EMA:
         return self.alpha * old + (1 - self.alpha) * new
 
 class Network(nn.Module):
-    def __init__(self, n_mel_channels: int, n: int, d_model: int, heads: int, kernel_size: int, eps: float) -> None:
+    def __init__(self, n_mel_channels: int, n: int, d_model: int, heads: int, kernel_size: int, dropout_rate: float = 0.0) -> None:
         super().__init__()
         self.encoder = Encoder(
             n_mel_channels=n_mel_channels,
@@ -88,7 +88,7 @@ class Network(nn.Module):
             d_model=d_model,
             heads=heads,
             kernel_size=kernel_size,
-            eps=eps
+            dropout_rate=dropout_rate
         )
 
         self.projector = MLP(dim=d_model)

@@ -16,7 +16,7 @@ from pyctcdecode import build_ctcdecoder
 MAX_AUDIO_VALUE = 32768
 
 class ConformerProcessor:
-    def __init__(self, vocab_path: str, unk_token: str = "<unk>", pad_token: str = "<pad>", word_delim_token: str = "|", sampling_rate: int = 16000, num_mels: int = 80, n_fft: int = 400, hop_length: int = 160, win_length: int = 400, fmin: float = 0.0, fmax: float = 8000.0, puncs: str = r"([:./,?!@#$%^&=`~*\(\)\[\]\"\-\\])", lm_path: Optional[str] = None, beam_alpha: float = 2.1, beam_beta: float = 9.2, device: str = 'cpu') -> None:
+    def __init__(self, vocab_path: Optional[str] = None, unk_token: str = "<unk>", pad_token: str = "<pad>", word_delim_token: str = "|", sampling_rate: int = 16000, num_mels: int = 80, n_fft: int = 400, hop_length: int = 160, win_length: int = 400, fmin: float = 0.0, fmax: float = 8000.0, puncs: str = r"([:./,?!@#$%^&=`~*\(\)\[\]\"\-\\])", lm_path: Optional[str] = None, beam_alpha: float = 2.1, beam_beta: float = 9.2, device: str = 'cpu') -> None:
         self.params = {k: v for k, v in locals().items() if k != 'self'}
         
         if device != 'cpu':
@@ -25,30 +25,31 @@ class ConformerProcessor:
             self.device = device
         
         # Text
-        self.replace_dict = dict()
-        self.dictionary = None
-        self.hotwords_dict = dict()
+        if vocab_path is not None:
+            self.replace_dict = dict()
+            self.dictionary = None
+            self.hotwords_dict = dict()
 
-        self.create_vocab(vocab_path, pad_token=pad_token, word_delim_token=word_delim_token, unk_token=unk_token)
+            self.create_vocab(vocab_path, pad_token=pad_token, word_delim_token=word_delim_token, unk_token=unk_token)
 
-        self.word_delim_item = word_delim_token
-        self.unk_item = unk_token
+            self.word_delim_item = word_delim_token
+            self.unk_item = unk_token
 
-        self.unk_token = self.find_token(unk_token)
-        self.pad_token = self.find_token(pad_token)
-        self.word_delim_token = self.find_token(word_delim_token)
+            self.unk_token = self.find_token(unk_token)
+            self.pad_token = self.find_token(pad_token)
+            self.word_delim_token = self.find_token(word_delim_token)
 
-        self.special_tokens = [unk_token, pad_token]
+            self.special_tokens = [unk_token, pad_token]
 
-        self.puncs = puncs
+            self.puncs = puncs
 
-        if lm_path is not None and os.path.exists(lm_path):
-            self.ctc_lm = build_ctcdecoder(
-                labels=self.dictionary.get_itos(),
-                kenlm_model_path=lm_path,
-                alpha=beam_alpha,
-                beta=beam_beta
-            )
+            if lm_path is not None and os.path.exists(lm_path):
+                self.ctc_lm = build_ctcdecoder(
+                    labels=self.dictionary.get_itos(),
+                    kenlm_model_path=lm_path,
+                    alpha=beam_alpha,
+                    beta=beam_beta
+                )
             
         # Audio
         self.sampling_rate = sampling_rate

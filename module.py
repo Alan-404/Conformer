@@ -9,6 +9,7 @@ import lightning as L
 from torchmetrics.text import WordErrorRate
 
 from model.conformer import Conformer
+from model.byol import BYOL
 
 from typing import List, Tuple, Union, Callable, Optional
 import statistics
@@ -95,9 +96,40 @@ class ConformerModule(L.LightningModule):
         for params in self.model.encoder.subsampling.parameters():
             params.requires_grad = False
 
+class BYOLConformerModule(L.LightningModule):
+    def __init__(self, n_mel_channels: int, n_blocks: int, d_model: int, heads: int, kernel_size: int, dropout_rate: float, alpha: float = 0.99) -> None:
+        super().__init__()
+        self.model = BYOL(n_mel_channels=n_mel_channels, n=n_blocks, d_model=d_model, heads=heads, kernel_size=kernel_size, dropout_rate=dropout_rate, alpha=alpha)
+        self.criterion = ConformerCriterion()
+
+        self.train_loss = []
+        self.val_loss = []
+        self.val_score = []
+
+    def forward(self, mel: torch.Tensor):
+        online, target = self.model(mel)
+        loss = self.criterion.l2_norm(online, target)
+        return loss
+    
+    def configure_optimizers(self):
+        optimizer = optim.Adam(params=self.parameters(), lr=3e-5, weight_decay=1e-6, betas=[0.9, 0.98], eps=1e-9)
+        scheduler = lr_scheduler.CosineAnnealingLR(optimizer=optimizer, T_max=1000)
+        return [optimizer], [{'scheduler': scheduler, 'interval': "epoch"}]
+    
+    def on_train_epoch_end(self):
+        loss = statistics.mean(self.train_loss)
+        print(f"Train Loss: {(loss):.4f}")
+        print(f"Current Learning Rate: {self.optimizers().param_groups[0]['lr']}")
+
+        self.log("train_loss", loss, rank_zero_only=True)
+        self.log('learning_rate', self.optimizers().param_groups[0]['lr'], rank_zero_only=True)
+        
+        self.train_loss.clear()
+
 class ConformerCriterion:
     def __init__(self, blank_id: Optional[int] = None) -> None:
-        self.ctc_criterion = nn.CTCLoss(blank=blank_id, zero_infinity=True)
+        if blank_id is not None:
+            self.ctc_criterion = nn.CTCLoss(blank=blank_id, zero_infinity=True)
 
     def ctc_loss(self, outputs: torch.Tensor, targets: torch.Tensor, input_lengths: torch.Tensor, target_lengths: torch.Tensor) -> torch.Tensor:
         return self.ctc_criterion(outputs.log_softmax(dim=-1).transpose(0,1), targets, input_lengths, target_lengths)
@@ -118,6 +150,19 @@ class ConformerCriterion:
             loss += similaries[i] / torch.sum(torch.tensor(similaries))
 
         return -loss
+    
+    def __l2_norm(self, online: torch.Tensor, target: torch.Tensor):
+        online = F.normalize(online, dim=-1, p=2)
+        target = F.normalize(target, dim=-1, p=2)
+        return 2 - 2 * (online * target).sum(dim=-1)
+    
+    def l2_norm(self, online: torch.Tensor, target: torch.Tensor):
+        batch_size = online.size(0)
+        loss = 0.0
+        for idx in range(batch_size):
+            loss += self.__l2_norm(online[idx], target[idx])
+
+        return loss.mean()
 
 class ConformerMetric:
     def __init__(self) -> None:

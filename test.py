@@ -1,22 +1,30 @@
 import os
 import torch
+from torch.utils.data import DataLoader
 
 import torchsummary
 
-import pandas as pd
+import io
 
 from ignite.engine import Engine
+from ignite.contrib.handlers.tqdm_logger import ProgressBar
+
 import fire
 
 from processing.processor import ConformerProcessor
 from model.conformer import Conformer
+from dataset import ConformerInferenceDataset
 
-from module import ConformerMetric
+from evaluation import ConformerMetric
+
 from common import map_weights
-from tqdm import tqdm
+from typing import Tuple
+
+import time
 
 def test(result_folder: str,
          test_path: str,
+         result_path: str,
          vocab_path: str,
          arpa_path: str,
          checkpoint: str,
@@ -37,6 +45,8 @@ def test(result_folder: str,
          n_layers: int = 1,
          hidden_dim: int = 640,
          dropout_rate: float = 0.0,
+         batch_size: int = 1,
+         device: str = 'cuda',
          num_examples: int = None):
     
     assert os.path.exists(test_path) and os.path.exists(checkpoint)
@@ -45,7 +55,10 @@ def test(result_folder: str,
         os.mkdir(result_folder)
 
     # Device Config
-    device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
+    if device == 'cpu' or torch.cuda.is_available() == False:
+        device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
+    else:
+        device = torch.device('cuda')
 
     # Processor Setup
     processor = ConformerProcessor(
@@ -84,44 +97,50 @@ def test(result_folder: str,
     else:
         model.load_state_dict(checkpoint['model'])
     model.to(device)
-    model.eval()
 
     metric = ConformerMetric()
 
-    df = pd.read_csv(test_path, sep="\t")
-    if num_examples is not None:
-        df = df[:num_examples]
-    df['text'] = df['text'].fillna('')
+    def get_batch(signals: torch.Tensor):
+        if batch_size != 1:
+            mels, mel_lengths = processor(signals, return_length=True)
+            return mels, mel_lengths
+        
+        mels = processor(signals, return_length=False)
+        return mels, None
 
-    answers = df['text'].to_list()
+    dataset = ConformerInferenceDataset(manifest_path=test_path, processor=processor, num_examples=num_examples)
+    dataloader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=False, collate_fn=get_batch)
+
+    predicts = []
+
+    def infer_step(_: Engine, batch: Tuple[torch.Tensor]) -> None:
+        mels, lengths = batch[0].to(device), batch[1].to(device)
+        with torch.inference_mode():
+            outputs = model(mels, lengths)
+        
+        outputs = outputs.cpu().numpy()
+        lengths = lengths.cpu().numpy()
+        for index, output in enumerate(outputs):
+            if lengths is not None:
+                output = output[:lengths[index]]
+            predicts.append(processor.decode_beam_search(output))
+
+    engine = Engine(infer_step)
+    ProgressBar().attach(engine)
+
+    engine.run(dataloader, max_epochs=1)
+
+    print("Done Inference")
     
-    preds = []
-    for _, row in tqdm(df.iterrows(), total=df.shape[0]):
-        path = row['path']
-        start, end = None, None
-        if 'start' in df.columns and 'end' in df.columns:
-            start = row['start']
-            end = row['end']
-        
-        role = None
-        if 'type' in df.columns:
-            if row['type'] == 'up':
-                role = 0
-            elif row['type'] == 'down':
-                role = 1
+    answers = io.open(result_path).read().strip().split("\n")
 
-        mel = processor.mel_spectrogram(processor.load_audio(path, start, end, role)).unsqueeze(0).to(device)
-
-        with torch.no_grad():
-            logits = model(mel)
-        
-        preds.append(processor.decode_beam_search(logits[0].cpu().numpy()))
-
-    print(f"WER Score: {metric.wer_score(preds, answers)}")
-    df['pred'] = preds
+    print(f"WER Score: {metric.wer_score(predicts, answers)}")
+    
+    df = dataset.prompts
+    df['pred'] = predicts
 
     filename = os.path.basename(test_path)
-    df.to_csv(f"{result_folder}/{filename}", sep="\t", index=False)
+    df.to_csv(f"{result_folder}/{filename}", index=False, sep="\t")
         
 if __name__ == '__main__':
     fire.Fire(test)

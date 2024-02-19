@@ -23,6 +23,21 @@ class ConformerProcessor:
             self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         else:
             self.device = device
+
+        # Audio
+        self.sampling_rate = sampling_rate
+        self.num_mels = num_mels
+        self.hop_length = hop_length
+
+        self.mel_transform = MelSpectrogram(
+            sample_rate=sampling_rate,
+            n_fft=n_fft,
+            win_length=win_length,
+            hop_length=hop_length,
+            f_min=fmin,
+            f_max=fmax,
+            n_mels=num_mels
+        ).to(self.device)
         
         # Text
         if vocab_path is not None:
@@ -50,21 +65,6 @@ class ConformerProcessor:
                     alpha=beam_alpha,
                     beta=beam_beta
                 )
-            
-        # Audio
-        self.sampling_rate = sampling_rate
-        self.num_mels = num_mels
-        self.hop_length = hop_length
-
-        self.mel_transform = MelSpectrogram(
-            sample_rate=sampling_rate,
-            n_fft=n_fft,
-            win_length=win_length,
-            hop_length=hop_length,
-            f_min=fmin,
-            f_max=fmax,
-            n_mels=num_mels
-        ).to(self.device)
 
     def create_vocab(self, vocab_path: str, pad_token: str, word_delim_token: str, unk_token: str) -> Vocab:
         data = json.load(open(vocab_path, encoding='utf8'))

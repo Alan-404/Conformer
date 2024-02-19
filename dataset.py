@@ -117,8 +117,6 @@ class ConformerInferenceDataset(Dataset):
         if num_examples is not None:
             self.prompts = self.prompts[:num_examples]
 
-        self.prompts['text'] = self.prompts['text'].fillna('')
-
         self.processor = processor
 
     def __len__(self):

@@ -91,8 +91,7 @@ def test(result_folder: str,
     checkpoint = torch.load(checkpoint, map_location='cpu')
     if 'state_dict' in checkpoint.keys():
         model.load_state_dict(map_weights(checkpoint['state_dict']))
-    else:
-        model.load_state_dict(checkpoint['model'])
+        
     model.to(device)
 
     metric = ConformerMetric()
@@ -103,7 +102,7 @@ def test(result_folder: str,
             return mels, mel_lengths
         
         mels = processor(signals, return_length=False)
-        return mels, None
+        return mels
 
     dataset = ConformerInferenceDataset(manifest_path=test_path, processor=processor, num_examples=num_examples)
     dataloader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=False, collate_fn=get_batch)
@@ -111,12 +110,19 @@ def test(result_folder: str,
     predicts = []
 
     def infer_step(_: Engine, batch: Tuple[torch.Tensor]) -> None:
-        mels, lengths = batch[0].to(device), batch[1].to(device)
+        if batch_size == 1:
+            mels = batch[0].unsqueeze(0).to(device)
+            lengths = None
+        else:
+            mels, lengths = batch[0].to(device), batch[1].to(device)
+        
         with torch.inference_mode():
             outputs = model(mels, lengths)
         
         outputs = outputs.cpu().numpy()
-        lengths = lengths.cpu().numpy()
+        if batch_size != 1:
+            lengths = lengths.cpu().numpy()
+            
         for index, output in enumerate(outputs):
             if lengths is not None:
                 output = output[:lengths[index]]

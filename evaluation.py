@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from torchmetrics.text import WordErrorRate
+from torchmetrics.text import WordErrorRate, CharErrorRate
 
 from typing import Optional, Union, List
 
@@ -47,6 +47,10 @@ class ConformerCriterion:
 class ConformerMetric:
     def __init__(self) -> None:
         self.wer_metric = WordErrorRate()
+        self.cer_metric = CharErrorRate()
 
     def wer_score(self, pred: Union[List[str], str], label: Union[List[str], str]) -> torch.Tensor:
         return self.wer_metric(pred, label)
+    
+    def cer_score(self, pred: Union[List[str], str], label: Union[List[str], str]) -> torch.Tensor:
+        return self.cer_metric(pred, label)

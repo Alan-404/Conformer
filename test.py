@@ -91,6 +91,8 @@ def test(result_folder: str,
     ).to(device)
     model.eval()
 
+    torchsummary.summary(model)
+
     checkpoint = torch.load(checkpoint, map_location='cpu')
     if 'state_dict' in checkpoint.keys():
         model.load_state_dict(map_weights(checkpoint['state_dict']))
@@ -136,6 +138,7 @@ def test(result_folder: str,
     def _(_: Engine):
         answers = io.open(result_path).read().strip().split("\n")
         print(f"WER Score: {metric.wer_score(predicts, answers)}")
+        print(f"CER Score: {metric.cer_score(predicts, answers)}")
         
         df = dataset.prompts
         df['transcript'] = answers

@@ -17,8 +17,6 @@ class BYOL(nn.Module):
             kernel_size=kernel_size,
             dropout_rate=dropout_rate
         )
-
-        self.quantizier = Quantization(d_model=d_model, proj_dim=d_model)
         self.target_network = self.copy_network()
 
         self.predictor = MLP(dim=d_model)
@@ -47,9 +45,8 @@ class BYOL(nn.Module):
 
         with torch.no_grad():
             target_output = self.target_network(target_item, lengths)
-            target_output, perplexity = self.quantizier(target_output)
 
-        return online_output, target_output, perplexity
+        return online_output, target_output
 
 class MLP(nn.Module):
     def __init__(self, dim: int) -> None:

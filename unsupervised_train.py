@@ -5,7 +5,6 @@ from torch.utils.data import DataLoader
 from lightning import Trainer
 from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.strategies import DDPStrategy
-from lightning.pytorch.loggers.wandb import WandbLogger
 from processing.processor import ConformerProcessor
 
 from module import BYOLConformerModule
@@ -80,15 +79,9 @@ def train(
 
     strategy = 'auto'
     if torch.cuda.device_count() > 1:
-        strategy = DDPStrategy(process_group_backend='gloo')
+        strategy = DDPStrategy(process_group_backend='gloo', find_unused_parameters=True)
 
-    logger = WandbLogger(
-        project=project_name,
-        name=os.environ.get("WANDB_USERNAME"),
-        save_dir=os.environ.get("WANDB_SAVE_DIR"),
-    )
-
-    trainer = Trainer(max_epochs=num_epochs, callbacks=callbacks, precision='16-mixed', strategy=strategy, logger=logger)
+    trainer = Trainer(max_epochs=num_epochs, callbacks=callbacks, precision='16-mixed', strategy=strategy)
     trainer.fit(module, train_dataloaders=dataloader, ckpt_path=checkpoint)
 
 if __name__ == '__main__':

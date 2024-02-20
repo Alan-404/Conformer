@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
-from model.conformer import Encoder
-from model.modules.quantization import Quantization
+from model.modules.encoder import Encoder
+
 import copy
 
 from typing import Optional

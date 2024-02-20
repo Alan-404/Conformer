@@ -5,7 +5,6 @@ from torch.utils.data import DataLoader, random_split
 from lightning import Trainer
 from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping
 from lightning.pytorch.strategies import SingleDeviceStrategy ,DDPStrategy
-from lightning.pytorch.loggers.wandb import WandbLogger
 
 import fire
 

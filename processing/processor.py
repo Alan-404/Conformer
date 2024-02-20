@@ -306,15 +306,12 @@ class ConformerProcessor:
 
         for index, signal in enumerate(signals):
             padded_signals.append(F.pad(signal, (0, max_len - lengths[index]), mode='constant', value=0.0))
-            if return_length:
-                mel_lengths.append(lengths[index] // self.hop_length + 1)
+            mel_lengths.append(lengths[index] // self.hop_length + 1)
 
         mels = self.mel_spectrogram(torch.stack(padded_signals)).type(torch.FloatTensor)
+        mel_lengths = torch.stack(mel_lengths)
 
-        if return_length:
-            return mels, torch.tensor(mel_lengths)
-        
-        return mels
+        return mels, mel_lengths
     
     def tokenize(self, graphemes: List[List[str]], max_len: Optional[int] = None) -> Tuple[torch.Tensor, torch.Tensor]:
         tokens = []

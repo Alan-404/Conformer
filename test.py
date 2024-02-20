@@ -100,17 +100,13 @@ def test(result_folder: str,
     metric = ConformerMetric()
 
     def get_batch(signals: torch.Tensor):
-        if batch_size != 1:
-            mels, mel_lengths = processor(signals, return_length=True)
-            
-            sorted_indexes = torch.argsort(mel_lengths, descending=True)
-            mel_lengths = mel_lengths[sorted_indexes]
-            mels = mels[sorted_indexes]
-            
-            return mels, mel_lengths, sorted_indexes
-        
-        mels = processor(signals, return_length=False)
-        return mels
+        mels, mel_lengths = processor(signals, return_length=True)
+
+        sorted_indexes = torch.argsort(mel_lengths, descending=True)
+        mel_lengths = mel_lengths[sorted_indexes]
+        mels = mels[sorted_indexes]
+
+        return mels, mel_lengths, sorted_indexes
 
     dataset = ConformerInferenceDataset(manifest_path=test_path, processor=processor, num_examples=num_examples)
     dataloader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=False, collate_fn=get_batch, num_workers=num_workers)
@@ -118,28 +114,19 @@ def test(result_folder: str,
     predicts = []
 
     def infer_step(_: Engine, batch: Tuple[torch.Tensor]) -> None:
-        if batch_size == 1:
-            mels = batch[0].unsqueeze(0).to(device)
-            lengths = None
-        else:
-            mels, lengths, sorted_indexes = batch[0].to(device), batch[1].to(device), batch[2]
+        mels, lengths, sorted_indexes = batch[0].to(device), batch[1].to(device), batch[2]
         
         with torch.inference_mode():
-            if lengths is None:
-                outputs = model(mels)
-            else:
-                outputs, lengths = model(mels, lengths)
+            outputs, lengths = model(mels, lengths)
         
-        if lengths is not None:
-            origin_indexes = torch.argsort(sorted_indexes)
-            outputs = outputs[origin_indexes]
-            lengths = lengths[origin_indexes].cpu().numpy()
+        origin_indexes = torch.argsort(sorted_indexes)
+        outputs = outputs[origin_indexes]
+        lengths = lengths[origin_indexes].cpu().numpy()
         
         outputs = outputs.cpu().numpy()
         
         for index, output in enumerate(outputs):
-            if lengths is not None:
-                output = output[:lengths[index]]
+            output = output[:lengths[index]]
             predicts.append(processor.decode_beam_search(output))
 
     engine = Engine(infer_step)

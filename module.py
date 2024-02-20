@@ -95,7 +95,7 @@ class ConformerModule(L.LightningModule):
             params.requires_grad = False
 
 class BYOLConformerModule(L.LightningModule):
-    def __init__(self, n_mel_channels: int, n_blocks: int, d_model: int, heads: int, kernel_size: int, dropout_rate: float, alpha: float = 0.99) -> None:
+    def __init__(self, n_mel_channels: int, n_blocks: int, d_model: int, heads: int, kernel_size: int, dropout_rate: float, alpha: float = 0.95) -> None:
         super().__init__()
         self.model = BYOL(n_mel_channels=n_mel_channels, n=n_blocks, d_model=d_model, heads=heads, kernel_size=kernel_size, dropout_rate=dropout_rate, alpha=alpha)
         self.criterion = ConformerCriterion()
@@ -103,10 +103,21 @@ class BYOLConformerModule(L.LightningModule):
         self.train_loss = []
         self.val_loss = []
         self.val_score = []
+    
+    def training_step(self, batch: Tuple[torch.Tensor], _: int):
+        self.model.update_moving_average()
+        
+        online = batch[0]
+        target = batch[1]
 
-    def forward(self, mel: torch.Tensor):
-        online, target = self.model(mel)
+        lengths = batch[2]
+
+        online, target = self.model(online, target, lengths)
+
         loss = self.criterion.l2_norm(online, target)
+
+        self.train_loss.append(loss.item())
+
         return loss
     
     def configure_optimizers(self):

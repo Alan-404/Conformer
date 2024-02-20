@@ -296,7 +296,7 @@ class ConformerProcessor:
                 graphemes.append(self.word_delim_item)
         return graphemes
     
-    def __call__(self, signals: List[torch.Tensor], return_length: bool = False) -> torch.Tensor:
+    def __call__(self, signals: List[torch.Tensor], get_signals: bool = False) -> torch.Tensor:
         lengths = torch.tensor([len(signal) for signal in signals])
         max_len = torch.max(lengths)
             
@@ -306,7 +306,11 @@ class ConformerProcessor:
 
         for index, signal in enumerate(signals):
             padded_signals.append(F.pad(signal, (0, max_len - lengths[index]), mode='constant', value=0.0))
-            mel_lengths.append(lengths[index] // self.hop_length + 1)
+            if not get_signals:
+                mel_lengths.append(lengths[index] // self.hop_length + 1)
+
+        if get_signals:
+            return torch.stack(padded_signals)
 
         mels = self.mel_spectrogram(torch.stack(padded_signals)).type(torch.FloatTensor)
         mel_lengths = torch.stack(mel_lengths)

@@ -2,10 +2,11 @@ import torch
 import torch.nn as nn
 from model.conformer import Encoder
 import copy
-import torchaudio
+
+from typing import Optional
 
 class BYOL(nn.Module):
-    def __init__(self, n_mel_channels: int, n: int, d_model: int, heads: int, kernel_size: int, dropout_rate: float, alpha: float=0.99) -> None:
+    def __init__(self, n_mel_channels: int, n: int, d_model: int, heads: int, kernel_size: int, dropout_rate: float, alpha: float=0.95) -> None:
         super().__init__()
         self.online_network = Network(
             n_mel_channels=n_mel_channels,
@@ -23,11 +24,6 @@ class BYOL(nn.Module):
 
         self.freeze_target()
 
-        self.spec_augment = nn.Sequential(
-            torchaudio.transforms.FrequencyMasking(freq_mask_param=30),
-            torchaudio.transforms.TimeMasking(time_mask_param=10, p=0.065)
-        )
-
     def freeze_target(self):
         for params in self.target_network.parameters():
             params.requires_grad = False
@@ -42,18 +38,12 @@ class BYOL(nn.Module):
             old_weights, new_weights = target_params.data, online_params.data
             target_params = self.update_handler.update_average(old_weights, new_weights)
 
-    def gaussion_noise(self, x: torch.Tensor):
-        return (x - x.mean()) / (x.var() + 1e-7)
-
-    def forward(self, mel: torch.Tensor):
-        online_item = self.spec_augment(mel)
-        target_item = self.gaussion_noise(mel)
-
-        online_output = self.online_network(online_item)
+    def forward(self, online_item: torch.Tensor, target_item: torch.Tensor, lengths: torch.Tensor):
+        online_output = self.online_network(online_item, lengths)
         online_output = self.predictor(online_output)
 
         with torch.no_grad():
-            target_output = self.target_network(target_item)
+            target_output = self.target_network(target_item, lengths)
 
         return online_output, target_output
 
@@ -93,7 +83,7 @@ class Network(nn.Module):
 
         self.projector = MLP(dim=d_model)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x, _ = self.encoder(x)
+    def forward(self, x: torch.Tensor, lengths: Optional[torch.Tensor] = None) -> torch.Tensor:
+        x, lengths = self.encoder(x, lengths)
         x = self.projector(x)
         return x

@@ -4,23 +4,26 @@ from torch.utils.data import DataLoader
 
 from lightning import Trainer
 from lightning.pytorch.callbacks import ModelCheckpoint
-from lightning.pytorch.strategies import DDPStrategy, SingleDeviceStrategy
+from lightning.pytorch.strategies import DDPStrategy
 from lightning.pytorch.loggers.wandb import WandbLogger
 from processing.processor import ConformerProcessor
 
 from module import BYOLConformerModule
 from dataset import UnsupervisedConformerDataset
+from processing.noise import OnlineAugment, TargetAugment
 
 import fire
 
 from typing import Tuple
 
+
 def train(
         data_path: str,
-        checkpoint: str,
-        saved_folder: str,
-        num_epochs: int,
-        batch_size: int,
+        checkpoint: str = None,
+        num_epochs: int = 1,
+        batch_size: int = 1,
+        num_train: int = None,
+        saved_folder: str = "./checkpoints",
         sampling_rate: int = 16000,
         n_fft: int = 400,
         hop_length: int = 160,
@@ -33,8 +36,7 @@ def train(
         heads: int = 8,
         kernel_size: int = 31,
         dropout_rate: float = 0.1,
-        alpha: float = 0.99,
-        device: str = 'cuda',
+        alpha: float = 0.95,
         num_workers: int = 1,
         project_name: str = "unsupervised_conformer_byol"
     ):
@@ -62,23 +64,23 @@ def train(
         fmax=fmax
     )
 
-    def get_batch(batch: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-        mels = processor(batch, return_length=False)
-        return mels
+    online_augment = OnlineAugment()
+    target_augment = TargetAugment()
 
-    dataset = UnsupervisedConformerDataset(manifest_path=data_path, processor=processor)
+    def get_batch(signals: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        mels, lengths = processor(signals)
+        
+        return online_augment(mels), processor.mel_spectrogram(target_augment(processor(signals, get_signals=True))), lengths
+
+    dataset = UnsupervisedConformerDataset(manifest_path=data_path, processor=processor, num_examples=num_train)
     dataloader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers, collate_fn=get_batch)
 
     callbacks = []
-    callbacks.append(ModelCheckpoint(saved_folder, filename="{epoch}", save_on_train_epoch_end=True, save_last=True))
+    callbacks.append(ModelCheckpoint(saved_folder, filename="byol_{epoch}", save_on_train_epoch_end=True, save_last=True))
 
-    if device == 'cpu' or torch.cuda.is_available() == False:
-        strategy = SingleDeviceStrategy()
-    else:
-        if torch.cuda.device_count() == 1:
-            strategy = SingleDeviceStrategy(device='cuda')
-        else:
-            strategy = DDPStrategy(process_group_backend='gloo')
+    strategy = 'auto'
+    if torch.cuda.device_count() > 1:
+        strategy = DDPStrategy(process_group_backend='gloo')
 
     logger = WandbLogger(
         project=project_name,

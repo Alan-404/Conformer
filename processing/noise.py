@@ -13,3 +13,19 @@ class SpecAugment:
         x = self.time_masker(x)
 
         return x
+    
+class OnlineAugment:
+    def __init__(self, freq_augment: int = 35, time_augment: int = 10, time_mask_ratio: float = 0.065) -> None:
+        self.spec_augment = SpecAugment(freq_augment=freq_augment, time_augment=time_augment, time_mask_ratio=time_mask_ratio)
+
+    def __call__(self, mels: torch.Tensor) -> Any:
+        return self.spec_augment(mels)
+    
+class TargetAugment:
+    def __init__(self) -> None:
+        pass
+
+    def __call__(self, signals: torch.Tensor) -> Any:
+        signals = (signals - signals.mean(dim=0)) / torch.sqrt(signals.var(dim=0) + 1e-7)
+
+        return signals

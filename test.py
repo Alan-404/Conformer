@@ -20,6 +20,7 @@ from evaluation import ConformerMetric
 from common import map_weights
 from typing import Tuple
 
+import time
 
 def test(result_folder: str,
          test_path: str,
@@ -45,6 +46,7 @@ def test(result_folder: str,
          hidden_dim: int = 640,
          dropout_rate: float = 0.0,
          batch_size: int = 1,
+         num_workers: int = 1,
          device: str = 'cuda',
          num_examples: int = None):
     
@@ -87,6 +89,7 @@ def test(result_folder: str,
         hidden_dim=hidden_dim,
         dropout_rate=dropout_rate
     ).to(device)
+    model.eval()
 
     checkpoint = torch.load(checkpoint, map_location='cpu')
     if 'state_dict' in checkpoint.keys():
@@ -99,13 +102,18 @@ def test(result_folder: str,
     def get_batch(signals: torch.Tensor):
         if batch_size != 1:
             mels, mel_lengths = processor(signals, return_length=True)
-            return mels, mel_lengths
+            
+            sorted_indexes = torch.argsort(mel_lengths, descending=True)
+            mel_lengths = mel_lengths[sorted_indexes]
+            mels = mels[sorted_indexes]
+            
+            return mels, mel_lengths, sorted_indexes
         
         mels = processor(signals, return_length=False)
         return mels
 
     dataset = ConformerInferenceDataset(manifest_path=test_path, processor=processor, num_examples=num_examples)
-    dataloader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=False, collate_fn=get_batch)
+    dataloader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=False, collate_fn=get_batch, num_workers=num_workers)
 
     predicts = []
 
@@ -114,15 +122,21 @@ def test(result_folder: str,
             mels = batch[0].unsqueeze(0).to(device)
             lengths = None
         else:
-            mels, lengths = batch[0].to(device), batch[1].to(device)
+            mels, lengths, sorted_indexes = batch[0].to(device), batch[1].to(device), batch[2]
         
         with torch.inference_mode():
-            outputs = model(mels, lengths)
+            if lengths is None:
+                outputs = model(mels)
+            else:
+                outputs, lengths = model(mels, lengths)
+        
+        if lengths is not None:
+            origin_indexes = torch.argsort(sorted_indexes)
+            outputs = outputs[origin_indexes]
+            lengths = lengths[origin_indexes].cpu().numpy()
         
         outputs = outputs.cpu().numpy()
-        if batch_size != 1:
-            lengths = lengths.cpu().numpy()
-            
+        
         for index, output in enumerate(outputs):
             if lengths is not None:
                 output = output[:lengths[index]]
@@ -131,23 +145,22 @@ def test(result_folder: str,
     engine = Engine(infer_step)
     ProgressBar().attach(engine)
 
-    @engine.on(Events.STARTED)
-    def _ (_: Engine):
-        torchsummary.summary(model)
-
     @engine.on(Events.COMPLETED)
     def _(_: Engine):
-        answers = io.open(result_path).read().strip().split("\n")
         answers = io.open(result_path).read().strip().split("\n")
         print(f"WER Score: {metric.wer_score(predicts, answers)}")
         
         df = dataset.prompts
+        df['transcript'] = answers
         df['pred'] = predicts
 
         filename = os.path.basename(test_path)
         df.to_csv(f"{result_folder}/{filename}", index=False, sep="\t")
 
+    start_time = time.time()
     engine.run(dataloader, max_epochs=1)
+    end_time = time.time()
+    print(f"Inference Time: {end_time - start_time}")
     print("Done Inference")
         
 if __name__ == '__main__':

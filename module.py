@@ -112,9 +112,9 @@ class BYOLConformerModule(L.LightningModule):
 
         lengths = batch[2]
 
-        online, target = self.model(online, target, lengths)
+        online, target, perplexity = self.model(online, target, lengths)
 
-        loss = self.criterion.l2_norm(online, target)
+        loss = self.criterion.l2_norm(online, target) + 0.1 * perplexity
 
         self.train_loss.append(loss.item())
 

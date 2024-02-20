@@ -15,18 +15,12 @@ class Quantization(nn.Module):
         self.weight_proj = nn.Linear(d_model, self.num_groups * self.num_vars)
         self.temperature = 2
 
-    def _compute_perplexity(self, probs: torch.Tensor, mask: Optional[torch.Tensor] = None):
-        if mask is not None:
-            mask_extended = mask.flatten()[:, None, None].expand(probs.shape)
-            probs = torch.where(mask_extended, probs, torch.zeros_like(probs))
-            marginal_probs = probs.sum(dim=0) / mask.sum()
-        else:
-            marginal_probs = probs.mean(dim=0)
-
+    def _compute_perplexity(self, probs: torch.Tensor):
+        marginal_probs = probs.mean(dim=0)
         perplexity = torch.exp(-torch.sum(marginal_probs * torch.log(marginal_probs + 1e-7), dim=-1)).sum()
         return perplexity
     
-    def forward(self, hidden_states: torch.Tensor, mask_time_indices: Optional[torch.Tensor] = None):
+    def forward(self, hidden_states: torch.Tensor):
         batch_size, sequence_length, _ = hidden_states.shape
 
         hidden_states = self.weight_proj(hidden_states)
@@ -39,12 +33,15 @@ class Quantization(nn.Module):
         codevector_soft_dist = F.softmax(
                 hidden_states.view(batch_size * sequence_length, self.num_groups, -1).float(), dim=-1
             )
-        
-        perplexity = self._compute_perplexity(codevector_soft_dist, mask_time_indices)
+
+        perplexity = self._compute_perplexity(codevector_soft_dist)
         
         codevector_probs = codevector_probs.view(batch_size * sequence_length, -1)
+
         codevectors_per_group = codevector_probs.unsqueeze(-1) * self.codevectors
+
         codevectors = codevectors_per_group.view(batch_size * sequence_length, self.num_groups, self.num_vars, -1)
+
         codevectors = codevectors.sum(-2).view(batch_size, sequence_length, -1)
 
         return codevectors, perplexity

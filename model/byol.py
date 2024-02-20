@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from model.conformer import Encoder
+from model.modules.quantization import Quantization
 import copy
 
 from typing import Optional
@@ -17,9 +18,11 @@ class BYOL(nn.Module):
             dropout_rate=dropout_rate
         )
 
+        self.quantizier = Quantization(d_model=d_model, proj_dim=d_model)
         self.target_network = self.copy_network()
 
         self.predictor = MLP(dim=d_model)
+
         self.update_handler = EMA(alpha=alpha)
 
         self.freeze_target()
@@ -44,8 +47,9 @@ class BYOL(nn.Module):
 
         with torch.no_grad():
             target_output = self.target_network(target_item, lengths)
+            target_output, perplexity = self.quantizier(target_output)
 
-        return online_output, target_output
+        return online_output, target_output, perplexity
 
 class MLP(nn.Module):
     def __init__(self, dim: int) -> None:

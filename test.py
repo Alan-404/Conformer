@@ -97,12 +97,10 @@ def test(result_folder: str,
     if 'state_dict' in checkpoint.keys():
         model.load_state_dict(map_weights(checkpoint['state_dict']))
         
-    model.to(device)
-
     metric = ConformerMetric()
 
     def get_batch(signals: torch.Tensor):
-        mels, mel_lengths = processor(signals, return_length=True)
+        mels, mel_lengths = processor(signals)
 
         sorted_indexes = torch.argsort(mel_lengths, descending=True)
         mel_lengths = mel_lengths[sorted_indexes]
@@ -152,6 +150,7 @@ def test(result_folder: str,
     end_time = time.time()
     print(f"Inference Time: {end_time - start_time}")
     print("Done Inference")
+
         
 if __name__ == '__main__':
     fire.Fire(test)

@@ -124,4 +124,3 @@ class BYOLConformerModule(L.LightningModule):
         
         self.train_loss.clear()
 
-

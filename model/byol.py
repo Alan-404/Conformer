@@ -24,8 +24,8 @@ class BYOL(nn.Module):
         self.freeze_target()
 
         self.spec_augment = nn.Sequential(
-            torchaudio.transforms.FrequencyMasking(freq_mask_param=35),
-            torchaudio.transforms.TimeMasking(time_mask_param=20, p=0.1)
+            torchaudio.transforms.FrequencyMasking(freq_mask_param=30),
+            torchaudio.transforms.TimeMasking(time_mask_param=10, p=0.065)
         )
 
     def freeze_target(self):

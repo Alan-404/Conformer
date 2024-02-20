@@ -148,15 +148,9 @@ def train(
         if torch.cuda.device_count() == 1:
             strategy = SingleDeviceStrategy(device='cuda')
         else:
-            strategy = DDPStrategy(process_group_backend='gloo')
+            strategy = DDPStrategy(process_group_backend='gloo', find_unused_parameters=True)
 
-    logger = WandbLogger(
-        project=project_name,
-        name=os.environ.get("WANDB_USERNAME"),
-        save_dir=os.environ.get("WANDB_SAVE_DIR"),
-    )
-
-    trainer = Trainer(max_epochs=num_epochs, callbacks=callbacks, precision='16-mixed', strategy=strategy, logger=logger)
+    trainer = Trainer(max_epochs=num_epochs, callbacks=callbacks, precision='16-mixed', strategy=strategy)
     
     trainer.fit(module, train_dataloaders=dataloader, val_dataloaders=val_dataloader if use_validation else None, ckpt_path=checkpoint)
 

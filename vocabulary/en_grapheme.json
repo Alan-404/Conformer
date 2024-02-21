@@ -1,35 +1,37 @@
 {
-    "vocab": [
-        "a", "e", "u", "o", "i",
-        "b", "c", "d", "f", "g", "h", "j", "k", "l", "m", "n", "p", "q", "r", "s", "t", "v", "x", "y", "z", "w",
+    "sound": [
         "pp",
         "bb",
         "wh",
-        "dd", "ed",
+        "dd",
         "ss", "sc", "ps",
         "gg", "gh",
         "ff", "ph",
         "ck", "ch",
-        "mm", "mb", "mn",
+        "mm", "mn",
         "sh", "ll",
         "rr", "wr", "rh",
         "dg", "dj",
-        "kn", "nn", "gn", "pn",
+        "kn", "nn", "pn",
         "zz", "qu", "cc", "tt", "bt",
-        "th", "ng", "tr",
+        "th", "tr",
         "oa", "ow", "oe", "ough", "ou", "ew",
         "ear", "eer", "ere", "er",
         "igh",
         "ee", "ea", "ey", "ei", "eo",
-        "ai", "ea", "ay", "ey", "aigh", 
-        "ore", "or", "oor", "au", "aw", "oar", "ar",
-        "ar", "yr",
+        "ai", "ay", "aigh",
+        "aw",
+        "yr",
         "oo", "oy",
-        "ue", "are", "eir", "ayor", "ayer", "ae",
-        "ui", "ti",
+        "ue", "are", "eir", "ayor", "ae",
+        "ui", "ir",
         "'", "n'"
     ],
-    "replace": [
-        
-    ]
+    "vowel": ["a", "e", "u", "o", "i"],
+    "consonant": ["b", "c", "d", "f", "g", "h", "j", "k", "l", "m", "n", "p", "q", "r", "s", "t", "v", "x", "y", "z", "w"],
+    "last": [
+        "be", "ce", "de", "fe", "ge", "he", "je", "ke", "le", "me", "ne", "pe", "qe", "re", "se", "te", "ve", "xe", "ye", "ze", "we",
+        "ng", "mb"
+    ],
+    "specials": ["ed", "s", "dge"]
 }

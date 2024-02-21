@@ -154,7 +154,7 @@ def train(
 
     trainer = Trainer(max_epochs=num_epochs, callbacks=callbacks, precision='16-mixed', strategy=strategy)
     
-    trainer.fit(module, train_dataloaders=dataloader, val_dataloaders=val_dataloader if use_validation else None, ckpt_path=checkpoint)
+    trainer.fit(module, train_dataloaders=dataloader, val_dataloaders=val_dataloader if use_validation else None)
 
 if __name__ == '__main__':
     fire.Fire(train)

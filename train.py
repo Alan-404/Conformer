@@ -103,7 +103,7 @@ def train(
     
     def get_batch(batch, augment: bool) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         signals, transcripts = zip(*batch)
-        mels, mel_lengths = processor(signals, return_length=True)
+        mels, mel_lengths = processor(signals)
 
         sorted_indexes = torch.argsort(mel_lengths, descending=True)
 

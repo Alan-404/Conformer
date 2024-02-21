@@ -1,4 +1,6 @@
 {
+    "vowel": ["a", "e", "u", "o", "i"],
+    "consonant": ["b", "c", "d", "f", "g", "h", "j", "k", "l", "m", "n", "p", "q", "r", "s", "t", "v", "x", "y", "z", "w"],
     "sound": [
         "pp",
         "bb",
@@ -17,7 +19,7 @@
         "th", "tr",
         "oa", "ow", "oe", "ough", "ou", "ew",
         "ear", "eer", "ere", "er",
-        "igh",
+        "igh", "ie",
         "ee", "ea", "ey", "ei", "eo",
         "ai", "ay", "aigh",
         "aw",
@@ -25,13 +27,11 @@
         "oo", "oy",
         "ue", "are", "eir", "ayor", "ae",
         "ui", "ir",
-        "'", "n'"
+        "'", "n'", "'s",
+        "ed", "dge"
     ],
-    "vowel": ["a", "e", "u", "o", "i"],
-    "consonant": ["b", "c", "d", "f", "g", "h", "j", "k", "l", "m", "n", "p", "q", "r", "s", "t", "v", "x", "y", "z", "w"],
     "last": [
         "be", "ce", "de", "fe", "ge", "he", "je", "ke", "le", "me", "ne", "pe", "qe", "re", "se", "te", "ve", "xe", "ye", "ze", "we",
         "ng", "mb"
-    ],
-    "specials": ["ed", "s", "dge"]
+    ]
 }

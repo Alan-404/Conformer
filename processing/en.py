@@ -3,10 +3,10 @@ import numpy as np
 import json
 from pydub import AudioSegment
 import librosa
-from typing import Any, Union, Optional, List, Tuple, Dict
+from typing import Union, Optional, List, Tuple
 import re
 import pickle
-from torchaudio.transforms import MelSpectrogram ,TimeMasking, FrequencyMasking
+from torchaudio.transforms import MelSpectrogram
 import torch
 import torch.nn.functional as F
 from torchtext.vocab import Vocab, vocab as create_vocab
@@ -16,32 +16,14 @@ from pyctcdecode import build_ctcdecoder
 MAX_AUDIO_VALUE = 32768
 
 class ConformerProcessor:
-    def __init__(self, vocab_path: str, unk_token: str = "<unk>", pad_token: str = "<pad>", word_delim_token: str = "|", sampling_rate: int = 16000, num_mels: int = 80, n_fft: int = 400, hop_length: int = 160, win_length: int = 400, fmin: float = 0.0, fmax: float = 8000.0, freq_augment: int = 27, time_augment: int = 10, time_mask_ratio: float = 0.05, puncs: str = r"([:./,?!@#$%^&=`~*\(\)\[\]\"\-\\])", lm_path: Optional[str] = None, beam_config_path: Optional[str] = None) -> None:
-        # Text
-        self.dictionary = self.create_vocab(vocab_path, pad_token, word_delim_token, unk_token)
+    def __init__(self, vocab_path: Optional[str] = None, unk_token: str = "<unk>", pad_token: str = "<pad>", word_delim_token: str = "|", sampling_rate: int = 16000, num_mels: int = 80, n_fft: int = 400, hop_length: int = 160, win_length: int = 400, fmin: float = 0.0, fmax: float = 8000.0, puncs: str = r"([:./,?!@#$%^&=`~*\(\)\[\]\"\-\\])", lm_path: Optional[str] = None, beam_alpha: float = 2.1, beam_beta: float = 9.2, device: str = 'cpu') -> None:
+        self.params = {k: v for k, v in locals().items() if k != 'self'}
+        
+        if device != 'cpu':
+            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        else:
+            self.device = device
 
-        self.word_delim_item = word_delim_token
-        self.unk_item = unk_token
-
-        self.unk_token = self.find_token(unk_token)
-        self.pad_token = self.find_token(pad_token)
-        self.word_delim_token = self.find_token(word_delim_token)
-
-        self.special_tokens = [unk_token, pad_token]
-
-        self.puncs = puncs
-
-        if lm_path is not None and os.path.exists(lm_path):
-            if beam_config_path is not None:
-                assert os.path.exists(beam_config_path), "Not Found BEAM Config"
-                self.beam_config = json.load(open(beam_config_path, encoding='utf-8'))
-                self.decoder = build_ctcdecoder(self.dictionary.get_itos(), 
-                                            alpha=self.beam_config['alpha'], 
-                                            beta=self.beam_config['beta'])
-            else:
-                self.beam_config = None
-                self.decoder = build_ctcdecoder(self.dictionary.get_itos())
-            
         # Audio
         self.sampling_rate = sampling_rate
         self.num_mels = num_mels
@@ -55,32 +37,58 @@ class ConformerProcessor:
             f_min=fmin,
             f_max=fmax,
             n_mels=num_mels
-        )
+        ).to(self.device)
+        
+        # Text
+        if vocab_path is not None:
+            self.replace_dict = dict()
+            self.dictionary = None
+            self.hotwords_dict = dict()
 
-        self.freq_masker = FrequencyMasking(freq_mask_param=freq_augment)
-        self.time_masker = TimeMasking(time_mask_param=time_augment, p=time_mask_ratio)
+            self.create_vocab(vocab_path, pad_token=pad_token, word_delim_token=word_delim_token, unk_token=unk_token)
+
+            self.word_delim_item = word_delim_token
+            self.unk_item = unk_token
+
+            self.unk_token = self.find_token(unk_token)
+            self.pad_token = self.find_token(pad_token)
+            self.word_delim_token = self.find_token(word_delim_token)
+
+            self.special_tokens = [unk_token, pad_token]
+
+            self.puncs = puncs
+
+            if lm_path is not None and os.path.exists(lm_path):
+                self.ctc_lm = build_ctcdecoder(
+                    labels=self.dictionary.get_itos(),
+                    kenlm_model_path=lm_path,
+                    alpha=beam_alpha,
+                    beta=beam_beta
+                )
 
     def create_vocab(self, vocab_path: str, pad_token: str, word_delim_token: str, unk_token: str) -> Vocab:
-        data = json.load(open(vocab_path, encoding='utf-8'))
-        vocabs = []
-        for key in data.keys():
-            vocabs += data[key]
+        data = json.load(open(vocab_path, encoding='utf8'))
+
+        assert "vocab" in data.keys() and "replace" in data.keys() and "hotword" in data.keys()
+
+        vocabs = data['vocab']
+        self.replace_dict = data['replace']
+        self.hotwords_dict = data['hotword']
+        
         dictionary = dict()
         count = 0
         for item in vocabs:
             count += 1
             dictionary[item] = count
 
-        vocab = Vocab(
+        self.dictionary = Vocab(
             vocab=create_vocab(
                 dictionary,
                 specials=[pad_token]
             ))
     
-        vocab.insert_token(word_delim_token, index=len(vocab))
-        vocab.insert_token(unk_token, index=len(vocab))
-        
-        return vocab
+        self.dictionary.insert_token(word_delim_token, index=len(self.dictionary))
+        self.dictionary.insert_token(unk_token, index=len(self.dictionary))
 
     def read_pickle(self, path: str) -> np.ndarray:
         with open(path, 'rb') as file:
@@ -95,40 +103,50 @@ class ConformerProcessor:
         return np.array(audio).astype(np.float64) / MAX_AUDIO_VALUE
     
     def read_audio(self, path: str, role: Optional[int] = None) -> np.ndarray:
-        signal, _ = librosa.load(path, sr=self.sampling_rate, mono=False)
-        if signal.ndim == 2 and role is not None:
+        if role is not None:
+            signal, _ = librosa.load(path, sr=self.sampling_rate, mono=False)
             signal = signal[role]
+        else:
+            signal, _ = librosa.load(path, sr=self.sampling_rate, mono=True)
+
         return signal
     
-    def spectral_normalize(self, x: torch.Tensor, C=1, clip_val=1e-5) -> torch.Tensor:
+    def spectral_normalize(self, x: torch.Tensor, C: int = 1, clip_val: float = 1e-5) -> torch.Tensor:
         return torch.log(torch.clamp(x, min=clip_val) * C)
 
     def mel_spectrogram(self, signal: torch.Tensor) -> torch.Tensor:
         mel_spec = self.mel_transform(signal)
         log_mel = self.spectral_normalize(mel_spec)
         return log_mel
-        
-    def standard_normalize(self, signal: torch.Tensor) -> torch.Tensor:
-        return (signal - signal.mean()) / torch.sqrt(signal.var() + 1e-7)
+    
+    def split_segment(self, signal: torch.Tensor, start: float, end: float):
+        return signal[int(start * self.sampling_rate) : int(end * self.sampling_rate)]
 
     def load_audio(self, path: str, start: Optional[float] = None, end: Optional[float] = None, role: Optional[int] = None) -> torch.Tensor:
         if ".pickle" in path:
             signal = self.read_pickle(path)
         elif ".pcm" in path:
             signal = self.read_pcm(path)
-        elif ".mp3" in path or ".flac" in path:
-            signal = self.read_audio(path)
-        elif ".wav" in path:
+        else:
             signal = self.read_audio(path, role)
 
         if start is not None and end is not None:
-            signal = signal[int(start * self.sampling_rate) : int(end * self.sampling_rate)]
+            signal = self.split_segment(signal, start, end)
 
         signal = torch.FloatTensor(signal)
-
-        # signal = self.standard_normalize(signal)
-
+        signal = signal.to(self.device)
         return signal
+    
+    def split_signal(self, signal: np.ndarray, threshold_length_segment_max: float = 60.0, threshold_length_segment_min: float = 0.1):
+        intervals = []
+
+        for top_db in range(30, 5, -5):
+            intervals = librosa.effects.split(
+            signal, top_db=top_db, frame_length=4096, hop_length=1024)
+            if len(intervals) != 0 and max((intervals[:, 1] - intervals[:, 0]) / self.sampling_rate) <= threshold_length_segment_max:
+                break
+            
+        return np.array([i for i in intervals if threshold_length_segment_min < (i[1] - i[0]) / self.sampling_rate <= threshold_length_segment_max])
 
     def load_vocab(self, path: str) -> List[str]:
         if os.path.exists(path):
@@ -154,35 +172,41 @@ class ConformerProcessor:
             tokens.append(self.find_token(char))
         return torch.tensor(tokens)
     
-    def decode_beam_search(self, digit: np.ndarray):
-        if self.beam_config is not None:
-            return self.decoder.decode(
-                digit,
-                hotwords=self.beam_config['hotwords'],
-                beam_width=self.beam_config['beam_width'],
-                beam_prune_logp=self.beam_config['beam_prune_logp'],
-                hotword_weight=self.beam_config['hotword_weight']
-            )
-        else:
-            return self.decoder.decode(
-                digit
-            )
+    def find_specs(self, word: str):
+        for index, item in enumerate(list(self.replace_dict.values())):
+            if item in word:
+                return (list(self.replace_dict.keys())[index], item)
+        return None
+    
+    def post_process(self, text: str):
+        words = text.split(" ")
+        items = []
+        for word in words:
+            patterns = self.find_specs(word)
+            if patterns is None or word.split(patterns[1])[1] == '':
+                items.append(word)
+            else:
+                items.append(word.replace(patterns[1], patterns[0]))
+        return " ".join(items)
+    
+    def decode_beam_search(self, digits: np.ndarray, beam_width: int = 170, beam_prune_logp: float = -20.0):
+        text = self.ctc_lm.decode(
+                    digits,
+                    beam_width=beam_width,
+                    beam_prune_logp=beam_prune_logp,
+                    hotword_weight=self.hotwords_dict['weight'],
+                    hotwords=self.hotwords_dict['items']
+                )
+        
+        return self.post_process(text)
 
     def decode_batch(self, digits: Union[torch.Tensor, np.ndarray, list], group_token: bool = True) -> List[str]:
         sentences = []
-
         for logit in digits:
             if group_token:
                 logit = self.group_tokens(logit)
             sentences.append(self.token2text(logit))
-        
         return sentences
-    
-    def spec_augment(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.freq_masker(x)
-        x = self.time_masker(x)
-
-        return x
     
     def group_tokens(self, logits: Union[torch.Tensor, np.ndarray], length: Optional[int] = None) -> Union[np.ndarray, torch.Tensor]:
         items = []
@@ -222,8 +246,12 @@ class ConformerProcessor:
         text = re.sub(r"\s\s+", " ", text)
         return text.strip()
     
-    def word2graphemes(self, text: str,  n_grams: int = 4):
-        specs = ['di', 'te', 'ti', "si", "ge", "ce"]
+    def spec_replace(self, word: str):
+        for key in self.replace_dict:
+            word = word.replace(key, self.replace_dict[key])
+        return word
+    
+    def word2graphemes(self, text: str,  n_grams: int = 3):
         if len(text) == 1:
             if text in self.dictionary:
                 return [text]
@@ -236,14 +264,12 @@ class ConformerProcessor:
         while start < len(text):
             found = True
             item = text[start:start + num_steps]
+
+            if num_steps == 2:
+                item = self.spec_replace(item)
             
             if item in self.dictionary:
-                if item not in specs:
-                    graphemes.append(item)
-                elif len(graphemes) != 0:
-                    graphemes.append(item)
-                else:
-                    found = False
+                graphemes.append(item)
             elif num_steps == 1:
                 graphemes.append(self.unk_item)
             else:
@@ -266,43 +292,30 @@ class ConformerProcessor:
         graphemes = []
         for index, word in enumerate(words):
             graphemes += self.word2graphemes(word)
-            if index != len(words) -1:
-                graphemes.append("|")
+            if index != len(words) - 1:
+                graphemes.append(self.word_delim_item)
         return graphemes
     
-    def generate_mask(self, lengths: List[int], max_len: Optional[int] = None) -> torch.Tensor:
-        masks = []
+    def __call__(self, signals: List[torch.Tensor], get_signals: bool = False) -> torch.Tensor:
+        lengths = torch.tensor([len(signal) for signal in signals])
+        max_len = torch.max(lengths)
+            
+        padded_signals = []
 
-        if max_len is None:
-            max_len = np.max(lengths)
-
-        for length in lengths:
-            masks.append(torch.tensor(np.array([True] * length + [False] * (max_len - length), dtype=bool)))
-        
-        return torch.stack(masks)
-    
-    def __call__(self, signals: List[torch.Tensor], max_len: Optional[int] = None, return_length: bool = False, set_augment: bool = False) -> torch.Tensor:
-        if max_len is None:
-            max_len = np.max([len(signal) for signal in signals])
-
-        mels = []
         mel_lengths = []
 
-        for signal in signals:
-            signal_length = len(signal)
-            padded_signal = F.pad(signal, (0, max_len - signal_length), mode='constant', value=0.0)
-            mels.append(self.mel_spectrogram(padded_signal))
-            mel_lengths.append((signal_length // self.hop_length) + 1)
+        for index, signal in enumerate(signals):
+            padded_signals.append(F.pad(signal, (0, max_len - lengths[index]), mode='constant', value=0.0))
+            if not get_signals:
+                mel_lengths.append(lengths[index] // self.hop_length + 1)
 
-        mels = torch.stack(mels).type(torch.FloatTensor)
-        
-        if set_augment:
-            mels = self.spec_augment(mels)
+        if get_signals:
+            return torch.stack(padded_signals)
 
-        if return_length:
-            return mels, torch.tensor(mel_lengths)
-        
-        return mels
+        mels = self.mel_spectrogram(torch.stack(padded_signals)).type(torch.FloatTensor)
+        mel_lengths = torch.stack(mel_lengths)
+
+        return mels, mel_lengths
     
     def tokenize(self, graphemes: List[List[str]], max_len: Optional[int] = None) -> Tuple[torch.Tensor, torch.Tensor]:
         tokens = []

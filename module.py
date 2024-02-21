@@ -146,12 +146,11 @@ class Wav2Vec2Conformer(L.LightningModule):
 class BYOLConformerModule(L.LightningModule):
     def __init__(self, n_mel_channels: int, n_blocks: int, d_model: int, heads: int, kernel_size: int, dropout_rate: float, alpha: float = 0.95) -> None:
         super().__init__()
-        self.model = BYOL(n_mel_channels=n_mel_channels, n=n_blocks, d_model=d_model, heads=heads, kernel_size=kernel_size, dropout_rate=dropout_rate, alpha=alpha)
+        self.model = BYOL(n_mel_channels=n_mel_channels, n_blocks=n_blocks, d_model=d_model, heads=heads, kernel_size=kernel_size, dropout_rate=dropout_rate, alpha=alpha)
         self.criterion = ConformerCriterion()
 
         self.train_loss = []
         self.val_loss = []
-        self.val_score = []
     
     def training_step(self, batch: Tuple[torch.Tensor], _: int):
         self.model.update_moving_average()
@@ -183,4 +182,3 @@ class BYOLConformerModule(L.LightningModule):
         self.log('learning_rate', self.optimizers().param_groups[0]['lr'], rank_zero_only=True)
         
         self.train_loss.clear()
-

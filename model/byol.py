@@ -11,11 +11,11 @@ import copy
 from typing import Optional
 
 class BYOL(nn.Module):
-    def __init__(self, n_mel_channels: int, n: int, d_model: int, heads: int, kernel_size: int, dropout_rate: float, alpha: float=0.95) -> None:
+    def __init__(self, n_mel_channels: int, n_blocks: int, d_model: int, heads: int, kernel_size: int, dropout_rate: float, alpha: float=0.95) -> None:
         super().__init__()
         self.online_network = Network(
             n_mel_channels=n_mel_channels,
-            n=n,
+            n_blocks=n_blocks,
             d_model=d_model,
             heads=heads,
             kernel_size=kernel_size,

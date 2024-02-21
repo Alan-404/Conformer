@@ -9,7 +9,7 @@ from processing.processor import ConformerProcessor
 
 from module import BYOLConformerModule
 from dataset import UnsupervisedConformerDataset
-from processing.noise import OnlineAugment, TargetAugment
+from processing.noise import SpecAugment, NormalizeAugment, CropAugment
 
 import fire
 
@@ -63,13 +63,16 @@ def train(
         fmax=fmax
     )
 
-    online_augment = OnlineAugment()
-    target_augment = TargetAugment()
+    spec_augment = SpecAugment()
+    normal_augment = NormalizeAugment()
+    crop_augment = CropAugment(n_mel_channels=n_mel_channels)
 
     def get_batch(signals: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         mels, lengths = processor(signals)
+
+        mel_targets = processor.mel_spectrogram(normal_augment(processor(signals, get_signals=True)))
         
-        return online_augment(mels), processor.mel_spectrogram(target_augment(processor(signals, get_signals=True))), lengths
+        return spec_augment(mels), crop_augment(mel_targets, length=torch.min(lengths).item()), lengths
 
     dataset = UnsupervisedConformerDataset(manifest_path=data_path, processor=processor, num_examples=num_train)
     dataloader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers, collate_fn=get_batch)

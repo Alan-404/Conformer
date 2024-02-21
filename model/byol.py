@@ -1,6 +1,10 @@
 import torch
 import torch.nn as nn
-from model.modules.encoder import Encoder
+
+from model.utils.convolution import ConvolutionSubsampling
+from model.utils.block import ConformerBlock
+from model.utils.position import RelativePositionalEncoding
+from model.utils.masking import generate_mask
 
 import copy
 
@@ -71,20 +75,26 @@ class EMA:
         return self.alpha * old + (1 - self.alpha) * new
 
 class Network(nn.Module):
-    def __init__(self, n_mel_channels: int, n: int, d_model: int, heads: int, kernel_size: int, dropout_rate: float = 0.0) -> None:
+    def __init__(self, n_mel_channels: int, n_blocks: int, d_model: int, heads: int, kernel_size: int, dropout_rate: float = 0.0) -> None:
         super().__init__()
-        self.encoder = Encoder(
-            n_mel_channels=n_mel_channels,
-            n=n,
-            d_model=d_model,
-            heads=heads,
-            kernel_size=kernel_size,
-            dropout_rate=dropout_rate
-        )
+        self.subsampling = ConvolutionSubsampling(channels=d_model)
+        self.linear = nn.Linear(in_features=d_model * (((n_mel_channels - 1) // 2 - 1) // 2), out_features=d_model)
+        self.rel_pe = RelativePositionalEncoding(d_model=d_model)
+        self.blocks = nn.ModuleList([ConformerBlock(d_model=d_model, heads=heads, kernel_size=kernel_size, dropout_rate=dropout_rate) for _ in range(n_blocks)])
 
         self.projector = MLP(dim=d_model)
 
     def forward(self, x: torch.Tensor, lengths: Optional[torch.Tensor] = None) -> torch.Tensor:
-        x, lengths = self.encoder(x, lengths)
-        x = self.projector(x)
+        x, lengths = self.subsampling(x, lengths)
+
+        x = self.linear(x)
+
+        mask = None
+        if lengths is not None:
+            mask = (generate_mask(lengths).to(x.device) == 0)[:, None, None, :]
+
+        rel_pos = self.rel_pe(x)
+        for layer in self.blocks:
+            x = layer(x, rel_pos, mask)
+
         return x

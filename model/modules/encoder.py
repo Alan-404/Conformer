@@ -15,14 +15,12 @@ class Encoder(nn.Module):
         self.rel_pe = RelativePositionalEncoding(d_model=d_model)
         self.layers = nn.ModuleList([ConformerBlock(d_model=d_model, heads=heads, kernel_size=kernel_size, dropout_rate=dropout_rate) for _ in range(n)])
     
-    def forward(self, x: torch.Tensor, lengths: Optional[torch.Tensor] = None, return_hidden_state: bool = False) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, lengths: Optional[torch.Tensor] = None) -> torch.Tensor:
         # Subsampling Mel - Spectrogram
         x, lengths = self.subsampling(x, lengths)
         
         # Pre - Project
         x = self.linear(x)
-        if return_hidden_state:
-            hidden_state = x
         
         x = self.dropout(x)
         
@@ -35,8 +33,5 @@ class Encoder(nn.Module):
         rel_pos = self.rel_pe(x)
         for layer in self.layers:
             x = layer(x, rel_pos, mask)
-
-        if return_hidden_state:
-            return x, lengths, hidden_state
 
         return x, lengths

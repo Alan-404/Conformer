@@ -6,6 +6,7 @@ import lightning as L
 
 from model.conformer import Conformer
 from model.byol import BYOL
+from model.wav2vec2 import Wav2Vec2
 
 from evaluation import ConformerCriterion, ConformerMetric
 
@@ -93,6 +94,54 @@ class ConformerModule(L.LightningModule):
     def freeze_features(self):
         for params in self.model.encoder.subsampling.parameters():
             params.requires_grad = False
+
+class Wav2Vec2Conformer(L.LightningModule):
+    def __init__(self, n_mel_channels: int, n_blocks: int, d_model: int, heads: int, kernel_size: int, proj_dim: int, num_groups: int, num_vars: int, dropout_rate: float) -> None:
+        super().__init__()
+        self.model = Wav2Vec2(
+            n_blocks=n_blocks,
+            n_mel_channels=n_mel_channels,
+            d_model=d_model,
+            heads=heads,
+            kernel_size=kernel_size,
+            proj_dim=proj_dim,
+            num_groups=num_groups,
+            num_vars=num_vars,
+            dropout_rate=dropout_rate
+        )
+
+        self.train_loss = []
+
+        self.criterion = ConformerCriterion()
+    
+    def training_step(self, batch: Tuple[torch.Tensor], _: int):
+        inputs = batch[0]
+
+        input_lengths = batch[1]
+
+        context, target, perplexity = self.model(inputs, input_lengths)
+
+        loss = self.criterion.contrastive_loss(context, target) + 0.2 * perplexity
+
+        self.train_loss.append(loss.item())
+
+        return loss
+        
+    def configure_optimizers(self):
+        optimizer = optim.Adam(params=self.parameters(), lr=3e-5, weight_decay=1e-6, betas=[0.9, 0.98], eps=1e-9)
+        scheduler = lr_scheduler.CosineAnnealingLR(optimizer=optimizer, T_max=1000)
+        return [optimizer], [{'scheduler': scheduler, 'interval': "epoch"}]
+
+    def on_train_epoch_end(self):
+        loss = statistics.mean(self.train_loss)
+        print(f"Train Loss: {(loss):.4f}")
+        print(f"Current Learning Rate: {self.optimizers().param_groups[0]['lr']}")
+
+        self.log("train_loss", loss, rank_zero_only=True)
+        self.log('learning_rate', self.optimizers().param_groups[0]['lr'], rank_zero_only=True)
+        
+        self.train_loss.clear()
+
 
 class BYOLConformerModule(L.LightningModule):
     def __init__(self, n_mel_channels: int, n_blocks: int, d_model: int, heads: int, kernel_size: int, dropout_rate: float, alpha: float = 0.95) -> None:

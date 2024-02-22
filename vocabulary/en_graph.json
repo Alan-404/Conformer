@@ -1,0 +1,63 @@
+{
+    "vowel": [
+        "a", "e", "i", "o", "u", "y"
+    ],
+    "consonant": [
+        "b", "c", "d", "f", "g", "h", "j", "k", "l", "m", "n", "p", "q", "r", "s", "t", "v", "w", "x", "z"
+    ],
+    "composed_vowel": [
+        "ae", "ah", "ai", "aigh", "ao", "au", "augh", "ay",
+        "ea", "eau", "ee", "ei", "eigh", "eo", "eou", "eu", "ey",
+        "ia", "ie", "ieu", "iew", "igh",
+        "oa", "oe", "oh", "oi", "oo", "ou", "ough", "oy",
+        "ue", "ui", "uo", "uy"
+    ],
+    "composed_consonant": [
+        "bb", "bt",
+        "cc", "cch", "ch", "cht",  "ck", "cq", "cs", "ct", "cz",
+        "dd", "dg", "dj",
+        "ff", "ft",
+        "gg", "gh",  "gm",
+        "kh", "kn",
+        "ld", "lf", "lk", "ll", "lm", "lv",
+        "mb", "mm", "mn",
+        "nn",
+        "pb", "ph", "pn", "pp", "ps", "pt",
+        "qu", "rh", "rr", 
+        "sc", "sch", "sh", "sl", "ss", "st", "sw",
+        "tch", "tg", "th", "tt", "tw",
+        "wh", "wr",
+        "zz"
+    ],
+    "mixed": [
+        "aw",
+        "ew",
+        "ow",
+
+        "ce", "ci",
+        "di",
+        "gi",
+        "sci",
+        "ngue", "gue"
+    ],
+    "last_item": {
+        "e": [
+            "a", "ai", "au", "aw", "ay",
+            "e", "ea", "ee", "ei", "eu", "ew", "ey",
+            "i", "ia", "ie",
+            "oo", "o", "oa", "oi", "ou", "ow", "oy",
+            "u", "ui"
+        ]
+    },
+    "last_special": [
+        "al", "en", "el", "ol", "on", "ul", "il",
+        "si", "ti",
+        "ng", "gn"
+    ],
+    "last_split_item": {
+        "es": ["s", "ch", "sh", "x", "z", "o", "c", "g"],
+        "ed": ["t", "d"],
+        "s": ["e"],
+        "d": ["e"]
+    }
+}

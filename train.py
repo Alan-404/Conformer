@@ -39,7 +39,7 @@ def train(
         n_blocks: int = 17,
         d_model: int = 512,
         heads: int = 8,
-        kernel_size: int = 31,
+        kernel_size: int = 32,
         n_layers: int = 1,
         hidden_dim: int = 640,
         dropout_rate: float = 0.1,

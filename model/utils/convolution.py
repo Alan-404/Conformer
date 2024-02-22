@@ -6,7 +6,8 @@ from typing import Optional
 class ConvolutionModule(nn.Module):
     def __init__(self, channels: int, kernel_size: int, dropout_rate: float = 0.0) -> None:
         super().__init__()
-        padding = (kernel_size - 1) // 2
+        self.num_pad = 1 if kernel_size % 2 == 0 else 0
+        padding = (kernel_size - 1) // 2 + self.num_pad
 
         self.layer_norm = nn.LayerNorm(normalized_shape=channels)
         self.pointwise_conv_1 = nn.Conv1d(in_channels=channels, out_channels=channels * 2, kernel_size=1, stride=1, padding=0)
@@ -23,6 +24,7 @@ class ConvolutionModule(nn.Module):
         x = self.pointwise_conv_1(x)
         x = self.glu(x)
         x = self.deepwise_conv(x)
+        x = x[:, :, :-self.num_pad]
         x = self.swish(x)
         x = self.pointwise_conv_2(x)
         x = self.dropout(x)

@@ -92,5 +92,16 @@
     "\u1ef9",
     "\u1ef5",
     "z",
-    "'"
+    "'",
+    {
+        "last_item": {
+            "e": [
+                "a", "ai", "au", "aw", "ay",
+                "e", "ea", "ee", "ei", "eu", "ew", "ey",
+                "i", "ia", "ie",
+                "oo", "o", "oa", "oi", "ou", "ow", "oy",
+                "u", "ui"
+            ]
+        }
+    }
 ]

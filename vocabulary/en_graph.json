@@ -16,11 +16,12 @@
         "bb", "bt",
         "cc", "cch", "ch", "cht",  "ck", "cq", "cs", "cz",
         "dd", "dg", "dj",
-        "ff", "ft",
+        "ff",
         "gg", "gh",  "gm",
         "kh", "kn",
         "ld", "lf", "lk", "ll", "lm", "lv",
         "mb", "mm", "mn",
+        "ng", "gn",
         "nn",
         "pb", "ph", "pn", "pp", "ps", "pt",
         "qu", "rh", "rr", 
@@ -34,30 +35,76 @@
         "ew",
         "ow",
 
-        "ce", "ci",
-        "di",
+        "ce",
         "gi",
         "sci",
         "ngue", "gue"
     ],
-    "last_item": {
-        "e": [
-            "a", "ai", "au", "aw", "ay",
-            "e", "ea", "ee", "ei", "eu", "ew", "ey",
-            "i", "ia", "ie",
-            "oo", "o", "oa", "oi", "ou", "ow", "oy",
-            "u", "ui"
-        ]
+    "many": {
+        "es": ["s", "ch", "sh", "x", "z", "c", "g"],
+        "s": ["e"]
     },
-    "last_special": [
-        "al", "en", "el", "ol", "on", "ul", "il", "er",
-        "si", "ti",
-        "ng", "gn", "ct"
-    ],
-    "last_split_item": {
-        "es": ["s", "ch", "sh", "x", "z", "o", "c", "g"],
+    "past": {
         "ed": ["t", "d"],
-        "s": ["e"],
         "d": ["e"]
+    },
+    "prefix": [
+        "pre", "dis", "un", "re", "sub",
+        "im", "ir", "il", "hyper", "post",
+        "ex", "extra", "de", "anti", "non", "pro",
+        "contra", "contro", "co"
+    ],
+    "suffix": {
+        "ly": ["l", "y"],
+        "ful": ["f", "ul"],
+        "ness": ["n", "e", "ss"],
+        "able": ["a", "b", "le"],
+        "ous": ["ou", "s"],
+        "ing": ["i", "ng"],
+        "er": ["e", "r"],
+        "ment": ["m", "e", "n", "t"],
+        "ist": ["i", "s", "t"],
+        "tion": ["ti", "on"],
+        "sion": ["si", "on"],
+        "shion": ["shi", "on"],
+        "el": ["el"],
+        "en": ["en"],
+        "ol": ["ol"],
+        "ct": ["ct"],
+        "tial": ["ti", "al"],
+        "cial": ["ci", "al"],
+        "ity": ["i", "t", "y"],
+        "ty": ["t", "y"],
+        "hood": ["h", "oo", "d"],
+        "ese": ["e", "se"],
+        "ess": ["e", "ss"],
+        "ship": ["sh", "i", "p"],
+        "ure": ["u", "re"],
+        "an": ["a", "n"],
+        "or": ["o", "r"],
+        "ant": ["a", "n", "t"],
+        "age": ["a", "ge"],
+        "ence": ["e", "n", "ce"],
+        "ward": ["w", "a", "r", "d"]
+    },
+    "dictionary": {
+        "often": ["o", "ft", "en"],
+        "prayer": ["p", "r", "ayer"],
+        "listen": ["l", "i", "st", "en"],
+        "soldier": ["s", "o", "di", "e", "r"],
+        "cordial": ["c", "o", "r", "di", "al"],
+        "tough": ["t", "ou", "gh"],
+        "scien": ["sc", "i", "e"]
+    },
+    "exept": [
+        "ayer", "ft", "st", "di", "le", 
+        "shi", "ti", "ci", "si", "es",
+        "on", "ol", "ge", "ed", "ul"
+    ],
+    "replace":{
+
+    },
+    "hotword": {
+        
     }
 }

@@ -16,7 +16,7 @@ from pyctcdecode import build_ctcdecoder
 MAX_AUDIO_VALUE = 32768
 
 class ConformerProcessor:
-    def __init__(self, pattern_path: str, vocab_path: Optional[str] = None, unk_token: str = "<unk>", pad_token: str = "<pad>", word_delim_token: str = "|", sampling_rate: int = 16000, num_mels: int = 80, n_fft: int = 400, hop_length: int = 160, win_length: int = 400, fmin: float = 0.0, fmax: float = 8000.0, puncs: str = r"([:./,?!@#$%^&=`~*\(\)\[\]\"\-\\])", lm_path: Optional[str] = None, beam_alpha: float = 2.1, beam_beta: float = 9.2, device: str = 'cpu') -> None:
+    def __init__(self, pattern_path: Optional[str] = None, unk_token: str = "<unk>", pad_token: str = "<pad>", word_delim_token: str = "|", sampling_rate: int = 16000, num_mels: int = 80, n_fft: int = 400, hop_length: int = 160, win_length: int = 400, fmin: float = 0.0, fmax: float = 8000.0, puncs: str = r"([:./,?!@#$%^&=`~*\(\)\[\]\"\-\\])", lm_path: Optional[str] = None, beam_alpha: float = 2.1, beam_beta: float = 9.2, device: str = 'cpu') -> None:
         self.params = {k: v for k, v in locals().items() if k != 'self'}
         
         if device != 'cpu':
@@ -39,13 +39,14 @@ class ConformerProcessor:
             n_mels=num_mels
         ).to(self.device)
 
-        self.patterns = json.load(open(pattern_path, 'r'))
-        first_patterns = self.patterns['vowel'] + self.patterns['consonant'] + self.patterns['composed_vowel'] + self.patterns['composed_consonant']
-        self.first_patterns = sorted(first_patterns, key=len, reverse=True)
+        if pattern_path is not None:
+            self.patterns = json.load(open(pattern_path, 'r'))
+            first_patterns = self.patterns['vowel'] + self.patterns['consonant'] + self.patterns['composed_vowel'] + self.patterns['composed_consonant']
+            self.first_patterns = sorted(first_patterns, key=len, reverse=True)
+            
+            self.stride_patterns = first_patterns + self.patterns['mixed']
 
-        self.stride_patterns = first_patterns + self.patterns['mixed']
-
-        self.puncs = puncs
+            self.puncs = puncs
         
         # Text
         if vocab_path is not None:
@@ -63,7 +64,6 @@ class ConformerProcessor:
             self.word_delim_token = self.find_token(word_delim_token)
 
             self.special_tokens = [unk_token, pad_token]
-
             
             if lm_path is not None and os.path.exists(lm_path):
                 self.ctc_lm = build_ctcdecoder(
@@ -73,6 +73,30 @@ class ConformerProcessor:
                     beta=beam_beta
                 )
 
+    def create_vocab(self, vocab_path: str, pad_token: str, word_delim_token: str, unk_token: str) -> Vocab:
+        data = json.load(open(vocab_path, encoding='utf8'))
+
+        assert "vocab" in data.keys() and "replace" in data.keys() and "hotword" in data.keys()
+
+        vocabs = data['vocab']
+        self.replace_dict = data['replace']
+        self.hotwords_dict = data['hotword']
+        
+        dictionary = dict()
+        count = 0
+        for item in vocabs:
+            count += 1
+            dictionary[item] = count
+
+        self.dictionary = Vocab(
+            vocab=create_vocab(
+                dictionary,
+                specials=[pad_token]
+            ))
+    
+        self.dictionary.insert_token(word_delim_token, index=len(self.dictionary))
+        self.dictionary.insert_token(unk_token, index=len(self.dictionary))
+    
     def get_last_item(self, word: str, pattern: str):
         length_item = len(pattern)
         start_check = len(word) - length_item
@@ -188,30 +212,6 @@ class ConformerProcessor:
 
         graphemes = first_grapheme + left_graphemes + middle_grapheme + right_graphemes + last_items
         return graphemes
-
-    def create_vocab(self, vocab_path: str, pad_token: str, word_delim_token: str, unk_token: str) -> Vocab:
-        data = json.load(open(vocab_path, encoding='utf8'))
-
-        assert "vocab" in data.keys() and "replace" in data.keys() and "hotword" in data.keys()
-
-        vocabs = data['vocab']
-        self.replace_dict = data['replace']
-        self.hotwords_dict = data['hotword']
-        
-        dictionary = dict()
-        count = 0
-        for item in vocabs:
-            count += 1
-            dictionary[item] = count
-
-        self.dictionary = Vocab(
-            vocab=create_vocab(
-                dictionary,
-                specials=[pad_token]
-            ))
-    
-        self.dictionary.insert_token(word_delim_token, index=len(self.dictionary))
-        self.dictionary.insert_token(unk_token, index=len(self.dictionary))
 
     def read_pickle(self, path: str) -> np.ndarray:
         with open(path, 'rb') as file:

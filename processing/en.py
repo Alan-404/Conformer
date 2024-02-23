@@ -16,7 +16,7 @@ from pyctcdecode import build_ctcdecoder
 MAX_AUDIO_VALUE = 32768
 
 class ConformerProcessor:
-    def __init__(self, pattern_path: str, vocab_path: Optional[str] = None, unk_token: str = "<unk>", pad_token: str = "<pad>", word_delim_token: str = "|", sampling_rate: int = 16000, num_mels: int = 80, n_fft: int = 400, hop_length: int = 160, win_length: int = 400, fmin: float = 0.0, fmax: float = 8000.0, puncs: str = r"([:./,?!@#$%^&=`~*\(\)\[\]\"\-\\])", lm_path: Optional[str] = None, beam_alpha: float = 2.1, beam_beta: float = 9.2, device: str = 'cpu') -> None:
+    def __init__(self, vocab_path: Optional[str] = None, unk_token: str = "<unk>", pad_token: str = "<pad>", word_delim_token: str = "|", sampling_rate: int = 16000, num_mels: int = 80, n_fft: int = 400, hop_length: int = 160, win_length: int = 400, fmin: float = 0.0, fmax: float = 8000.0, puncs: str = r"([:./,?!@#$%^&=`~*\(\)\[\]\"\-\\])", lm_path: Optional[str] = None, beam_alpha: float = 2.1, beam_beta: float = 9.2, device: str = 'cpu') -> None:
         self.params = {k: v for k, v in locals().items() if k != 'self'}
         
         if device != 'cpu':
@@ -39,40 +39,43 @@ class ConformerProcessor:
             n_mels=num_mels
         ).to(self.device)
 
-        self.patterns = json.load(open(pattern_path, 'r'))
-        first_patterns = self.patterns['vowel'] + self.patterns['consonant'] + self.patterns['composed_vowel'] + self.patterns['composed_consonant']
-        self.first_patterns = sorted(first_patterns, key=len, reverse=True)
-
-        self.stride_patterns = first_patterns + self.patterns['mixed']
-
-        self.puncs = puncs
-        
         # Text
         if vocab_path is not None:
-            self.replace_dict = dict()
-            self.dictionary = None
-            self.hotwords_dict = dict()
+            assert os.path.exists(vocab_path)
 
-            self.create_vocab(vocab_path, pad_token=pad_token, word_delim_token=word_delim_token, unk_token=unk_token)
-
-            self.word_delim_item = word_delim_token
-            self.unk_item = unk_token
-
-            self.unk_token = self.find_token(unk_token)
-            self.pad_token = self.find_token(pad_token)
-            self.word_delim_token = self.find_token(word_delim_token)
-
-            self.special_tokens = [unk_token, pad_token]
-
+            self.pattern = json.load(open(vocab_path, 'r'))
             
-            if lm_path is not None and os.path.exists(lm_path):
-                self.ctc_lm = build_ctcdecoder(
-                    labels=self.dictionary.get_itos(),
-                    kenlm_model_path=lm_path,
-                    alpha=beam_alpha,
-                    beta=beam_beta
-                )
+            self.stride_patterns = self.pattern['vowel'] + self.pattern['consonant'] + self.pattern['composed_vowel'] + self.pattern['composed_consonant'] + self.pattern['mixed']
+            
+            self.first_patterns = self.pattern['vowel'] + self.pattern['consonant'] + self.pattern['composed_vowel'] + self.pattern['composed_consonant']
 
+            self.dictionary = Vocab(
+                create_vocab(self.create_dictionary(self.first_patterns + self.pattern['except']), specials=[pad_token])
+            )
+
+            self.dictionary.insert_token(word_delim_token, index=len(self.dictionary))
+            self.dictionary.insert_token(unk_token, index=len(self.dictionary))
+
+            self.unk_token = unk_token
+            self.pad_token = pad_token
+            self.word_delim_token = word_delim_token
+        
+            self.first_patterns = sorted(self.first_patterns, key=len, reverse=True)
+
+            self.puncs = puncs
+
+    def create_dictionary(self, vocab: List[str]):
+        items = dict()
+        for index, item in enumerate(vocab):
+            items[item] = index + 1
+        
+        return items
+    
+    def find_token(self, char: str) -> int:
+        if char in self.dictionary:
+            return self.dictionary.__getitem__(char)
+        return self.unk_token
+    
     def get_last_item(self, word: str, pattern: str):
         length_item = len(pattern)
         start_check = len(word) - length_item
@@ -80,142 +83,153 @@ class ConformerProcessor:
             return word[:start_check ], pattern
         return None
     
-    def get_last_pattern(self, word: str, patterns: List[str]):
-        item = None
-        for pattern in patterns:
-            items = self.get_last_item(word, pattern)
+    def get_first_item(self, word: str, pattern: str):
+        length_item = len(pattern)
+        if word[0: length_item] == pattern:
+            return pattern, word[length_item: ]
+        return None
+    
+    def get_by_prev(self, word: str, patterns: List[dict]):
+        for key in patterns.keys():
+            items = self.get_last_item(word, key)
             if items is not None:
-                word = items[0]
-                item = items[1]
+                for pattern in patterns[key]:
+                    specific_items = self.get_last_item(items[0], pattern)
+                    if specific_items is not None:
+                        return items[0], [*items[1]]
+                return items[0], [items[1]]
+        return None
+    
+    def get_prefix(self, word: str, patterns: List[dict]):
+        for key in patterns:
+            items = self.get_first_item(word, key)
+            if items is not None:
+                return [*items[0]], items[1]
+        return [], word
+    
+    def get_suffix(self, word: str, patterns: List[dict]):
+        for key in patterns.keys():
+            items = self.get_last_item(word, key)
+            if items is not None:
+                return items[0], patterns[items[1]]
+        return None
+    
+    def get_last(self, word: str, suffix_patterns: List[dict], past_patterns: List[dict], quantity_patterns: List[dict]):
+        suffixes = []
+        count = 0
+
+        last_items = None
+        last_items = self.get_by_prev(word, quantity_patterns)
+        if last_items is not None:
+            word = last_items[0]
+            suffixes.append(last_items[1])
+        
+        while True:
+            last_items = None
+            last_items = self.get_suffix(word, suffix_patterns)
+            if last_items is not None:
+                word = last_items[0]
+                suffixes.append(last_items[1])
+                count = 0
+            else:
+                count += 1
+
+            last_items = self.get_by_prev(word, past_patterns)
+            if last_items is not None:
+                word = last_items[0]
+                suffixes.append(last_items[1])
+                count = 0
+            else:
+                count += 1
+
+            if count > 2:
                 break
 
-        if item is None:
-            return None
+        suffixes = [suffixes[i] for i in range(len(suffixes) - 1, -1, -1)]
 
-        length = None
-        arr_pattern = None
-        best_pattern = None
-
-        for pattern in patterns[item]:
-            if pattern not in word:
-                continue
-            
-            arr = word.split(pattern)
-            if length is None or (length > len(arr[-1])):
-                length = len(arr[-1])
-                arr_pattern = arr
-                best_pattern = pattern
-        
-        if arr_pattern is None or len(arr_pattern) == 1:
-            return None
+        return word, suffixes
     
-        return best_pattern.join(arr_pattern[:-1]), f"{best_pattern}_{item}", arr_pattern[-1]
-    
-    def get_last_list(self, word: str, patterns: List[str]):
-        for pattern in patterns:
-            items = self.get_last_item(word, pattern)
-            if items is not None:
-                return items
-        return None
-    
-    def get_last_auto_split(self, word, patterns: dict):
-        print(patterns)
-        for pattern in patterns.keys():
-            items = self.get_last_item(word, pattern)
-            if items is not None:
-                return items[0], patterns[pattern]
-        return None
-
-    def get_last_split_item(self, word: str, patterns: dict):
-        for pattern in patterns.keys():
-            items = self.get_last_item(word, pattern)
-            if items is not None:
-                pattern_items = self.get_last_list(items[0], list(patterns[pattern]))
-                if pattern_items is not None:
-                    return items[0], [*items[1]]
-        return None
-    
-    def get_first_item(self, word: str, patterns: List[str]):
-        for item in patterns:
-            if item in word:
-                first_item = word[:len(item)]
-                if first_item == item:
-                    return first_item, word[len(item):]
-        return None
-    
-    def text2graphemes(self, word: str):
-        first_item = ''
-        left_side = ''
-        middle_side = ''
-        right_side = ''
-        last_items = []
-
-        last_item_outputs = None
-
-        if len(self.patterns['last_split_item']) != 0:
-            last_item_outputs = self.get_last_split_item(word, self.patterns['last_split_item'])
-
-            if last_item_outputs is not None:
-                left_side = last_item_outputs[0]
-                last_items += last_item_outputs[1]
-                word = left_side
-        
-        if len(self.patterns['last_item']) != 0 or len(self.patterns['last_special']) != 0:
-            last_item_outputs = self.get_last_pattern(word, self.patterns['last_item'])
-            if last_item_outputs is not None:
-                left_side = last_item_outputs[0]
-                middle_side = last_item_outputs[1]
-                right_side = last_item_outputs[2]
+    def stride_graphemes(self, text: str, patterns: List, n_grams: int = 4):
+        if len(text) == 1:
+            if text in patterns:
+                return [text]
+            return [self.unk_token]
+        graphemes = []
+        start = 0
+        if len(text) - 1 < n_grams:
+            n_grams = len(text)
+        num_steps = n_grams
+        while start < len(text):
+            found = True
+            item = text[start:start + num_steps]
+                
+            if item in patterns:
+                graphemes.append(item)
+            elif num_steps == 1:
+                graphemes.append(self.unk_token)
             else:
-                left_side = word
-                tmp = []
-                while True:
-                    last_item_outputs = self.get_last_list(left_side, self.patterns['last_special'])
-                    if last_item_outputs is not None:
-                        left_side = last_item_outputs[0]
-                        tmp.append(last_item_outputs[1])
-                    else:
-                        break
-                tmp = [tmp[i] for i in range(len(tmp) - 1, -1, -1)]
-                last_items += tmp
+                found = False
 
-        # First Handle
-        first_items = self.get_first_item(left_side, self.first_patterns)
-        if first_items is not None:
-            first_item = first_items[0]
-            left_side = first_items[1]
+            if found:
+                start += num_steps
+                if len(text[start:]) < n_grams:
+                    num_steps = len(text[start:])
+                else:
+                    num_steps = n_grams
+            else:
+                num_steps -= 1
 
-        left_graphemes = self.word2graphemes(left_side, self.stride_patterns)
-        right_graphemes = self.word2graphemes(right_side, self.stride_patterns)
-        middle_grapheme = [middle_side] if middle_side != '' else []
-        first_grapheme = [first_item] if first_item != '' else []
-
-        graphemes = first_grapheme + left_graphemes + middle_grapheme + right_graphemes + last_items
         return graphemes
-
-    def create_vocab(self, vocab_path: str, pad_token: str, word_delim_token: str, unk_token: str) -> Vocab:
-        data = json.load(open(vocab_path, encoding='utf8'))
-
-        assert "vocab" in data.keys() and "replace" in data.keys() and "hotword" in data.keys()
-
-        vocabs = data['vocab']
-        self.replace_dict = data['replace']
-        self.hotwords_dict = data['hotword']
-        
-        dictionary = dict()
-        count = 0
-        for item in vocabs:
-            count += 1
-            dictionary[item] = count
-
-        self.dictionary = Vocab(
-            vocab=create_vocab(
-                dictionary,
-                specials=[pad_token]
-            ))
     
-        self.dictionary.insert_token(word_delim_token, index=len(self.dictionary))
-        self.dictionary.insert_token(unk_token, index=len(self.dictionary))
+    def split_first(self, word: str, patterns: List):
+        for pattern in patterns:
+            items = self.get_first_item(word, pattern)
+            if items is not None:
+                return items[0], items[1]
+        return '', word
+    
+    def word2grapheme(self, word: str):
+        prefix = []
+        suffixes = []
+
+        first_item = ''
+        stride_items = []
+
+        word, suffixes = self.get_last(word, self.pattern['suffix'], self.pattern['past'], self.pattern['many'])
+        if word != '':
+            prefix, word = self.get_prefix(word, self.pattern['prefix'])
+        
+            if word != '':
+                first_item, word = self.split_first(word, self.first_patterns)
+
+                if word != '':
+                    stride_items = self.stride_graphemes(word, self.stride_patterns)
+
+        graphemes = prefix + [first_item] + stride_items
+
+        for suffix in suffixes:
+            graphemes += suffix
+        
+        results = []
+        for item in graphemes:
+            if item != '':
+                results.append(item)
+
+        return results
+    
+    def text2graphemes(self, sentence: str):
+        sentence = self.clean_text(sentence)
+        words = sentence.split(" ")
+
+        length = len(words) - 1
+
+        graphemes = []
+        for index, word in enumerate(words):
+            graphemes += self.word2grapheme(word)
+            if index != length:
+                graphemes.append(self.word_delim_token)
+
+        return graphemes
 
     def read_pickle(self, path: str) -> np.ndarray:
         with open(path, 'rb') as file:
@@ -278,11 +292,6 @@ class ConformerProcessor:
     def load_vocab(self, path: str) -> List[str]:
         if os.path.exists(path):
             return json.load(open(path, encoding='utf-8'))
-    
-    def find_token(self, char: str) -> int:
-        if char in self.dictionary:
-            return self.dictionary.__getitem__(char)
-        return self.unk_token
 
     def clean_text(self, sentence: str) -> str:
         sentence = re.sub(self.puncs, "", sentence)
@@ -290,14 +299,6 @@ class ConformerProcessor:
         sentence = sentence.strip().lower()
 
         return sentence
-    
-    def text2token(self, sentence: str) -> torch.Tensor:
-        sentence = self.clean_text(sentence)
-        sentence = sentence.replace(" ", self.word_delim_item)
-        tokens = []
-        for char in [*sentence]:
-            tokens.append(self.find_token(char))
-        return torch.tensor(tokens)
     
     def find_specs(self, word: str):
         for index, item in enumerate(list(self.replace_dict.values())):

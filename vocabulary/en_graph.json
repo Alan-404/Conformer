@@ -14,7 +14,7 @@
     ],
     "composed_consonant": [
         "bb", "bt",
-        "cc", "cch", "ch", "cht",  "ck", "cq", "cs", "ct", "cz",
+        "cc", "cch", "ch", "cht",  "ck", "cq", "cs", "cz",
         "dd", "dg", "dj",
         "ff", "ft",
         "gg", "gh",  "gm",
@@ -50,9 +50,9 @@
         ]
     },
     "last_special": [
-        "al", "en", "el", "ol", "on", "ul", "il",
+        "al", "en", "el", "ol", "on", "ul", "il", "er",
         "si", "ti",
-        "ng", "gn"
+        "ng", "gn", "ct"
     ],
     "last_split_item": {
         "es": ["s", "ch", "sh", "x", "z", "o", "c", "g"],

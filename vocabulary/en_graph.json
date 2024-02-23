@@ -52,7 +52,7 @@
     "last_special": [
         "al", "en", "el", "ol", "on", "ul", "il", "er",
         "si", "ti",
-        "ng", "gn", "ct"
+        "ng", "gn", "ct", "'s", "'"
     ],
     "last_split_item": {
         "es": ["s", "ch", "sh", "x", "z", "o", "c", "g"],

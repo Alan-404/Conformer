@@ -150,30 +150,34 @@ class ConformerProcessor:
         right_side = ''
         last_items = []
 
-        last_item_outputs = self.get_last_split_item(word, self.patterns['last_split_item'])
+        last_item_outputs = None
 
-        if last_item_outputs is not None:
-            left_side = last_item_outputs[0]
-            last_items += last_item_outputs[1]
-            word = left_side
+        if len(self.patterns['last_split_item']) != 0:
+            last_item_outputs = self.get_last_split_item(word, self.patterns['last_split_item'])
 
-        last_item_outputs = self.get_last_pattern(word, self.patterns['last_item'])
-        if last_item_outputs is not None:
-            left_side = last_item_outputs[0]
-            middle_side = last_item_outputs[1]
-            right_side = last_item_outputs[2]
-        else:
-            left_side = word
-            tmp = []
-            while True:
-                last_item_outputs = self.get_last_list(left_side, self.patterns['last_special'])
-                if last_item_outputs is not None:
-                    left_side = last_item_outputs[0]
-                    tmp.append(last_item_outputs[1])
-                else:
-                    break
-            tmp = [tmp[i] for i in range(len(tmp) - 1, -1, -1)]
-            last_items += tmp
+            if last_item_outputs is not None:
+                left_side = last_item_outputs[0]
+                last_items += last_item_outputs[1]
+                word = left_side
+        
+        if len(self.patterns['last_item']) != 0 or len(self.patterns['last_special']) != 0:
+            last_item_outputs = self.get_last_pattern(word, self.patterns['last_item'])
+            if last_item_outputs is not None:
+                left_side = last_item_outputs[0]
+                middle_side = last_item_outputs[1]
+                right_side = last_item_outputs[2]
+            else:
+                left_side = word
+                tmp = []
+                while True:
+                    last_item_outputs = self.get_last_list(left_side, self.patterns['last_special'])
+                    if last_item_outputs is not None:
+                        left_side = last_item_outputs[0]
+                        tmp.append(last_item_outputs[1])
+                    else:
+                        break
+                tmp = [tmp[i] for i in range(len(tmp) - 1, -1, -1)]
+                last_items += tmp
 
         # First Handle
         first_items = self.get_first_item(left_side, self.first_patterns)

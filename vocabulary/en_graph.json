@@ -100,7 +100,7 @@
     "except": [
         "ayer", "ft", "st", "di", "le", 
         "shi", "ti", "ci", "si", "es",
-        "on", "ol", "ge", "ed", "ul"
+        "on", "ol", "ge", "ed", "ul", "il"
     ],
     "replace":{
 

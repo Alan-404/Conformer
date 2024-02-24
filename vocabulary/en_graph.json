@@ -9,8 +9,9 @@
         "ae", "ah", "ai", "aigh", "ao", "au", "augh", "ay",
         "ea", "eau", "ee", "ei", "eigh", "eo", "eou", "eu", "ey",
         "ia", "ie", "ieu", "iew", "igh",
-        "oa", "oe", "oh", "oi", "oo", "ou", "ough", "oy",
-        "ue", "ui", "uo", "uy"
+        "oa", "oe", "oh", "oi", "oo", "ou", "ough", "oy", "o'",
+        "ue", "ui", "uo", "uy", 
+        "'d", "'v", "'s", "'t", "'"
     ],
     "composed_consonant": [
         "bb", "bt",
@@ -84,12 +85,7 @@
         "ant": ["a", "n", "t"],
         "age": ["a", "ge"],
         "ence": ["e", "n", "ce"],
-        "ward": ["w", "a", "r", "d"],
-        "'s'": ["'s"],
-        "'t": ["'t"],
-        "'m": ["'m"],
-        "'re": ["'re"],
-        "'": ["'"]
+        "ward": ["w", "a", "r", "d"]
     },
     "dictionary": {
         "often": ["o", "ft", "en"],

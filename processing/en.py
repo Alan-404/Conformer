@@ -100,6 +100,13 @@ class ConformerProcessor:
                 return items[0], [items[1]]
         return None
     
+    def lookup(self, word: str, patterns: List[dict]):
+        for pattern in patterns:
+            items = self.get_first_item(word, pattern)
+            if items is not None:
+                return patterns[pattern], items[1]
+        return [], word
+
     def get_prefix(self, word: str, patterns: List[dict]):
         for key in patterns:
             items = self.get_first_item(word, key)
@@ -194,18 +201,22 @@ class ConformerProcessor:
 
         first_item = ''
         stride_items = []
+        looked_item = []
 
         word, suffixes = self.get_last(word, self.pattern['suffix'], self.pattern['past'], self.pattern['many'])
         if word != '':
             prefix, word = self.get_prefix(word, self.pattern['prefix'])
         
             if word != '':
-                first_item, word = self.split_first(word, self.first_patterns)
+                looked_item, word = self.lookup(word, self.pattern['dictionary'])
 
                 if word != '':
-                    stride_items = self.stride_graphemes(word, self.stride_patterns)
+                    first_item, word = self.split_first(word, self.first_patterns)
 
-        graphemes = prefix + [first_item] + stride_items
+                    if word != '':
+                        stride_items = self.stride_graphemes(word, self.stride_patterns)
+
+        graphemes = prefix + looked_item + [first_item] + stride_items
 
         for suffix in suffixes:
             graphemes += suffix

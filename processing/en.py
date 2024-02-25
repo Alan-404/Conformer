@@ -135,7 +135,9 @@ class ConformerProcessor:
             suffixes.append(last_items[1])
 
         if len(word) > 1 and word[-1] == "s":
-            if word[-2] != word[-1]:
+            if word[-2] == "'":
+                pass
+            elif word[-2] != word[-1]:
                 suffixes.append(word[-1])
                 word = word[:-1]
         

@@ -14,18 +14,18 @@
     ],
     "composed_consonant": [
         "bb", "bt",
-        "cc", "cch", "ch", "cht",  "ck", "cq", "cs", "cz",
+        "cc", "cch", "ch", "cht",  "ck", "cq", "cs", "cz", "cqu",
         "dd", "dg", "dj",
         "ff",
         "gg", "gh",  "gm",
         "kh", "kn",
-        "ld", "lf", "lk", "ll", "lm", "lv",
+        "ld", "lf", "lk", "ll", "lv",
         "mm", "mn",
         "ng", "gn",
         "nn",
         "pb", "ph", "pn", "pp", "ps", "pt",
         "qu", "rh", "rr", 
-        "sc", "sch", "sh", "sl", "ss", "sw",
+        "sc", "sch", "sh", "sl", "ss", "sw", "st", "sp",
         "tch", "tg", "th", "tt", "tw", "tr",
         "tth",
         "wh", "wr",
@@ -36,6 +36,7 @@
         "ew", "er",
         "ow", "or",
         "ir",
+        "ur",
         
         "ar",
         "ce",
@@ -52,7 +53,7 @@
     },
     "prefix": [
         "pre", "dis", "un", "re", "sub",
-        "im", "ir", "il", "hyper", "post",
+        "im", "ir", "il", "hyper",
         "ex", "extra", "de", "anti", "non", "pro",
         "contra", "contro"
     ],
@@ -90,7 +91,6 @@
         "ese": ["e", "se"],
         "ess": ["e", "ss"],
         "ship": ["sh", "i", "p"],
-        "ure": ["u", "re"],
         "an": ["a", "n"],
         "ant": ["a", "n", "t"],
         "age": ["a", "ge"],
@@ -102,7 +102,8 @@
         "'ve": ["'ve"],
         "'d": ["'d"],
         "'re": ["'re"],
-        "'ll": ["'ll"]
+        "'ll": ["'ll"],
+        "lm": ["lm"]
     },
     "dictionary": {
         "often": ["o", "ft", "en"],
@@ -119,6 +120,7 @@
         "ayer", "ft", "st", "di", "le", 
         "shi", "ssi", "ti", "ci", "si", "es",
         "on", "ol", "ge", "ed", "ul", "il", "gi",
+        "lm",
         "re",
         "mb", "er", "or",
         "n't"

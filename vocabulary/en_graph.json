@@ -10,8 +10,7 @@
         "ea", "eau", "ee", "ei", "eigh", "eo", "eou", "eu", "ey",
         "ia", "ie", "ieu", "iew", "igh",
         "oa", "oe", "oh", "oi", "oo", "ou", "ough", "oy", "o'",
-        "ue", "ui", "uo", "uy", 
-        "'d", "'v", "'s", "'t", "'"
+        "ue", "ui", "uo", "uy"
     ],
     "composed_consonant": [
         "bb", "bt",
@@ -33,14 +32,16 @@
     ],
     "mixed": [
         "aw",
-        "ew",
-        "ow",
+        "ew", "er",
+        "ow", "or",
         "ir",
-
+        
+        "ar",
         "ce",
-        "gi",
         "sci",
-        "ngue", "gue"
+        "ngue", "gue",
+
+        "'"
     ],
     "many": {
         "es": ["s", "ch", "sh", "x", "z", "c", "g"]
@@ -52,7 +53,7 @@
         "pre", "dis", "un", "re", "sub",
         "im", "ir", "il", "hyper", "post",
         "ex", "extra", "de", "anti", "non", "pro",
-        "contra", "contro", "co"
+        "contra", "contro"
     ],
     "suffix": {
         "ly": ["l", "y"],
@@ -66,6 +67,11 @@
         "tion": ["ti", "on"],
         "sion": ["si", "on"],
         "shion": ["shi", "on"],
+        "gion": ["gi", "on"],
+        "een": ["ee", "n"],
+        "oon": ["oo", "n"],
+        "ool": ["oo", "l"],
+        "eel": ["ee", "l"],
         "el": ["el"],
         "ol": ["ol"],
         "il": ["il"],
@@ -83,26 +89,33 @@
         "ship": ["sh", "i", "p"],
         "ure": ["u", "re"],
         "an": ["a", "n"],
-        "or": ["or"],
-        "er": ["er"],
         "ant": ["a", "n", "t"],
         "age": ["a", "ge"],
         "ence": ["e", "n", "ce"],
-        "ward": ["w", "a", "r", "d"]
+        "ward": ["w", "a", "r", "d"],
+        "'s": ["'s"],
+        "'t": ["'t"],
+        "'m": ["'m"],
+        "'ve": ["'ve"],
+        "'d": ["'d"],
+        "'re": ["'re"],
+        "'ll": ["'ll"]
     },
     "dictionary": {
         "often": ["o", "ft", "en"],
         "prayer": ["p", "r", "ayer"],
         "listen": ["l", "i", "st", "en"],
+        "christ": ["ch", "r", "i", "st"],
         "soldi": ["s", "o", "l", "di"],
         "cordial": ["c", "o", "r", "di", "al"],
         "tough": ["t", "ou", "gh"],
-        "scien": ["sc", "i", "e", "n"]
+        "scien": ["sc", "i", "e", "n"],
+        "awf": ["aw", "f"]
     },
     "except": [
         "ayer", "ft", "st", "di", "le", 
         "shi", "ti", "ci", "si", "es",
-        "on", "ol", "ge", "ed", "ul", "il",
+        "on", "ol", "ge", "ed", "ul", "il", "gi",
         "re",
         "mb", "er", "or"
     ],

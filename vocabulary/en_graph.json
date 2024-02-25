@@ -128,6 +128,7 @@
             "a", "ai", "au", "aw", "ay", "e", "ea", "ee", "ei", "eu", "ew", "ey", "i", "ia", "ie", "oo", "o", "oa", "oi", "ou", "ow", "oy", "u", "ui", "y"
         ]
     },
+    "last_condition": ["e", "d"],
     "replace":{
 
     },

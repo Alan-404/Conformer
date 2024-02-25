@@ -212,18 +212,14 @@ class ConformerProcessor:
         looked_item = []
 
         prefix, word = self.get_prefix(word, self.pattern['prefix'])
-        print(word)
         if word != '':
             looked_item, word = self.lookup(word, self.pattern['dictionary'])
-            print(word)
         
             if word != '':
                 first_item, word = self.split_first(word, self.first_patterns)
-                print(word)
 
                 if word != '':
                     word, suffixes = self.get_last(word, self.pattern['suffix'], self.pattern['past'], self.pattern['many'])
-                    print(word)
                     
                     if word != '':
                         stride_items = self.stride_graphemes(word, self.stride_patterns)

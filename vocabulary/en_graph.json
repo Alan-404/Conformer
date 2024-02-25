@@ -35,6 +35,7 @@
         "aw",
         "ew",
         "ow",
+        "ir",
 
         "ce",
         "gi",
@@ -68,6 +69,8 @@
         "el": ["el"],
         "ol": ["ol"],
         "il": ["il"],
+        "en": ["en"],
+        "on": ["on"],
         "ct": ["ct"],
         "tial": ["ti", "al"],
         "cial": ["ci", "al"],

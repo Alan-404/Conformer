@@ -60,7 +60,6 @@
         "le": ["le"],
         "ous": ["ou", "s"],
         "ing": ["i", "ng"],
-        "er": ["e", "r"],
         "ment": ["m", "e", "n", "t"],
         "ist": ["i", "s", "t"],
         "tion": ["ti", "on"],
@@ -81,7 +80,8 @@
         "ship": ["sh", "i", "p"],
         "ure": ["u", "re"],
         "an": ["a", "n"],
-        "or": ["o", "r"],
+        "or": ["or"],
+        "er": ["er"],
         "ant": ["a", "n", "t"],
         "age": ["a", "ge"],
         "ence": ["e", "n", "ce"],
@@ -100,7 +100,8 @@
         "ayer", "ft", "st", "di", "le", 
         "shi", "ti", "ci", "si", "es",
         "on", "ol", "ge", "ed", "ul", "il",
-        "mb"
+        "re",
+        "mb", "er", "or"
     ],
     "replace":{
 

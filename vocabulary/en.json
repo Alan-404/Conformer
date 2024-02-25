@@ -1,0 +1,92 @@
+{
+    "vowel": [
+        "a", "e", "i", "o", "u", "y"
+    ],
+    "consonant": [
+        "b", "c", "d", "f", "g", "h", "j", "k", "l", "m", "n", "p", "q", "r", "s", "t", "v", "w", "x", "z"
+    ],
+    "composed_vowel": [
+        "ae", "ai", "ao", "au", "ay",
+        "ea", "eau", "ee", "ei", "eo", "eou", "eu", "ey",
+        "ia", "ie", "ieu",
+        "oa", "oe", "oi", "oo", "ou", "oy", "o'",
+        "ue", "ui", "uo", "uy"
+    ],
+    "composed_consonant": [
+        "bb", "bt",
+        "cc", "cch", "ch", "cht",  "ck", "cq", "cs", "ct", "cz",
+        "dd", "di", "dg", "dj", "'d",
+        "ff", "ft",
+        "gg", "gh",  "gm", "gn",
+        "kh", "kn",
+        "ld", "lf", "lk", "ll", "lm", "lv", "'ll",
+        "mb", "mm", "mn",
+        "ng", "nn",
+        "pb", "ph", "pn", "pp", "ps", "pt",
+        "rh", "rr", 
+        "sc", "sch", "sh", "sl", "ss", "st", "sw", "'s",
+        "tch", "tg", "th", "tt", "tw", "tr",
+        "'ve",
+        "wh", "wr",
+        "zz",
+        "'"
+    ],
+    "mixed": [
+        "ah", "aigh", "augh", "aw",
+        "ew", "et",
+        "ough", "ow", "oh",
+        "eigh",
+        "iew", "igh",
+        
+        "al",
+        "ce", "ci",
+        "il", "in",
+        "ed", "es", "el", "en",
+        "gi",
+        "le", 
+        "ol", "on",
+        "sci", "ssi",
+        "qu", 
+        "ti",
+        "ngue", "gue"
+    ],
+    "vocab": [
+        "a", "e", "i", "o", "u", "y",
+        "b", "c", "d", "f", "g", "h", "j", "k", "l", "m", "n", "p", "q", "r", "s", "t", "v", "w", "x", "z",
+        "ae", "ai", "ao", "au", "ay",
+        "ea", "eau", "ee", "ei", "eo", "eou", "eu", "ey",
+        "ia", "ie", "ieu",
+        "oa", "oe", "oi", "oo", "ou", "oy", "o'",
+        "ue", "ui", "uo", "uy",
+        "bb", "bt",
+        "cc", "cch", "ch", "cht",  "ck", "cq", "cs", "ct", "cz",
+        "dd", "di", "dg", "dj", "'d",
+        "ff", "ft",
+        "gg", "gh",  "gm", "gn",
+        "kh", "kn",
+        "ld", "lf", "lk", "ll", "lm", "lv", "'ll",
+        "mb", "mm", "mn",
+        "ng", "nn",
+        "pb", "ph", "pn", "pp", "ps", "pt",
+        "rh", "rr", 
+        "sc", "sch", "sh", "sl", "ss", "st", "sw", "'s",
+        "tch", "tg", "th", "tt", "tw", "tr",
+        "'ve",
+        "wh", "wr",
+        "zz",
+        "'",
+        "ah", "aigh", "augh", "aw",
+        "ew", "et",
+        "ough", "ow", "oh",
+        "eigh",
+        "iew", "igh",
+    
+        "gi",
+        "qu", 
+        "ngue", "gue"
+    ],
+    "replace":{
+    },
+    "hotword": {
+    }
+}

@@ -49,6 +49,9 @@ class ConformerProcessor:
             
             self.first_patterns = self.pattern['vowel'] + self.pattern['consonant'] + self.pattern['composed_vowel'] + self.pattern['composed_consonant']
 
+            self.suffix_patterns  = dict(sorted(self.pattern['suffix'].items(), key=lambda item: len(item[0]), reverse=True))
+            self.prefix_patterns = sorted(self.pattern['prefix'], key=lambda item: len(item[0]), reverse=True)
+
             self.dictionary = Vocab(
                 create_vocab(self.create_dictionary(self.first_patterns + self.pattern['except']), specials=[pad_token])
             )

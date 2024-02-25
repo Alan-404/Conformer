@@ -21,7 +21,7 @@
         "gg", "gh",  "gm",
         "kh", "kn",
         "ld", "lf", "lk", "ll", "lm", "lv",
-        "mb", "mm", "mn",
+        "mm", "mn",
         "ng", "gn",
         "nn",
         "pb", "ph", "pn", "pp", "ps", "pt",
@@ -42,12 +42,10 @@
         "ngue", "gue"
     ],
     "many": {
-        "es": ["s", "ch", "sh", "x", "z", "c", "g"],
-        "s": ["e"]
+        "es": ["s", "ch", "sh", "x", "z", "c", "g"]
     },
     "past": {
-        "ed": ["t", "d"],
-        "d": ["e"]
+        "ed": ["t", "d"]
     },
     "prefix": [
         "pre", "dis", "un", "re", "sub",
@@ -74,6 +72,7 @@
         "ct": ["ct"],
         "tial": ["ti", "al"],
         "cial": ["ci", "al"],
+        "al": ["al"],
         "ity": ["i", "t", "y"],
         "ty": ["t", "y"],
         "hood": ["h", "oo", "d"],
@@ -100,7 +99,8 @@
     "except": [
         "ayer", "ft", "st", "di", "le", 
         "shi", "ti", "ci", "si", "es",
-        "on", "ol", "ge", "ed", "ul", "il"
+        "on", "ol", "ge", "ed", "ul", "il",
+        "mb"
     ],
     "replace":{
 

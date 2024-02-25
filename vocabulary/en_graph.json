@@ -26,7 +26,8 @@
         "pb", "ph", "pn", "pp", "ps", "pt",
         "qu", "rh", "rr", 
         "sc", "sch", "sh", "sl", "ss", "sw",
-        "tch", "tg", "th", "tt", "tw",
+        "tch", "tg", "th", "tt", "tw", "tr",
+        "tth",
         "wh", "wr",
         "zz"
     ],
@@ -56,6 +57,7 @@
         "contra", "contro"
     ],
     "suffix": {
+        "ssion": ["ssi", "on"],
         "ly": ["l", "y"],
         "ful": ["f", "ul"],
         "ness": ["n", "e", "ss"],
@@ -72,6 +74,7 @@
         "oon": ["oo", "n"],
         "ool": ["oo", "l"],
         "eel": ["ee", "l"],
+        "eed": ["ee", "d"],
         "el": ["el"],
         "ol": ["ol"],
         "il": ["il"],
@@ -94,7 +97,7 @@
         "ence": ["e", "n", "ce"],
         "ward": ["w", "a", "r", "d"],
         "'s": ["'s"],
-        "'t": ["'t"],
+        "n't": ["n't"],
         "'m": ["'m"],
         "'ve": ["'ve"],
         "'d": ["'d"],
@@ -114,11 +117,17 @@
     },
     "except": [
         "ayer", "ft", "st", "di", "le", 
-        "shi", "ti", "ci", "si", "es",
+        "shi", "ssi", "ti", "ci", "si", "es",
         "on", "ol", "ge", "ed", "ul", "il", "gi",
         "re",
-        "mb", "er", "or"
+        "mb", "er", "or",
+        "n't"
     ],
+    "last": {
+        "e": [
+            "a", "ai", "au", "aw", "ay", "e", "ea", "ee", "ei", "eu", "ew", "ey", "i", "ia", "ie", "oo", "o", "oa", "oi", "ou", "ow", "oy", "u", "ui", "y"
+        ]
+    },
     "replace":{
 
     },

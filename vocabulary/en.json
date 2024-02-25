@@ -60,7 +60,7 @@
         "ue", "ui", "uo", "uy",
         "bb", "bt",
         "cc", "cch", "ch", "cht",  "ck", "cq", "cs", "ct", "cz",
-        "dd", "di", "dg", "dj", "'d",
+        "dd", "dg", "dj", "'d",
         "ff", "ft",
         "gg", "gh",  "gm", "gn",
         "kh", "kn",
@@ -75,6 +75,7 @@
         "wh", "wr",
         "zz",
         "'",
+        
         "ah", "aigh", "augh", "aw",
         "ew", "et",
         "ough", "ow", "oh",

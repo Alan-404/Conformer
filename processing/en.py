@@ -273,9 +273,10 @@ class ConformerProcessor:
         for i in range(length - 1, -1, -1):
             if graphemes[i] != item:
                 continue
-
-            if i != length - 1 and graphemes[i+1] not in self.pattern['consonant'] + self.pattern['composed_consonant'] and self.check_vowel(graphemes[i+2:]):
-                continue
+        
+            if i != length - 1:
+                if graphemes[i+1] in self.pattern['consonant'] + self.pattern['composed_consonant'] or self.check_vowel(graphemes[i+2:]):
+                    continue
 
             for j in range(i-1, -1, -1):
                 if graphemes[j] not in patterns:

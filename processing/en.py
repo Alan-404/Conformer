@@ -247,7 +247,6 @@ class ConformerProcessor:
         results = graphemes
 
         for i in range(length - 1, -1, -1):
-            print(graphemes[i])
             if graphemes[i] != item:
                 continue
 

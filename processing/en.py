@@ -242,8 +242,9 @@ class ConformerProcessor:
     
     def check_vowel(self, graphemes: List[str]):
         for item in graphemes:
-            if item in self.pattern['vowel'] + self.pattern['composed_consonant']:
-                return True
+            for char in item:
+                if char in self.pattern['vowel']:
+                    return True
         return False
     
     def concat_process(self, graphemes: List[str]):
@@ -262,7 +263,6 @@ class ConformerProcessor:
             results.remove('')
         
         return results
-
     
     def last_handle(self, graphemes: List[str], patterns: List[Dict]):
         item = "e"
@@ -275,8 +275,10 @@ class ConformerProcessor:
                 continue
         
             if i != length - 1:
-                if graphemes[i+1] in self.pattern['consonant'] + self.pattern['composed_consonant'] or self.check_vowel(graphemes[i+2:]):
-                    continue
+                if graphemes[i+1] in self.pattern['consonant'] + self.pattern['composed_consonant']:
+                    if i+1 == length - 1 or self.check_vowel(graphemes[i+2:]) == False:
+                        continue
+                        
 
             for j in range(i-1, -1, -1):
                 if graphemes[j] not in patterns:

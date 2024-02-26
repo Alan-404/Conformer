@@ -3,7 +3,7 @@ import numpy as np
 import json
 from pydub import AudioSegment
 import librosa
-from typing import Union, Optional, List, Tuple
+from typing import Union, Optional, List, Tuple, Dict
 import re
 import pickle
 from torchaudio.transforms import MelSpectrogram
@@ -224,7 +224,9 @@ class ConformerProcessor:
                     word, suffixes = self.get_last(word, self.pattern['suffix'], self.pattern['past'], self.pattern['many'])
                     
                     if word != '':
-                        stride_items = self.stride_graphemes(word, self.stride_patterns)
+                        word_graphemes = self.stride_graphemes(word, self.stride_patterns)
+
+                        stride_items = self.last_handle(word_graphemes, self.pattern['last'])
 
         graphemes = prefix + looked_item + [first_item] + stride_items
 
@@ -238,6 +240,36 @@ class ConformerProcessor:
 
         return results
     
+    def last_handle(self, graphemes: List[str], patterns: List[Dict]):
+        item = "e"
+        length = len(graphemes)
+
+        results = graphemes
+
+        for i in range(length - 1, -1, -1):
+            print(graphemes[i])
+            if graphemes[i] != item:
+                continue
+
+            if i != length - 1 and graphemes[i+1] in self.pattern['consonant'] + self.pattern['composed_consonant']:
+                continue
+
+            for j in range(i-1, -1, -1):
+                if graphemes[j] not in patterns:
+                    continue
+                else:
+                    results[j] = f'{graphemes[j]}_{graphemes[i]}'
+                    results[i] = ''
+                    break
+
+                
+        
+        if '' in results:
+            results.remove('')
+
+        return results
+
+    
     def text2graphemes(self, sentence: str):
         sentence = self.clean_text(sentence)
         words = sentence.split(" ")
@@ -246,6 +278,7 @@ class ConformerProcessor:
 
         graphemes = []
         for index, word in enumerate(words):
+            word_graphemes = self.word2grapheme(word)
             graphemes += self.word2grapheme(word)
             if index != length:
                 graphemes.append(self.word_delim_token)

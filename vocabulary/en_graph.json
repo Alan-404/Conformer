@@ -65,7 +65,7 @@
         "le": ["le"],
         "ous": ["ou", "s"],
         "ing": ["i", "ng"],
-        "ment": ["m", "e", "n", "t"],
+        "ment": ["m", "en", "t"],
         "ist": ["i", "s", "t"],
         "tion": ["ti", "on"],
         "sion": ["si", "on"],
@@ -76,6 +76,7 @@
         "ool": ["oo", "l"],
         "eel": ["ee", "l"],
         "eed": ["ee", "d"],
+        "or": ["or"],
         "el": ["el"],
         "ol": ["ol"],
         "il": ["il"],
@@ -88,22 +89,23 @@
         "ity": ["i", "t", "y"],
         "ty": ["t", "y"],
         "hood": ["h", "oo", "d"],
-        "ese": ["e", "se"],
+        "ese": ["e_e", "s"],
         "ess": ["e", "ss"],
         "ship": ["sh", "i", "p"],
-        "an": ["a", "n"],
         "ant": ["a", "n", "t"],
-        "age": ["a", "ge"],
-        "ence": ["e", "n", "ce"],
+        "age": ["a_e", "g"],
+        "ence": ["e_e", "n", "c"],
         "ward": ["w", "a", "r", "d"],
         "'s": ["'s"],
+        "s'": ["s'"],
         "n't": ["n't"],
         "'m": ["'m"],
         "'ve": ["'ve"],
         "'d": ["'d"],
         "'re": ["'re"],
         "'ll": ["'ll"],
-        "lm": ["lm"]
+        "lm": ["lm"],
+        "rry": ["rr", "y"]
     },
     "dictionary": {
         "often": ["o", "ft", "en"],
@@ -125,11 +127,7 @@
         "mb", "er", "or",
         "n't"
     ],
-    "last": {
-        "e": [
-            "a", "ai", "au", "aw", "ay", "e", "ea", "ee", "ei", "eu", "ew", "ey", "i", "ia", "ie", "oo", "o", "oa", "oi", "ou", "ow", "oy", "u", "ui", "y"
-        ]
-    },
+    "last": ["a", "ai", "au", "aw", "ay", "e", "ea", "ee", "ei", "eu", "ew", "ey", "i", "ia", "ie", "oo", "o", "oa", "oi", "ou", "ow", "oy", "u", "ui", "y"],
     "last_condition": ["e", "d"],
     "replace":{
 

@@ -13,7 +13,7 @@
         "ue", "ui", "uo", "uy"
     ],
     "composed_consonant": [
-        "bb", "bt", "br", "bl",
+        "bb", "bt",
         "cc", "cch", "ch", "cht",  "ck", "cq", "cs", "cz", "cqu", "ct",
         "dd", "dg", "dj",
         "ff",
@@ -21,10 +21,10 @@
         "kh", "kn",
         "ld", "lf", "lk", "ll", "lv",
         "mm", "mn",
-        "ng", "gn", "gr",
+        "ng", "gn",
         "nn",
         "pb", "ph", "pn", "pp", "ps", "pt",
-        "qu", "rh", "rr", "rd",
+        "qu", "rh", "rr",
         "sc", "sch", "sh", "sl", "ss", "sw",
         "tch", "tg", "th", "tt", "tw",
         "tth",

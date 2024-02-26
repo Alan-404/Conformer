@@ -16,11 +16,11 @@
         "bb", "bt",
         "cc", "cch", "ch", "cht",  "ck", "cq", "cs", "cz", "cqu",
         "dd", "dg", "dj",
-        "ff",
+        "ff", "fr",
         "gg", "gh",  "gm",
         "kh", "kn",
         "ld", "lf", "lk", "ll", "lv",
-        "mm", "mn",
+        "mm", "mn", "nd",
         "ng", "gn",
         "nn",
         "pb", "ph", "pn", "pp", "ps", "pt",
@@ -33,18 +33,16 @@
     ],
     "mixed": [
         "aw",
-        "ew", "er",
-        "ow", "or",
-        "ir",
-        "ur",
+        "ew",
+        "ow",
         
-        "ar",
         "ce",
         "sci",
         "ngue", "gue",
 
         "'"
     ],
+    "concat": ["r", "n", "m", "l"],
     "many": {
         "es": ["s", "ch", "sh", "x", "z", "c", "g"]
     },
@@ -52,18 +50,17 @@
         "ed": ["t", "d"]
     },
     "prefix": [
-        "pre", "dis", "un", "re", "sub",
-        "im", "ir", "il", "hyper",
-        "ex", "extra", "de", "anti", "non", "pro",
-        "contra", "contro"
+
     ],
     "suffix": {
         "ssion": ["ssi", "on"],
+        "lly": ["ll", "y"],
         "ly": ["l", "y"],
         "ful": ["f", "ul"],
         "ness": ["n", "e", "ss"],
         "le": ["le"],
         "ous": ["ou", "s"],
+        "ary": ["a", "r", "y"],
         "ing": ["i", "ng"],
         "ment": ["m", "en", "t"],
         "ist": ["i", "s", "t"],
@@ -77,12 +74,15 @@
         "eel": ["ee", "l"],
         "eed": ["ee", "d"],
         "or": ["or"],
+        "er": ["er"],
         "el": ["el"],
+        "et": ["e", "t"],
         "ol": ["ol"],
         "il": ["il"],
         "en": ["en"],
         "on": ["on"],
         "ct": ["ct"],
+        "an": ["an"],
         "tial": ["ti", "al"],
         "cial": ["ci", "al"],
         "al": ["al"],

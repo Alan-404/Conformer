@@ -216,19 +216,16 @@ class ConformerProcessor:
         prefix, word = self.get_prefix(word, self.pattern['prefix'])
         if word != '':
             looked_item, word = self.lookup(word, self.pattern['dictionary'])
-        
             if word != '':
                 first_item, word = self.split_first(word, self.first_patterns)
-
                 if word != '':
                     word, suffixes = self.get_last(word, self.pattern['suffix'], self.pattern['past'], self.pattern['many'])
-                    
                     if word != '':
                         word_graphemes = self.stride_graphemes(word, self.stride_patterns)
+                        word_graphemes = self.last_handle([first_item] + word_graphemes, self.pattern['last'])
+                        stride_items = self.concat_process(word_graphemes)
 
-                        stride_items = self.last_handle(word_graphemes, self.pattern['last'])
-
-        graphemes = prefix + looked_item + [first_item] + stride_items
+        graphemes = prefix + looked_item +  stride_items
 
         for suffix in suffixes:
             graphemes += suffix
@@ -240,6 +237,30 @@ class ConformerProcessor:
 
         return results
     
+    def check_vowel(self, graphemes: List[str]):
+        for item in graphemes:
+            if item in self.pattern['vowel'] + self.pattern['composed_consonant']:
+                return True
+        return False
+    
+    def concat_process(self, graphemes: List[str]):
+        results = graphemes
+        length = len(graphemes)
+        for index, item in enumerate(graphemes):
+            if item == '':
+                continue
+            if item in self.pattern['vowel'] and index != length - 1:
+                for concat_item in self.pattern['concat']:
+                    if graphemes[index + 1] == concat_item:
+                        results[index] = f"{item}{concat_item}"
+                        results[index + 1] = ''
+        
+        if '' in results:
+            results.remove('')
+        
+        return results
+
+    
     def last_handle(self, graphemes: List[str], patterns: List[Dict]):
         item = "e"
         length = len(graphemes)
@@ -250,7 +271,7 @@ class ConformerProcessor:
             if graphemes[i] != item:
                 continue
 
-            if i != length - 1 and graphemes[i+1] in self.pattern['consonant'] + self.pattern['composed_consonant']:
+            if i != length - 1 and graphemes[i+1] not in self.pattern['consonant'] + self.pattern['composed_consonant'] and self.check_vowel(graphemes[i+2:]):
                 continue
 
             for j in range(i-1, -1, -1):
@@ -261,11 +282,9 @@ class ConformerProcessor:
                     results[i] = ''
                     break
 
-                
-        
         if '' in results:
             results.remove('')
-
+        
         return results
 
     
@@ -277,7 +296,6 @@ class ConformerProcessor:
 
         graphemes = []
         for index, word in enumerate(words):
-            word_graphemes = self.word2grapheme(word)
             graphemes += self.word2grapheme(word)
             if index != length:
                 graphemes.append(self.word_delim_token)

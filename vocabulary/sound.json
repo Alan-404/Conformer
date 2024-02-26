@@ -1,0 +1,41 @@
+{
+    "vowel": [
+        "a", "e", "i", "o", "u", "y"
+    ],
+    "composed_vowel": [
+        "ae", "ah", "ai", "aigh", "ao", "au", "augh", "ay",
+        "ea", "eau", "ee", "ei", "eigh", "eo", "eou", "eu", "ey",
+        "ia", "ie", "ieu", "iew", "igh",
+        "oa", "oe", "oh", "oi", "oo", "ou", "ough", "oy", "o'",
+        "ue", "ui", "uo", "uy"
+    ],
+    "voiced_consonant": [
+        "b", "bb",
+        "cz",
+        "d", "dd", "dj",
+        "g", "gg", "gh", "gm", "gn", "gue",
+        "j",
+        "kn",
+        "l", "ld", "ll", "lm", "lv",
+        "m", "mb", "mm", "mn",
+        "n", "ng", "ngue", "nn",
+        "pb", "pn",
+        "r", "rh", "rr", 
+        "s", "sc", "sl", "ss",
+        "tg", "th",
+        "v", "w", "wh", "wr",
+        "x", "z", "zz"
+    ],
+    "voiceless_consonant": [
+        "bt", 
+        "c", "cc", "cch", "ce", "ch", "cht", "ck", "cq", "cqu", "cs", "ct",
+        "f", "ff", "ft",
+        "gh",
+        "h",
+        "k", "kh",
+        "lf", "lk",
+        "p", "ph", "pp", "ps", "pt",
+        "s", "sc", "sch", "sh", "ss", "st", "sw",
+        "t", "tch", "th", "tt", "tw"
+    ]
+}

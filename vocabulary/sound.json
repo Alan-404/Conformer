@@ -7,12 +7,12 @@
         "ea", "eau", "ee", "ei", "eigh", "eo", "eou", "eu", "ey",
         "ia", "ie", "ieu", "iew", "igh",
         "oa", "oe", "oh", "oi", "oo", "ou", "ough", "oy", "o'",
-        "ue", "ui", "uo", "uy"
+        "ua", "ue", "ui", "uo", "uy"
     ],
     "voiced_consonant": [
         "b", "bb",
         "cz",
-        "d", "dd", "dj",
+        "d", "dd", "dj", "dg",
         "g", "gg", "gh", "gm", "gn", "gue",
         "j",
         "kn",
@@ -23,19 +23,65 @@
         "r", "rh", "rr", 
         "s", "sc", "sl", "ss",
         "tg", "th",
+        "q",
         "v", "w", "wh", "wr",
         "x", "z", "zz"
     ],
     "voiceless_consonant": [
         "bt", 
-        "c", "cc", "cch", "ce", "ch", "cht", "ck", "cq", "cqu", "cs", "ct",
+        "c", "cc", "cch", "ch", "cht", "ck", "cq", "cqu", "cs", "ct",
         "f", "ff", "ft",
         "gh",
         "h",
         "k", "kh",
         "lf", "lk",
         "p", "ph", "pp", "ps", "pt",
+        "qu",
         "s", "sc", "sch", "sh", "ss", "st", "sw",
-        "t", "tch", "th", "tt", "tw"
-    ]
+        "t", "tch", "th", "tt", "tw", "tth"
+    ],
+    "mixed": {
+        "a": ["r", "w"],
+        "e": ["r", "w"],
+        "i": ["r"],
+        "o": ["w", "r", "h"],
+        "u": ["r"]
+    },
+    "suffix": {
+        "ness": ["n", "e", "ss"],
+        "fess": ["f", "e", "ss"],
+        "es": ["es"],
+        "ssi": ["ssi"],
+        "n't": ["n't"],
+        "'s": ["'s"],
+        "'ve": ["'ve"],
+        "'d": ["'d"],
+        "'ll": ["'ll"],
+        "'m": ["'m"],
+        "al": ["al"],
+        "an": ["an"],
+        "ce": ["ce"],
+        "ci": ["ci"],
+        "gue": ["gue"],
+        "ngue": ["ngue"],
+        "di": ["di"],
+        "er": ["er"],
+        "ol": ["ol"],
+        "or": ["or"],
+        "on": ["on"],
+        "si": ["si"],
+        "sci": ["sci"],
+        "shi": ["shi"],
+        "ti": ["ti"],
+        "le": ["le"],
+        "en": ["en"],
+        "el": ["el"],
+        "il": ["il"],
+        "in": ["in"],
+        "ed": ["ed"],
+        "s": ["s"],
+        "ly": ["l", "y"],
+        "ous": ["ou", "s"]
+    },
+    "last": ["a", "ai", "au", "aw", "ay", "e", "ea", "ee", "ei", "eu", "ew", "ey", "i", "ia", "ie", "oo", "o", "oa", "oi", "ou", "ow", "oy", "u", "ui", "y", "ua"]
 }

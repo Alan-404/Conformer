@@ -14,18 +14,18 @@
     ],
     "composed_consonant": [
         "bb", "bt", "br", "bl",
-        "cc", "cch", "ch", "cht",  "ck", "cq", "cs", "cz", "cqu", "ct", "cl",
+        "cc", "cch", "ch", "cht",  "ck", "cq", "cs", "cz", "cqu", "ct",
         "dd", "dg", "dj",
-        "ff", "fr",
+        "ff",
         "gg", "gh",  "gm",
         "kh", "kn",
         "ld", "lf", "lk", "ll", "lv",
-        "mm", "mn", "nd",
+        "mm", "mn",
         "ng", "gn", "gr",
         "nn",
-        "pb", "ph", "pn", "pp", "ps", "pt", "pl", "pr",
+        "pb", "ph", "pn", "pp", "ps", "pt",
         "qu", "rh", "rr", "rd",
-        "sc", "sch", "sh", "sl", "ss", "sw", "st", "sk",
+        "sc", "sch", "sh", "sl", "ss", "sw",
         "tch", "tg", "th", "tt", "tw",
         "tth",
         "wh", "wr",
@@ -105,7 +105,8 @@
         "'re": ["'re"],
         "'ll": ["'ll"],
         "lm": ["lm"],
-        "rry": ["rr", "y"]
+        "rry": ["rr", "y"],
+        "di": ["di"]
     },
     "dictionary": {
         "often": ["o", "ft", "en"],

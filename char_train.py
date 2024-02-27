@@ -35,7 +35,7 @@ def train(
         fmin: float = 0.0, 
         fmax: float = 8000.0,
         # Model Hyper - Params
-        n_layers: int = 17,
+        n_blocks: int = 17,
         d_model: int = 512,
         heads: int = 8,
         kernel_size: int = 31,
@@ -76,12 +76,17 @@ def train(
 
     if checkpoint is None:
         module = ConformerModule(
-            processor=processor,
-            n_layers=n_layers,
+            vocab_size=len(processor.dictionary),
+            n_blocks=n_blocks,
+            n_mel_channels=num_mels,
             d_model=d_model,
             heads=heads,
             kernel_size=kernel_size,
-            dropout_rate=dropout_rate
+            n_layers=1,
+            hidden_dim=640,
+            dropout_rate=0.1,
+            pad_token=processor.pad_token,
+            metric_fx=processor.decode_batch
         )
     else: 
         module = ConformerModule.load_from_checkpoint(checkpoint, pad_token=processor.pad_token, metric_fx=processor.decode_batch)

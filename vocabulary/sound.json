@@ -28,14 +28,72 @@
     ],
     "voiceless_consonant": [
         "bt", 
-        "c", "cc", "cch", "ce", "ch", "cht", "ck", "cq", "cqu", "cs", "ct",
+        "c", "cc", "cch", "ch", "cht", "ck", "cq", "cqu", "cs", "ct",
         "f", "ff", "ft",
         "gh",
         "h",
         "k", "kh",
         "lf", "lk",
         "p", "ph", "pp", "ps", "pt",
-        "s", "sc", "sch", "sh", "ss", "st", "sw",
+        "s", "sc", "sch", "sh", "ss",
         "t", "tch", "th", "tt", "tw"
-    ]
+    ],
+    "split_condition": {
+        "es": ["s", "ch", "sh", "x", "z", "c", "g"],
+        "ed": ["t", "d"]
+    },
+    "suffix": {
+        "ssi": ["ssi"],
+        "ce": ["ce"],
+        "an": ["a", "n"],
+        "fully": ["f", "u", "ll", "y"],
+        "ify": ["i", "f", "y"],
+        "lly": ["ll", "y"],
+        "ful": ["f", "u", "l"],
+        "ous": ["ou", "s"],
+        "ing": ["i", "ng"],
+        "ften": ["ft", "e", "n"],
+        "ess": ["e", "ss"],
+        "ed": ["e", "d"],
+        "si": ["si"],
+        "sci": ["sci"],
+        "ci": ["ci"],
+        "ti": ["ti"],
+        "on": ["o", "n"],
+        "shi": ["shi"],
+        "ould": ["ou", "ld"],
+        "di": ["di"],
+        "ity": ["i", "t", "y"],
+        "ty": ["t", "y"],
+        "ly": ["l", "y"],
+        "al": ["a", "l"],
+        "mb": ["mb"],
+        "gn": ["gn"],
+        "lm": ["lm"],
+        "valve": ["v", "a_e", "l", "v"],
+        "alve": ["a_e", "lv"],
+        "ng": ["ng"],
+        "le": ["le"],
+        "gi": ["gi"],
+        "ate": ["a_e", "t"]
+    },
+    "prefix": {
+        "some": ["s", "o_e", "m"],
+        "any": ["a", "n", "y"]
+    },
+    "split": {
+        "o": ["tw", "sw"]
+    },
+    "exception": [
+        "le", "st", "mb", "lv", "gn", "ng",
+        "ssi", "si", "sci", "di", "ld",
+        "ed", "es", "gi"
+    ],
+    "special": {
+        "scien": ["sc", "i", "e", "n"],
+        "listen": ["l", "i", "st", "e", "n"],
+        "christ": ["ch", "r", "i", "st"],
+        "mould": ["m", "ou", "l", "d"]
+    },
+    "last": ["a", "ai", "au", "aw", "ay", "e", "ea", "ee", "ei", "eu", "ew", "ey", "i", "ia", "ie", "oo", "o", "oa", "oi", "ou", "ow", "oy", "u", "ui", "y"]
 }

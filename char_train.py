@@ -84,7 +84,7 @@ def train(
             dropout_rate=dropout_rate
         )
     else: 
-        module = ConformerModule.load_from_checkpoint(checkpoint)
+        module = ConformerModule.load_from_checkpoint(checkpoint, pad_token=processor.pad_token, metric_fx=processor.decode_batch)
 
     torchsummary.summary(module.model)
     module.model.train()

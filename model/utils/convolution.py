@@ -56,3 +56,11 @@ class ConvolutionSubsampling(nn.Module):
             lengths = ((lengths - 1) // 2 - 1) // 2
             
         return x, lengths
+
+class DepthWiseConvolution(nn.Module):
+    def __init__(self, in_channels: int, out_channels: int, kernel_size: int) -> None:
+        super().__init__()
+
+class ConvolutionDownSampling(nn.Module):
+    def __init__(self, channels: int, kernel_size: int) -> None:
+        super().__init__()

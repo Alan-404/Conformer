@@ -9,11 +9,16 @@
         "oa", "oe", "oh", "oi", "oo", "ou", "ough", "oy", "o'",
         "ue", "ui", "uo", "uy"
     ],
+    "mixed_vowel": [
+        "aw",
+        "ew",
+        "ow"
+    ],
     "voiced_consonant": [
         "b", "bb",
         "cz",
         "d", "dd", "dj",
-        "g", "gg", "gh", "gm", "gn", "gue",
+        "g", "gg", "gh", "gm", "gue",
         "j",
         "kn",
         "l", "ld", "ll", "lm", "lv",
@@ -28,7 +33,7 @@
     ],
     "voiceless_consonant": [
         "bt", 
-        "c", "cc", "cch", "ch", "cht", "ck", "cq", "cqu", "cs", "ct",
+        "c", "cc", "cch", "ch", "cht", "ck", "cq", "cqu", "cs", "qu",
         "f", "ff", "ft",
         "gh",
         "h",
@@ -36,7 +41,9 @@
         "lf", "lk",
         "p", "ph", "pp", "ps", "pt",
         "s", "sc", "sch", "sh", "ss",
-        "t", "tch", "th", "tt", "tw"
+        "t", "tch", "th", "tt",
+
+        "'t", "'s", "'d", "'ve", "'ll"
     ],
     "split_condition": {
         "es": ["s", "ch", "sh", "x", "z", "c", "g"],
@@ -45,6 +52,10 @@
     "suffix": {
         "ssi": ["ssi"],
         "ce": ["ce"],
+        "'s": ["'s"],
+        "'ve": ["'ve"],
+        "'d": ["'d"],
+        "'ll": ["'ll"],
         "an": ["a", "n"],
         "fully": ["f", "u", "ll", "y"],
         "ify": ["i", "f", "y"],
@@ -53,7 +64,8 @@
         "ous": ["ou", "s"],
         "ing": ["i", "ng"],
         "ften": ["ft", "e", "n"],
-        "ess": ["e", "ss"],
+        "ness": ["n", "e", "ss"],
+        "less": ["l", "e", "ss"],
         "ed": ["e", "d"],
         "si": ["si"],
         "sci": ["sci"],
@@ -68,14 +80,14 @@
         "ly": ["l", "y"],
         "al": ["a", "l"],
         "mb": ["mb"],
-        "gn": ["gn"],
         "lm": ["lm"],
-        "valve": ["v", "a_e", "l", "v"],
-        "alve": ["a_e", "lv"],
+        "valve": ["v", "a", "l", "v", "e"],
+        "alve": ["a", "lv", "e"],
         "ng": ["ng"],
         "le": ["le"],
         "gi": ["gi"],
-        "ate": ["a_e", "t"]
+        "n't": ["n", "'t"],
+        "ign": ["i", "gn"]
     },
     "prefix": {
         "some": ["s", "o_e", "m"],
@@ -87,13 +99,20 @@
     "exception": [
         "le", "st", "mb", "lv", "gn", "ng",
         "ssi", "si", "sci", "di", "ld",
-        "ed", "es", "gi"
+        "ed", "es", "gi", "tw", "sw"
     ],
     "special": {
         "scien": ["sc", "i", "e", "n"],
         "listen": ["l", "i", "st", "e", "n"],
         "christ": ["ch", "r", "i", "st"],
-        "mould": ["m", "ou", "l", "d"]
+        "mould": ["m", "ou", "l", "d"],
+        "sword": ["sw", "o", "r", "d"],
+        "two": ["tw", "o"],
+        "answer": ["a", "n", "sw", "e", "r"],
+        "indict": ["i", "n", "d", "i", "ct"]
+    },
+    "dictionary": {
+        "sign": ["s", "i", "gn"]
     },
     "last": ["a", "ai", "au", "aw", "ay", "e", "ea", "ee", "ei", "eu", "ew", "ey", "i", "ia", "ie", "oo", "o", "oa", "oi", "ou", "ow", "oy", "u", "ui", "y"]
 }

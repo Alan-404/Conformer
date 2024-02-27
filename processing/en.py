@@ -221,14 +221,16 @@ class ConformerProcessor:
                 if word != '':
                     word, suffixes = self.get_last(word, self.pattern['suffix'], self.pattern['past'], self.pattern['many'])
                     if word != '':
-                        word_graphemes = self.stride_graphemes(word, self.stride_patterns)
-                        word_graphemes = self.last_handle([first_item] + word_graphemes, self.pattern['last'])
-                        stride_items = [word_graphemes[0]] + self.concat_process(word_graphemes[1:])
+                        stride_items = self.stride_graphemes(word, self.stride_patterns)
+                        # word_graphemes = self.last_handle([first_item] + word_graphemes, self.pattern['last'])
+                        # stride_items = [word_graphemes[0]] + self.concat_process(word_graphemes[1:])
 
-        if stride_items != []:
-            graphemes = prefix + looked_item +  stride_items
-        else:
-            graphemes = prefix + looked_item + [first_item]
+        # if stride_items != []:
+        #     graphemes = prefix + looked_item +  stride_items
+        # else:
+        #     graphemes = prefix + looked_item + [first_item]
+                        
+        graphemes = prefix + looked_item + [first_item] + stride_items
 
         for suffix in suffixes:
             graphemes += suffix

@@ -17,7 +17,6 @@
         "l", "ld", "ll", "lm", "lv",
         "m", "mb", "mm", "mn",
         "n", "ng", "ngue", "nn",
-        "q",
         "pb", "pn",
         "r", "rh", "rr", 
         "s", "sc", "sl", "ss",
@@ -34,19 +33,15 @@
         "lf", "lk",
         "p", "ph", "pp", "ps", "pt",
         "s", "sc", "sch", "sh", "ss",
-        "t", "tch", "th", "tt",
+        "t", "tch", "th", "tt", "tth",
 
-        "le", "st", "mb", "lv", "gn", "ng",
-        "ssi", "si", "sci", "di", "ld", "ti", "ce", "ci",
+        "le", "st", "mb", "gn", "ng",
+        "ce", "ci", "gi", "ti",
+        "ssi", "si", "sci", "di", "ld",
         "ed", "es", "gi", "tw", "sw",
 
-        "'t", "o'", "'d", "'m", "'ve", "'ll", "'s", "s", "'"
-    ],
-    "replace":{
+        "al", "il", "in", "ol", "on", "ul", "el",
 
-    },
-    "hotword": {
-        "weight": 9.0,
-        "items": []
-    }
+        "'s", "'t", "'d", "'ve", "'t", "'", "'ll"
+    ]
 }

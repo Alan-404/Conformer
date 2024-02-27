@@ -57,9 +57,11 @@ class ConvolutionSubsampling(nn.Module):
             
         return x, lengths
 
-class DepthWiseConvolution(nn.Module):
-    def __init__(self, in_channels: int, out_channels: int, kernel_size: int) -> None:
+class DepthWiseSeperatedConvolution(nn.Module):
+    def __init__(self, in_channels: int, out_channels: int) -> None:
         super().__init__()
+        self.depth_conv = nn.Conv2d(in_channels=in_channels, out_channels=in_channels, kernel_size=3, stride=2, padding=1, groups=in_channels)
+        self.pointwise_conv = nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=1)
 
 class ConvolutionDownSampling(nn.Module):
     def __init__(self, channels: int, kernel_size: int) -> None:

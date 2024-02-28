@@ -14,7 +14,7 @@ from typing import Tuple, Callable
 import statistics
 
 class ConformerModule(L.LightningModule):
-    def __init__(self, vocab_size: int, n_mel_channels: int, n_blocks: int, d_model: int, heads: int, kernel_size: int, n_layers: int, hidden_dim: int, dropout_rate: float, pad_token: int, metric_fx: Callable[[str, bool], torch.Tensor]) -> None:
+    def __init__(self, vocab_size: int, n_mel_channels: int, n_blocks: int, d_model: int, heads: int, kernel_size: int, dropout_rate: float, pad_token: int, metric_fx: Callable[[str, bool], torch.Tensor]) -> None:
         super().__init__()
         self.metric_fx = metric_fx
 

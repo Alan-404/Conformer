@@ -125,16 +125,12 @@ class ConformerProcessor:
 
         if word != '':
             word, specials = self.split_by_condition(word, self.patterns['split_condition'])
-        print(word)
         if word != '':
             word, splitted_items = self.split_handle(word, self.patterns['split'])
-        print(word)
         if word != '':
             word, suffixes = self.get_suffixes(word, self.patterns['suffix'])
-        print(word)
         if word != '':
             graphemes = self.stride_graphemes(word, self.vowels + self.consonants)
-        print(word)
 
         for item in suffixes:
             graphemes += item

@@ -131,7 +131,7 @@ def train(
     
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, collate_fn=lambda batch: get_batch(batch, set_augment), num_workers=num_workers)
 
-    if device == 'cpu' and torch.cuda.is_available():
+    if device == 'cpu' or not torch.cuda.is_available():
         strategy = SingleDeviceStrategy(device='cpu')
     else:
         if torch.cuda.device_count() == 1:

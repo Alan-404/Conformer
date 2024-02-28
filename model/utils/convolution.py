@@ -7,8 +7,7 @@ from typing import Optional
 class ConvolutionModule(nn.Module):
     def __init__(self, channels: int, kernel_size: int, dropout_rate: float = 0.0) -> None:
         super().__init__()
-        self.num_pad = 1 if kernel_size % 2 == 0 else 0
-        padding = (kernel_size - 1) // 2 + self.num_pad
+        padding = (kernel_size - 1) // 2
 
         self.layer_norm = nn.LayerNorm(normalized_shape=channels)
         self.pointwise_conv_1 = nn.Conv1d(in_channels=channels, out_channels=channels * 2, kernel_size=1, stride=1, padding=0)
@@ -25,7 +24,6 @@ class ConvolutionModule(nn.Module):
         x = self.pointwise_conv_1(x)
         x = self.glu(x)
         x = self.deepwise_conv(x)
-        x = x[:, :, :-self.num_pad]
         x = self.swish(x)
         x = self.pointwise_conv_2(x)
         x = self.dropout(x)
@@ -58,7 +56,7 @@ class ConvolutionSubsampling(nn.Module):
             
         return x, lengths
 
-class DepthWiseSeperableConvolution(nn.Module):
+class DepthWiseSeparableConvolution(nn.Module):
     def __init__(self, in_channels: int, out_channels: int) -> None:
         super().__init__()
         self.depth_conv = nn.Conv2d(in_channels=in_channels, out_channels=in_channels, kernel_size=3, stride=2, groups=in_channels)
@@ -70,23 +68,21 @@ class DepthWiseSeperableConvolution(nn.Module):
         return x
 
 class DownsamplingConvolution(nn.Module):
-    def __init__(self, channels: int, num_layers: int = 2) -> None:
+    def __init__(self, channels: int) -> None:
         super().__init__()
-        assert num_layers % 2 == 0
-        self.n_layers = num_layers
-
-        self.convs = nn.ModuleList()
-
-        self.convs.append(DepthWiseSeperableConvolution(in_channels=1, out_channels=channels))
-        for _ in range(num_layers - 1):
-            self.convs.append(DepthWiseSeperableConvolution(in_channels=channels, out_channels=channels))
+        self.pointwise_conv = nn.Conv2d(in_channels=1, out_channels=channels, kernel_size=1, stride=1, padding=0)
+        self.conv_1 = DepthWiseSeparableConvolution(in_channels=channels, out_channels=channels)
+        self.conv_2 = DepthWiseSeparableConvolution(in_channels=channels, out_channels=channels)
 
     def forward(self, x: torch.Tensor, lengths: Optional[torch.Tensor] = None):
         x = x.unsqueeze(1)
+        x = self.pointwise_conv(x)
+    
+        x = self.conv_1(x)
+        x = F.relu(x)
 
-        for layer in self.convs:
-            x = layer(x)
-            x = F.silu(x)
+        x = self.conv_2(x)
+        x = F.relu(x)
 
         batch_size, dim, downsampling_channels, downsampling_length = x.size()
         
@@ -94,7 +90,6 @@ class DownsamplingConvolution(nn.Module):
         x = x.contiguous().view(batch_size, downsampling_length, dim * downsampling_channels)
 
         if lengths is not None:
-            for _ in range(self.n_layers):
-                lengths = (lengths - 1) // 2
+            lengths = ((lengths - 1) // 2 - 1) // 2
 
         return x, lengths

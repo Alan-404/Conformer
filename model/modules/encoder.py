@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from model.utils.convolution import ConvolutionSubsampling
+from model.utils.convolution import DownsamplingConvolution
 from model.utils.block import ConformerBlock
 from model.utils.masking import generate_mask
 from model.utils.position import RelativePositionalEncoding
@@ -9,7 +9,7 @@ from typing import Optional
 class Encoder(nn.Module):
     def __init__(self, n_mel_channels: int, n: int, d_model: int, heads: int, kernel_size: int, dropout_rate: float = 0.0) -> None:
         super().__init__()
-        self.subsampling = ConvolutionSubsampling(channels=d_model)
+        self.downsampling_conv = DownsamplingConvolution(channels=d_model)
         self.linear = nn.Linear(in_features=d_model * (((n_mel_channels - 1) // 2 - 1) // 2), out_features=d_model)
         self.dropout = nn.Dropout(p=dropout_rate)
         self.rel_pe = RelativePositionalEncoding(d_model=d_model)
@@ -17,8 +17,8 @@ class Encoder(nn.Module):
     
     def forward(self, x: torch.Tensor, lengths: Optional[torch.Tensor] = None) -> torch.Tensor:
         # Subsampling Mel - Spectrogram
-        x, lengths = self.subsampling(x, lengths)
-        
+        x, lengths = self.downsampling_conv(x, lengths)
+
         # Pre - Project
         x = self.linear(x)
         
@@ -33,5 +33,5 @@ class Encoder(nn.Module):
         rel_pos = self.rel_pe(x)
         for layer in self.layers:
             x = layer(x, rel_pos, mask)
-
+        
         return x, lengths

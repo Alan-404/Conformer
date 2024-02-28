@@ -9,7 +9,7 @@ from lightning.pytorch.strategies import SingleDeviceStrategy ,DDPStrategy
 import fire
 
 from module import ConformerModule
-from processing._processor import ConformerProcessor
+from processing.processor import ConformerProcessor
 from dataset import ConformerDataset
 
 from processing.noise import SpecAugment

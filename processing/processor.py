@@ -146,6 +146,52 @@ class ConformerProcessor:
         graphemes = self.handle_exception(graphemes)
 
         return graphemes
+    
+    def decode_batch(self, digits: Union[torch.Tensor, np.ndarray, list], group_token: bool = True) -> List[str]:
+        sentences = []
+        for logit in digits:
+            if group_token:
+                logit = self.group_tokens(logit)
+            sentences.append(self.token2text(logit))
+        return sentences
+    
+    def group_tokens(self, logits: Union[torch.Tensor, np.ndarray], length: Optional[int] = None) -> Union[np.ndarray, torch.Tensor]:
+        items = []
+        prev_item = None
+
+        if length is None:
+            length = length = len(logits)
+
+        for i in range(length):
+            if prev_item is None:
+                items.append(logits[i])
+                prev_item = logits[i]
+                continue
+            
+            if logits[i] == self.pad_token:
+                prev_item = None
+                continue
+
+            if logits[i] == prev_item:
+                continue
+
+            items.append(logits[i])
+            prev_item = logits[i]
+        return items
+
+    def token2text(self, tokens: np.ndarray) -> str:
+        text = ""
+        for token in tokens:
+            if token == self.delim_idx:
+                text += " "
+            elif token >= 0:
+                text += self.dictionary.lookup_token(token)
+            else:
+                break
+        for item in self.special_tokens:
+            text = text.replace(item, "")
+        text = re.sub(r"\s\s+", " ", text)
+        return text.strip()
 
     def get_last_item(self, word: str, pattern: str):
         length_item = len(pattern)

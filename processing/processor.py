@@ -478,6 +478,7 @@ class ConformerProcessor:
 
         for item in graphemes:
             length = len(item)
+            lengths.append(length)
 
             if max_length < length:
                 max_length = length

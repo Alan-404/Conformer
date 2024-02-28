@@ -471,22 +471,21 @@ class ConformerProcessor:
     
     def tokenize(self, graphemes: List[List[str]], max_len: Optional[int] = None) -> Tuple[torch.Tensor, torch.Tensor]:
         tokens = []
-        lengths = []
-        for item in graphemes:
-            if item != ['']:
-                token = torch.tensor(np.array(self.dictionary(item)))
-            else:
-                token = torch.tensor(np.array([]))
-            lengths.append(len(token))
-            tokens.append(token)
 
-        if max_len is None:
-            max_len = np.max(lengths)
+        lengths = []
+
+        max_length = 0
+
+        for item in graphemes:
+            length = len(item)
+
+            if max_length < length:
+                max_length = length
+
+            tokens.append(self.dictionary(item))
 
         padded_tokens = []
-    
-        for index, token in enumerate(tokens):
-            padded_tokens.append(F.pad(token, (0, max_len - lengths[index]), mode='constant', value=self.pad_token))
+        for index, item in enumerate(tokens):
+            padded_tokens.append(F.pad(item, (0, max_len - lengths[index]), mode='constant', value=self.pad_token))
 
-        return torch.stack(padded_tokens), torch.tensor(lengths)
-    
+        return torch.stack(padded_tokens), torch.stack(lengths)

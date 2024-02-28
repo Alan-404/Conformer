@@ -485,6 +485,8 @@ class ConformerProcessor:
 
             tokens.append(self.dictionary(item))
 
+        print(lengths)
+
         padded_tokens = []
         for index, item in enumerate(tokens):
             padded_tokens.append(F.pad(item, (0, max_len - lengths[index]), mode='constant', value=self.pad_token))

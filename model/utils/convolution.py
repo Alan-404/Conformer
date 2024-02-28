@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from model.utils.activation import GLU, Swish
 from typing import Optional
 
@@ -57,12 +58,43 @@ class ConvolutionSubsampling(nn.Module):
             
         return x, lengths
 
-class DepthWiseSeperatedConvolution(nn.Module):
+class DepthWiseSeperableConvolution(nn.Module):
     def __init__(self, in_channels: int, out_channels: int) -> None:
         super().__init__()
-        self.depth_conv = nn.Conv2d(in_channels=in_channels, out_channels=in_channels, kernel_size=3, stride=2, padding=1, groups=in_channels)
+        self.depth_conv = nn.Conv2d(in_channels=in_channels, out_channels=in_channels, kernel_size=3, stride=2, groups=in_channels)
         self.pointwise_conv = nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=1)
 
-class ConvolutionDownSampling(nn.Module):
-    def __init__(self, channels: int, kernel_size: int) -> None:
+    def forward(self, x: torch.Tensor):
+        x = self.depth_conv(x)
+        x = self.pointwise_conv(x)
+        return x
+
+class DownsamplingConvolution(nn.Module):
+    def __init__(self, channels: int, num_layers: int = 2) -> None:
         super().__init__()
+        assert num_layers % 2 == 0
+        self.n_layers = num_layers
+
+        self.convs = nn.ModuleList()
+
+        self.convs.append(DepthWiseSeperableConvolution(in_channels=1, out_channels=channels))
+        for _ in range(num_layers - 1):
+            self.convs.append(DepthWiseSeperableConvolution(in_channels=channels, out_channels=channels))
+
+    def forward(self, x: torch.Tensor, lengths: Optional[torch.Tensor] = None):
+        x = x.unsqueeze(1)
+
+        for layer in self.convs:
+            x = layer(x)
+            x = F.silu(x)
+
+        batch_size, dim, downsampling_channels, downsampling_length = x.size()
+        
+        x = x.permute([0, 3, 1, 2])
+        x = x.contiguous().view(batch_size, downsampling_length, dim * downsampling_channels)
+
+        if lengths is not None:
+            for _ in range(self.n_layers):
+                lengths = (lengths - 1) // 2
+
+        return x, lengths

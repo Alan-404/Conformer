@@ -25,7 +25,7 @@ class ConformerDataset(Dataset):
 
         self.processor = processor
 
-        if 'graphemes' not in self.prompts.columns or make_grapheme:
+        if 'grapheme' not in self.prompts.columns or make_grapheme:
             print("Converting Text to Graphemes...")
             graphemes = []
             sentences = self.prompts['text'].to_list()
@@ -33,11 +33,11 @@ class ConformerDataset(Dataset):
                 graphemes_ = self.processor.sentence2graphemes(sentence)
                 graphemes.append(" ".join(graphemes_))
 
-            self.prompts['graphemes'] = graphemes
+            self.prompts['grapheme'] = graphemes
 
-            cols = ['path', 'text','graphemes']
+            cols = ['path', 'text','grapheme']
             if 'start' in self.prompts.columns and 'end' in self.prompts.columns:
-                cols = ['path', 'text','start', 'end', 'type', 'graphemes']
+                cols = ['path', 'text','start', 'end', 'type', 'grapheme']
 
             self.prompts[cols].to_csv(manifest_path, sep="\t", index=False)
 
@@ -48,7 +48,7 @@ class ConformerDataset(Dataset):
         index_df = self.prompts.iloc[index]
 
         audio_path = index_df['path']
-        transcript = index_df['graphemes']
+        transcript = index_df['grapheme']
         if type(transcript) != str:
             transcript = ['']
         else:

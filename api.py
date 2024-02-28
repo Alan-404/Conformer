@@ -4,7 +4,7 @@ import torch
 from fastapi import FastAPI, UploadFile, File
 from pydub import AudioSegment
 from io import BytesIO
-from processing.processor import ConformerProcessor
+from processing._processor import ConformerProcessor
 from model.conformer import Conformer
 import time
 import uvicorn

@@ -5,7 +5,7 @@ from torch.utils.data import DataLoader
 from lightning import Trainer
 from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.strategies import DDPStrategy
-from processing.processor import ConformerProcessor
+from processing._processor import ConformerProcessor
 
 from module import BYOLConformerModule
 from dataset import UnsupervisedConformerDataset

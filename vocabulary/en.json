@@ -1,93 +1,135 @@
 {
-    "vowel": [
-        "a", "e", "i", "o", "u", "y"
-    ],
-    "consonant": [
-        "b", "c", "d", "f", "g", "h", "j", "k", "l", "m", "n", "p", "q", "r", "s", "t", "v", "w", "x", "z"
-    ],
+    "single_vowel": ["a", "e", "i", "o", "u", "y"],
     "composed_vowel": [
-        "ae", "ai", "ao", "au", "ay",
-        "ea", "eau", "ee", "ei", "eo", "eou", "eu", "ey",
-        "ia", "ie", "ieu",
-        "oa", "oe", "oi", "oo", "ou", "oy", "o'",
-        "ue", "ui", "uo", "uy"
+        "ae", "ah", "ai", "aigh", "ao", "au", "augh", "ay", "aa",
+        "ea", "eau", "ee", "ei", "eigh", "eo", "eou", "eu", "ey",
+        "ia", "ie", "ieu", "iew", "igh", "ii",
+        "oa", "oe", "oh", "oi", "oo", "ou", "ough", "oy", "o'",
+        "ue", "ui", "uo", "uy", "uu",
+        "aw", "ew", "ow"
+    ],
+    "single_consonant": [
+        "b", "c", "d", "f", "g", "h", "j", "k", "l", "m", "n", "p", "q", "r", "s", "t", "v", "w", "x", "z"
     ],
     "composed_consonant": [
         "bb", "bt",
-        "cc", "cch", "ch", "cht",  "ck", "cq", "cs", "ct", "cz",
-        "dd", "di", "dg", "dj", "'d",
+        "cc", "cch", "ch", "cht",  "ck", "cq", "cs", "cz", "cqu", "ct",
+        "dd", "dg", "dj",
         "ff", "ft",
         "gg", "gh",  "gm", "gn",
         "kh", "kn",
-        "ld", "lf", "lk", "ll", "lm", "lv", "'ll",
-        "mb", "mm", "mn",
-        "ng", "nn",
-        "pb", "ph", "pn", "pp", "ps", "pt",
-        "rh", "rr", 
-        "sc", "sch", "sh", "sl", "ss", "st", "sw", "'s",
-        "tch", "tg", "th", "tt", "tw", "tr",
-        "'ve",
+        "ld", "lf", "lm", "lk", "ll", "lv",
+        "mm", "mn",
+        "ng", "gn",
+        "nn",
+        "pb", "ph", "pn", "pp", "ps", "pt", "pph",
+        "qu", "rh", "rr",
+        "sc", "sch", "sh", "sl", "ss", "sw", "st",
+        "tch", "tg", "th", "tt", "tw",
         "wh", "wr",
         "zz",
-        "'"
+
+        "'m", "'t", "'d", "'ve", "'ll", "'s", "s'", "n'", "'"
     ],
-    "mixed": [
-        "ah", "aigh", "augh", "aw",
-        "ew", "et",
-        "ough", "ow", "oh",
-        "eigh",
-        "iew", "igh",
+    "exception": [
+        "ed", "es",
+        "ti", "si", "sci", "ce", "ci", "gi", "gue", "ngue", "shi", "le", "di",
+        "ssi", "tti", "ggi", "ddi", "lle", "ss'", "tth", "ooh", "ttch", "nnn",
+        "jj"
+    ],
+    "voiced": [
+        "b", "d", "j", "g", "v", "z", "m", "n", "l", "r", "w",
+        "gm", "gn",
+        "ld", "lm", "lv",
+        "mb", "mn",
+        "ng", "rh",
+        "tg"
+    ],
+    "voiceless": [
+        "p", "f", "t", "k", "s", "h",
+        "st", "pt", "ps", "ft", "cs", "ct",
+        "sl"
+    ],
+    "type_1": [
+        "lf", "lk"
+    ],
+    "mixed_vowel": [
+        "aw", "ew", "ow"
+    ],
+    "suffix": {
+        "ably": ["a", "b", "l", "y"],
+        "ture": ["t", "u", "r", "e"],
+        "sure": ["s", "u", "r", "e"],
+        "over": ["o", "v", "e", "r"],
+        "able": ["a", "b", "le"],
+        "less": ["l", "e", "ss"],
+        "ty": ["t", "y"],
+        "al": ["a", "l"],
+        "an": ["a", "n"],
+        "il": ["i", "l"],
+        "in": ["i", "n"],
+        "el": ["e", "l"],
+        "le": ["le"],
+        "en": ["e", "n"],
+        "ul": ["u", "l"],
+        "ol": ["o", "l"],
+        "on": ["o", "n"],
+        "sci": ["sci"],
+
+        "ment": ["m", "e", "n", "t"],
+        "ness": ["n", "e", "ss"],
+        "noon": ["n", "oo", "n"],
+
+        "'s": ["'s"],
+        "s'": ["s'"],
+
+        "ess": ["e", "ss"],
+        "eed": ["ee", "d"],
+
+        "ing": ["i", "ng"],
+
+        "ly": ["l", "y"],
+        "lly": ["ll", "y"],
         
-        "al",
-        "ce", "ci",
-        "il", "in",
-        "ed", "es", "el", "en",
-        "gi",
-        "le", 
-        "ol", "on",
-        "sci", "ssi",
-        "qu", 
-        "ti",
-        "ngue", "gue"
-    ],
-    "vocab": [
-        "a", "e", "i", "o", "u", "y",
-        "b", "c", "d", "f", "g", "h", "j", "k", "l", "m", "n", "p", "q", "r", "s", "t", "v", "w", "x", "z",
-        "ae", "ai", "ao", "au", "ay",
-        "ea", "eau", "ee", "ei", "eo", "eou", "eu", "ey",
-        "ia", "ie", "ieu",
-        "oa", "oe", "oi", "oo", "ou", "oy", "o'",
-        "ue", "ui", "uo", "uy",
-        "bb", "bt",
-        "cc", "cch", "ch", "cht",  "ck", "cq", "cs", "ct", "cz",
-        "dd", "dg", "dj", "'d",
-        "ff", "ft",
-        "gg", "gh",  "gm", "gn",
-        "kh", "kn",
-        "ld", "lf", "lk", "ll", "lm", "lv", "'ll",
-        "mb", "mm", "mn",
-        "ng", "nn",
-        "pb", "ph", "pn", "pp", "ps", "pt",
-        "rh", "rr", 
-        "sc", "sch", "sh", "sl", "ss", "st", "sw", "'s",
-        "tch", "tg", "th", "tt", "tw", "tr",
-        "'ve",
-        "wh", "wr",
-        "zz",
-        "'",
-        
-        "ah", "aigh", "augh", "aw",
-        "ew", "et",
-        "ough", "ow", "oh",
-        "eigh",
-        "iew", "igh",
-    
-        "gi",
-        "qu", 
-        "ngue", "gue"
-    ],
+        "n't": ["n", "'t"],
+        "ce": ["ce"],
+        "ci": ["ci"],
+        "di": ["di"],
+        "gi": ["gi"],
+        "gue": ["gue"],
+        "ngue": ["ngue"],
+        "si": ["si"],
+        "ssi": ["ssi"],
+        "shi": ["shi"],
+        "ti": ["ti"],
+
+        "ary": ["a", "r", "y"],
+        "er": ["e", "r"],
+        "or": ["o", "r"],
+        "ar": ["a", "r"],
+        "ed": ["e", "d"],
+
+        "ous": ["ou", "s"]
+    },
+    "split": {
+        "ed": ["t", "d"],
+        "es": ["s", "z", "sh", "ch", "c", "x", "g"]
+    },
+    "split_condition": {
+        "s": ["e", "ou", "'"]
+    },
+    "auto_split": {
+        "eed": ["ee", "d"],
+        "cce": ["cc", "e"]
+    },
+    "special": {
+        "tw": [["o"]],
+        "sw": [["o", "r", "d"]]
+    },
     "replace":{
     },
     "hotword": {
+        "weight": 9.0,
+        "items": ["fpt"]
     }
 }

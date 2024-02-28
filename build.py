@@ -4,7 +4,7 @@ import fire
 
 import torchsummary
 
-from processing.processor import ConformerProcessor
+from processing._processor import ConformerProcessor
 from model.conformer import Conformer
 
 from common import map_weights

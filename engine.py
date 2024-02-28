@@ -5,7 +5,7 @@ from ignite.engine import Engine, Events
 from ignite.contrib.handlers.tqdm_logger import ProgressBar
 
 from model.conformer import Conformer
-from processing.processor import ConformerProcessor
+from processing._processor import ConformerProcessor
 
 from dataset import ConformerInferenceDataset
 

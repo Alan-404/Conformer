@@ -13,19 +13,19 @@
     ],
     "composed_consonant": [
         "bb", "bt",
-        "cc", "cch", "ch", "cht",  "ck", "cq", "cs", "cz", "cqu", "ct",
+        "cc", "cch", "ch", "cht",  "ck", "cq", "cz", "cqu",
         "dd", "dg", "dj",
-        "ff", "ft",
+        "ff",
         "gg", "gh",  "gm", "gn",
         "kh", "kn",
         "ld", "lf", "lm", "lk", "ll", "lv",
         "mm", "mn",
         "ng", "gn",
         "nn",
-        "pb", "ph", "pn", "pp", "ps", "pt", "pph",
+        "pb", "ph", "pn", "pp", "ps", "pph",
         "qu", "rh", "rr",
-        "sc", "sch", "sh", "sl", "ss", "sw", "st",
-        "tch", "tg", "th", "tt", "tw",
+        "sc", "sch", "sh", "sl", "ss",
+        "tch", "tg", "th", "tt",
         "wh", "wr",
         "zz",
 
@@ -34,16 +34,15 @@
     "exception": [
         "ed", "es",
         "ti", "si", "sci", "ce", "ci", "gi", "gue", "ngue", "shi", "le", "di",
-        "ssi", "tti", "ggi", "ddi", "lle", "ss'", "tth", "ooh", "ttch", "nnn",
-        "jj"
+        "ssi", "tti", "ggi", "ddi", "lle", "ss'", "tth", "ooh", "ttch",
+        "sw", "tw", "ct", "st", "pt", "ft"
     ],
     "voiced": [
         "b", "d", "j", "g", "v", "z", "m", "n", "l", "r", "w",
         "gm", "gn",
         "ld", "lm", "lv",
         "mb", "mn",
-        "ng", "rh",
-        "tg"
+        "ng", "rh"
     ],
     "voiceless": [
         "p", "f", "t", "k", "s", "h",
@@ -123,8 +122,19 @@
         "cce": ["cc", "e"]
     },
     "special": {
-        "tw": [["o"]],
-        "sw": [["o", "r", "d"]]
+        "two": ["tw", "o"],
+        "answer": ["a", "n", "sw", "e", "r"],
+        "listen": ["l", "i", "st", "e", "n"],
+        "sword": ["sw", "o", "r", "d"],
+        "unscien": ["u", "n", "sc", "i", "e", "n"],
+        "scien": ["sc", "i", "e", "n"],
+        "indict": ["i", "n", "d", "i", "ct"],
+        "receipt": ["r", "e", "c", "ei", "pt"],
+        "christmas": ["ch", "r", "i", "st", "m", "a", "s"],
+        "valve": ["v", "a", "l", "v", "e"],
+        "tough": ["t", "ou", "gh"],
+        "cough": ["c", "ou", "gh"],
+        "often": ["o", "ft", "e", "n"]
     },
     "replace":{
     },

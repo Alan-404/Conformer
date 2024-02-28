@@ -115,11 +115,17 @@ class ConformerProcessor:
     
     def word2graphemes(self, word: str):
         word = self.spec_replace(word)
+
+        special_items, word = self.lookup(word, self.patterns['special'])
+
         splitted_items = []
         suffixes = []
-
-        word, specials = self.split_by_condition(word, self.patterns['split_condition'])
         graphemes = []
+        specials = ''
+
+        if word != '':
+            word, specials = self.split_by_condition(word, self.patterns['split_condition'])
+        
         if word != '':
             word, splitted_items = self.split_handle(word, self.patterns['split'])
         if word != '':
@@ -134,11 +140,13 @@ class ConformerProcessor:
         if specials != '':
             graphemes += [specials]
 
+        graphemes = special_items + graphemes
+
         graphemes = self.split_voiced_item(graphemes, self.patterns['voiced'], self.vowels)
 
-        graphemes = self.split_voiceless_item(graphemes, self.patterns['voiceless'], self.vowels)
+        # graphemes = self.split_voiceless_item(graphemes, self.patterns['voiceless'], self.vowels)
         
-        graphemes = self.split_voiced_item(graphemes, self.patterns['type_1'], self.patterns['voiced'] + self.vowels)
+        # graphemes = self.split_voiced_item(graphemes, self.patterns['type_1'], self.patterns['voiced'] + self.vowels)
 
         graphemes = self.concat_item(graphemes)
         graphemes = self.mixed_vowel_handle(graphemes, self.patterns['mixed_vowel'], self.vowels)
@@ -198,6 +206,20 @@ class ConformerProcessor:
         start_check = len(word) - length_item
         if word[start_check: ] == pattern:
             return word[:start_check ], pattern
+        return None
+    
+    def lookup(self, word: str, patterns: Dict[str, List[str]]):
+        for pattern in patterns:
+            items = self.get_first_item(word, pattern)
+            if items is not None:
+                return patterns[pattern], items[1]
+            
+        return [], word
+    
+    def get_first_item(self, word: str, pattern: str):
+        length_item = len(pattern)
+        if word[0: length_item] == pattern:
+            return pattern, word[length_item: ]
         return None
 
     def suffix_handle(self, word, pattern):
@@ -288,7 +310,9 @@ class ConformerProcessor:
                 if i == 0 or i == length - 1:
                     items.append(graphemes[i])
                 else:
-                    if graphemes[i+1] in valid_items:
+                    if i+1 == length - 1 and graphemes[i+1] == "e":
+                        items.append(graphemes[i])
+                    elif graphemes[i+1] in valid_items:
                         items += [*graphemes[i]]
                     else:
                         items.append(graphemes[i])

@@ -101,19 +101,10 @@ def train(
         signals, transcripts = zip(*batch)
         mels, mel_lengths = processor(signals)
 
-        sorted_indexes = torch.argsort(mel_lengths, descending=True)
-
-        mel_lengths = mel_lengths[sorted_indexes]
-        mels = mels[sorted_indexes]
-        
-        sorted_transcripts = []
-        for index in sorted_indexes:
-            sorted_transcripts.append(transcripts[index])
-
         if augment:
             mels = spec_augment(mels)
 
-        tokens, token_lengths = processor.tokenize(sorted_transcripts)
+        tokens, token_lengths = processor.tokenize(transcripts)
 
         return mels, tokens, mel_lengths, token_lengths
     

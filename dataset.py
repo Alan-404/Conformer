@@ -53,7 +53,7 @@ class ConformerDataset(Dataset):
             transcript = ['']
         else:
             transcript = transcript.split(" ")
-
+        print(transcript)
         start = end = None
         if "start" in self.columns and "end" in self.columns:
             start = index_df["start"]

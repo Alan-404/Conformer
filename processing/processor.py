@@ -483,9 +483,7 @@ class ConformerProcessor:
             if max_length < length:
                 max_length = length
 
-            tokens.append(self.dictionary(item))
-
-        print(lengths)
+            tokens.append(torch.tensor(self.dictionary(item)))
 
         padded_tokens = []
         for index, item in enumerate(tokens):

@@ -469,7 +469,7 @@ class ConformerProcessor:
 
         return mels, mel_lengths
     
-    def tokenize(self, graphemes: List[List[str]], max_len: Optional[int] = None) -> Tuple[torch.Tensor, torch.Tensor]:
+    def tokenize(self, graphemes: List[List[str]]) -> Tuple[torch.Tensor, torch.Tensor]:
         tokens = []
 
         lengths = []
@@ -487,6 +487,6 @@ class ConformerProcessor:
 
         padded_tokens = []
         for index, item in enumerate(tokens):
-            padded_tokens.append(F.pad(item, (0, max_len - lengths[index]), mode='constant', value=self.pad_token))
+            padded_tokens.append(F.pad(item, (0, max_length - lengths[index]), mode='constant', value=self.pad_token))
 
         return torch.stack(padded_tokens), torch.stack(lengths)

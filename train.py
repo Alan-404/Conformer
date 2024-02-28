@@ -88,7 +88,7 @@ def train(
             heads=heads,
             kernel_size=kernel_size,
             dropout_rate=dropout_rate,
-            pad_token=processor.pad_token,
+            pad_token=processor.pad_idx,
             metric_fx=processor.decode_batch
         )
     else: 

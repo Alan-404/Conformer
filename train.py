@@ -39,9 +39,7 @@ def train(
         n_blocks: int = 17,
         d_model: int = 512,
         heads: int = 8,
-        kernel_size: int = 32,
-        n_layers: int = 1,
-        hidden_dim: int = 640,
+        kernel_size: int = 31,
         dropout_rate: float = 0.1,
         # Train config
         num_train: Optional[int] = None,
@@ -89,8 +87,6 @@ def train(
             d_model=d_model,
             heads=heads,
             kernel_size=kernel_size,
-            n_layers=n_layers,
-            hidden_dim=hidden_dim,
             dropout_rate=dropout_rate,
             pad_token=processor.pad_token,
             metric_fx=processor.decode_batch

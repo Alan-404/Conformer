@@ -25,8 +25,6 @@ class ConformerModule(L.LightningModule):
             d_model=d_model,
             heads=heads,
             kernel_size=kernel_size,
-            n_layers=n_layers,
-            hidden_dim=hidden_dim,
             dropout_rate=dropout_rate
         )
 

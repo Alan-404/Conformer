@@ -1,10 +1,11 @@
 import os
 import torch
-from torch.utils.data import DataLoader, random_split
+from torch.utils.data import DataLoader
 
 from lightning import Trainer
 from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping
-from lightning.pytorch.strategies import SingleDeviceStrategy ,DDPStrategy
+from lightning.pytorch.strategies import SingleDeviceStrategy, DDPStrategy
+from lightning.pytorch.loggers import WandbLogger
 
 import fire
 
@@ -14,10 +15,7 @@ from dataset import ConformerDataset
 
 from processing.noise import SpecAugment
 
-from dotenv import load_dotenv
 from typing import Optional, Tuple
-
-load_dotenv()
 
 def train(
         # Processor Config
@@ -130,7 +128,9 @@ def train(
         else:
             strategy = DDPStrategy(process_group_backend='gloo', find_unused_parameters=True)
 
-    trainer = Trainer(max_epochs=num_epochs, callbacks=callbacks, precision='16-mixed', strategy=strategy)
+    logger = WandbLogger(name=project_name, project=project_name)
+
+    trainer = Trainer(max_epochs=num_epochs, callbacks=callbacks, precision='16-mixed', strategy=strategy, logger=logger)
     
     trainer.fit(module, train_dataloaders=dataloader, val_dataloaders=val_dataloader, ckpt_path=checkpoint)
 

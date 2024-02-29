@@ -6,10 +6,12 @@ from torch.utils.data import DataLoader
 from lightning import Trainer
 from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping
 from lightning.pytorch.strategies import SingleDeviceStrategy ,DDPStrategy
+from lightning.pytorch.loggers import WandbLogger
 
 from module import Wav2Vec2Module
-from processing.processor import ConformerProcessor
 from dataset import Wav2Vec2Dataset
+
+from processing.processor import ConformerProcessor
 
 import fire
 
@@ -38,7 +40,8 @@ def pretrain(
         num_groups: int = 2,
         num_vars: int = 320,
         num_negatives: int = 100,
-        num_examples: Optional[int] = None
+        num_examples: Optional[int] = None,
+        project_name: str = "unsupervised_wav2vec2"
     ):
     processor = ConformerProcessor(
         sampling_rate=sampling_rate,
@@ -86,7 +89,9 @@ def pretrain(
         else:
             strategy = DDPStrategy(process_group_backend='gloo', find_unused_parameters=True)
 
-    trainer = Trainer(max_epochs=num_epochs, callbacks=callbacks, precision='16-mixed', strategy=strategy)
+    logger = WandbLogger(project=project_name)
+
+    trainer = Trainer(max_epochs=num_epochs, callbacks=callbacks, precision='16-mixed', strategy=strategy, logger=logger)
     
     trainer.fit(module, train_dataloaders=dataloader, ckpt_path=checkpoint)
 

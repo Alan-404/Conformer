@@ -6,6 +6,7 @@ from model.utils.activation import Swish
 class Decoder(nn.Module):
     def __init__(self, vocab_size: int, d_model: int) -> None:
         super().__init__()
+        self.depthwise_conv = nn.Conv1d(in_channels=d_model, out_channels=d_model, kernel_size=3, stride=2, padding=1, groups=d_model)
         self.pointwise_conv = nn.Conv1d(in_channels=d_model, out_channels=d_model, kernel_size=1)
         self.activation = Swish()
         self.norm = nn.BatchNorm1d(num_features=d_model)
@@ -13,6 +14,7 @@ class Decoder(nn.Module):
 
     def forward(self, x: torch.Tensor):
         x = x.transpose(-1, -2)
+        x = self.depthwise_conv(x)
         x = self.pointwise_conv(x)
         x = self.activation(x)
         x = self.norm(x)

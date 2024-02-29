@@ -10,7 +10,7 @@ from model.wav2vec2 import Wav2Vec2
 
 from evaluation import ConformerCriterion, ConformerMetric
 
-from typing import Tuple, Callable
+from typing import Tuple, Callable, Optional
 import statistics
 
 class ConformerModule(L.LightningModule):
@@ -117,13 +117,36 @@ class Wav2Vec2Conformer(L.LightningModule):
 
         input_lengths = batch[1]
 
-        context, target, perplexity = self.model(inputs, input_lengths)
+        context, target, perplexity, mask_indexes = self.model(inputs, input_lengths)
 
         loss = self.criterion.contrastive_loss(context, target) + 0.2 * perplexity
 
         self.train_loss.append(loss.item())
 
         return loss
+    
+    def sample_negative(self, batch_size: int, length: int, num_negatives: int, mask_indexes: Optional[torch.Tensor] = None):
+        seq_range = torch.arange(length)
+
+        neg_indexes = torch.zeros((batch_size, length, num_negatives), dtype=torch.int32)
+
+        if mask_indexes is None:
+            mask_indexes = torch.ones((batch_size, length), dtype=torch.bool)
+
+        for batch_idx in range(batch_size):
+            high = mask_indexes[batch_idx].sum() - 1
+            mapped_masked_indices = seq_range[mask_indexes[batch_idx]]
+
+            feature_indices = torch.broadcast_to(torch.arange(high + 1)[:, None], (high + 1, num_negatives))
+            sampled_indices = torch.randint(0, high, size=(high + 1, num_negatives))
+
+            sampled_indices[sampled_indices >= feature_indices] += 1
+
+            neg_indexes[batch_idx][mask_indexes[batch_idx]] = mapped_masked_indices[sampled_indices]
+
+            neg_indexes[batch_idx] += batch_idx * length
+
+        return neg_indexes
         
     def configure_optimizers(self):
         optimizer = optim.Adam(params=self.parameters(), lr=3e-5, weight_decay=1e-6, betas=[0.9, 0.98], eps=1e-9)

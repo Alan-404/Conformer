@@ -11,8 +11,6 @@ import torch
 import torch.nn.functional as F
 from torchtext.vocab import Vocab, vocab as create_vocab
 
-from pyctcdecode import build_ctcdecoder
-
 MAX_AUDIO_VALUE = 32768
 
 class ConformerProcessor:
@@ -39,27 +37,29 @@ class ConformerProcessor:
             n_mels=num_mels
         ).to(self.device)
 
-        self.patterns = json.load(open(vocab_path, 'r', encoding='utf8'))
+        # Text
+        if vocab_path is not None:
+            self.patterns = json.load(open(vocab_path, 'r', encoding='utf8'))
 
-        self.vowels = self.patterns['single_vowel'] + self.patterns['composed_vowel']
-        self.consonants = self.patterns['single_consonant'] + self.patterns['composed_consonant']
+            self.vowels = self.patterns['single_vowel'] + self.patterns['composed_vowel']
+            self.consonants = self.patterns['single_consonant'] + self.patterns['composed_consonant']
 
-        self.puncs = puncs
+            self.puncs = puncs
 
-        self.unk_token = unk_token
-        self.delim_token = word_delim_token
-        self.pad_token = pad_token
+            self.unk_token = unk_token
+            self.delim_token = word_delim_token
+            self.pad_token = pad_token
 
-        self.dictionary = Vocab(
-            vocab=create_vocab(ordered_dict=self.create_dictionary(), specials=[pad_token], special_first=True)
-        )
+            self.dictionary = Vocab(
+                vocab=create_vocab(ordered_dict=self.create_dictionary(), specials=[pad_token], special_first=True)
+            )
 
-        self.dictionary.append_token(word_delim_token)
-        self.dictionary.append_token(unk_token)
+            self.dictionary.append_token(word_delim_token)
+            self.dictionary.append_token(unk_token)
 
-        self.pad_idx = self.find_idx(pad_token)
-        self.delim_idx = self.find_idx(word_delim_token)
-        self.unk_token = self.find_idx(unk_token)
+            self.pad_idx = self.find_idx(pad_token)
+            self.delim_idx = self.find_idx(word_delim_token)
+            self.unk_token = self.find_idx(unk_token)
 
     def find_specs(self, word: str):
         for index, item in enumerate(list(self.patterns['replace'].values())):

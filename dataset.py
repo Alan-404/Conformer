@@ -109,7 +109,6 @@ class ConformerInferenceDataset(Dataset):
     def __init__(self, manifest_path: str, processor: ConformerProcessor, num_examples: Optional[int] = None) -> None:
         super().__init__()
         self.prompts = pd.read_csv(manifest_path, sep="\t")
-        self.prompts.columns = self.prompts.columns
     
         if num_examples is not None:
             self.prompts = self.prompts[:num_examples]

@@ -10,22 +10,19 @@ def convert(path: str, source_dir: str = "."):
 
     paths = dict()
     for folder in tqdm(folders):
-        item = os.listdir(f'{path}/{folder}')
-        if len(item) > 1:
-            print("Exeption...")
-            print(item)
-            break
-        item = item[0]
+        items = os.listdir(f'{path}/{folder}')
+        for item in items:
+            item = item[0]
 
-        files = glob.glob(f"{path}/{folder}/{item}/*.json")
+            files = glob.glob(f"{path}/{folder}/{item}/*.json")
 
-        for json_item in files:
-            data = json.load(open(json_item, 'r'))
-            filename = os.path.basename(json_item)
-            paths[filename.replace(".json", "")] = {
-                "audio": json_item.replace(".json", ".flac"),
-                "segments": data['voice_activity']
-            }
+            for json_item in files:
+                data = json.load(open(json_item, 'r'))
+                filename = os.path.basename(json_item)
+                paths[filename.replace(".json", "")] = {
+                    "audio": json_item.replace(".json", ".flac"),
+                    "segments": data['voice_activity']
+                }
 
     root_folder = path.split("/")[-1]
 

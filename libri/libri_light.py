@@ -18,7 +18,10 @@ def convert(path: str, source_dir: str = "."):
 
             for json_item in files:
                 data = json.load(open(json_item, 'r'))
+
                 filename = os.path.basename(json_item)
+                print(filename)
+
                 samples[filename.replace(".json", "")] = {
                     "audio": json_item.replace(".json", ".flac"),
                     "segments": data['voice_activity']

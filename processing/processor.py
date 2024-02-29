@@ -401,6 +401,8 @@ class ConformerProcessor:
 
         suffixes = [suffixes[i] for i in range(len(suffixes) - 1, -1, -1)]
         return word, suffixes
+    
+
 
     def read_pickle(self, path: str) -> np.ndarray:
         with open(path, 'rb') as file:
@@ -414,7 +416,7 @@ class ConformerProcessor:
         audio = AudioSegment.from_file(path, frame_rate=8000, channels=1, sample_width=2).set_frame_rate(self.sampling_rate).get_array_of_samples()
         return np.array(audio).astype(np.float64) / MAX_AUDIO_VALUE
     
-    def read_audio(self, path: str, role: Optional[int] = None) -> np.ndarray:
+    def read_signal(self, path: str, role: Optional[int] = None) -> np.ndarray:
         if role is not None:
             signal, _ = librosa.load(path, sr=self.sampling_rate, mono=False)
             signal = signal[role]
@@ -440,7 +442,7 @@ class ConformerProcessor:
         elif ".pcm" in path:
             signal = self.read_pcm(path)
         else:
-            signal = self.read_audio(path, role)
+            signal = self.read_signal(path, role)
 
         if start is not None and end is not None:
             signal = self.split_segment(signal, start, end)
@@ -466,6 +468,17 @@ class ConformerProcessor:
         sentence = sentence.strip().lower()
 
         return sentence
+    
+    def split_signal(self, signal: np.ndarray, threshold_length_segment_max: float = 60.0, threshold_length_segment_min: float = 0.1):
+        intervals = []
+
+        for top_db in range(30, 5, -5):
+            intervals = librosa.effects.split(
+            signal, top_db=top_db, frame_length=2048, hop_length=512)
+            if len(intervals) != 0 and max((intervals[:, 1] - intervals[:, 0]) / self.sampling_rate) <= threshold_length_segment_max:
+                break
+            
+        return np.array([i for i in intervals if threshold_length_segment_min < (i[1] - i[0]) / self.sampling_rate <= threshold_length_segment_max])
     
     def __call__(self, signals: List[torch.Tensor], get_signals: bool = False) -> torch.Tensor:
         lengths = torch.tensor([len(signal) for signal in signals])

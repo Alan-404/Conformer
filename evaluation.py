@@ -14,17 +14,6 @@ class ConformerCriterion:
     def ctc_loss(self, outputs: torch.Tensor, targets: torch.Tensor, input_lengths: torch.Tensor, target_lengths: torch.Tensor) -> torch.Tensor:
         return self.ctc_criterion(outputs.log_softmax(dim=-1).transpose(0,1), targets, input_lengths, target_lengths)
     
-    def compute_contrastive_logits(self, target_features: torch.Tensor, negative_features: torch.Tensor, predicted_features: torch.Tensor, temperature: float = 0.2):
-        target_features = torch.cat([target_features, negative_features], dim=0)
-
-        logits = F.cosine_similarity(predicted_features.float(), target_features.float(), dim=-1).type_as(
-            target_features
-        )
-
-        # apply temperature
-        logits = logits / temperature
-        return logits
-    
     def __l2_norm(self, online: torch.Tensor, target: torch.Tensor):
         online = F.normalize(online, dim=-1, p=2)
         target = F.normalize(target, dim=-1, p=2)

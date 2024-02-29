@@ -127,7 +127,7 @@ class Wav2Vec2Module(L.LightningModule):
 
         batch_size, sequence_length, hidden_size = context_features.size()
 
-        neg_indexes = self._sample_negative_indices(batch_size, sequence_length, self.num_negatives, mask_time_indices=mask_indexes)
+        neg_indexes = self._sample_negative_indices(batch_size, sequence_length, self.num_negatives, mask_time_indices=mask_indexes, device=context_features.device)
 
         negative_quantized_features = quantized_features.view(-1, hidden_size)[neg_indexes.long().view(-1)]
         negative_quantized_features = negative_quantized_features.view(batch_size, sequence_length, -1, hidden_size).permute(2, 0, 1, 3)
@@ -153,12 +153,12 @@ class Wav2Vec2Module(L.LightningModule):
 
         return contrastive_loss + 0.1 * diversity_loss
     
-    def _sample_negative_indices(self, batch_size: int, sequence_length: int, num_negatives: int, mask_time_indices: Optional[torch.Tensor] = None):
+    def _sample_negative_indices(self, batch_size: int, sequence_length: int, num_negatives: int, mask_time_indices: Optional[torch.Tensor] = None, device: str = 'cuda'):
         # generate indices of the positive vectors themselves, repeat them `num_negatives` times
-        sequence_length_range = torch.arange(sequence_length, dtype=torch.int)
+        sequence_length_range = torch.arange(sequence_length, dtype=torch.int, device=device)
 
         # get `num_negatives` random vector indices from the same utterance
-        sampled_negative_indices = torch.zeros(size=(batch_size, sequence_length, num_negatives), dtype=torch.int)
+        sampled_negative_indices = torch.zeros(size=(batch_size, sequence_length, num_negatives), dtype=torch.int, device=device)
 
         mask_time_indices = (
             mask_time_indices.type(torch.bool) if mask_time_indices is not None else torch.ones((batch_size, sequence_length), dtype=torch.bool)
@@ -168,8 +168,8 @@ class Wav2Vec2Module(L.LightningModule):
             high = mask_time_indices[batch_idx].sum() - 1
             mapped_masked_indices = sequence_length_range[mask_time_indices[batch_idx]]
 
-            feature_indices = torch.broadcast_to(torch.arange(high + 1)[:, None], (high + 1, num_negatives))
-            sampled_indices = torch.randint(0, high, size=(high + 1, num_negatives))
+            feature_indices = torch.broadcast_to(torch.arange(high + 1, device=device)[:, None], (high + 1, num_negatives))
+            sampled_indices = torch.randint(0, high, size=(high + 1, num_negatives), device=device)
             # avoid sampling the same positive vector, but keep the distribution uniform
             sampled_indices[sampled_indices >= feature_indices] += 1
 

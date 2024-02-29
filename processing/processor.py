@@ -186,19 +186,15 @@ class ConformerProcessor:
             prev_item = logits[i]
         return items
 
-    def token2text(self, tokens: np.ndarray) -> str:
-        text = ""
+    def token2text(self, tokens: np.ndarray, get_string: bool = False) -> str:
+        words = []
         for token in tokens:
-            if token == self.delim_idx:
-                text += " "
-            elif token >= 0:
-                text += self.dictionary.lookup_token(token)
-            else:
-                break
-        for item in self.special_tokens:
-            text = text.replace(item, "")
-        text = re.sub(r"\s\s+", " ", text)
-        return text.strip()
+            words.append(self.dictionary.get_itos()[token])
+
+        if get_string:
+            return "".join(words).replace(self.delim_token, " ")
+        
+        return words
 
     def get_last_item(self, word: str, pattern: str):
         length_item = len(pattern)

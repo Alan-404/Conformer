@@ -24,7 +24,6 @@ import time
 
 def test(result_folder: str,
          test_path: str,
-         result_path: str,
          vocab_path: str,
          arpa_path: str,
          checkpoint: str,
@@ -134,7 +133,7 @@ def test(result_folder: str,
 
     @engine.on(Events.COMPLETED)
     def _(_: Engine):
-        answers = io.open(result_path).read().strip().split("\n")
+        answers = df['text'].to_list()
         print(f"WER Score: {metric.wer_score(predicts, answers)}")
         print(f"CER Score: {metric.cer_score(predicts, answers)}")
         
@@ -148,6 +147,7 @@ def test(result_folder: str,
     start_time = time.time()
     engine.run(dataloader, max_epochs=1)
     end_time = time.time()
+    
     print(f"Inference Time: {end_time - start_time}")
     print("Done Inference")
 

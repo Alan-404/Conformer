@@ -1,0 +1,94 @@
+import os 
+
+import torch
+from torch.utils.data import DataLoader
+
+from lightning import Trainer
+from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping
+from lightning.pytorch.strategies import SingleDeviceStrategy ,DDPStrategy
+
+from module import Wav2Vec2Module
+from processing.processor import ConformerProcessor
+from dataset import Wav2Vec2Dataset
+
+import fire
+
+from typing import Optional, Tuple
+
+def pretrain(
+        data_path: str,
+        saved_checkpoint: str,
+        checkpoint: Optional[str] = None,
+        device: str = 'cuda',
+        batch_size: int = 1,
+        num_epochs: int = 1,
+        sampling_rate: int = 16000, 
+        fft_size: int = 400, 
+        hop_length: int = 160, 
+        win_length: int = 400, 
+        fmin: float = 0.0, 
+        fmax: float = 8000.0,
+        num_mels: int = 80,
+        n_blocks: int = 17,
+        d_model: int = 512,
+        heads: int = 8,
+        kernel_size: int = 31,
+        dropout_rate: float = 0.1,
+        proj_dim: int = 256,
+        num_groups: int = 2,
+        num_vars: int = 320,
+        num_negatives: int = 100,
+        num_examples: Optional[int] = None
+    ):
+    processor = ConformerProcessor(
+        sampling_rate=sampling_rate,
+        num_mels=num_mels,
+        n_fft=fft_size,
+        hop_length=hop_length,
+        win_length=win_length,
+        fmin=fmin,
+        fmax=fmax
+    )
+
+    if checkpoint is not None and os.path.exists(checkpoint):
+        module = Wav2Vec2Module.load_from_checkpoint(checkpoint)
+    else:
+        module = Wav2Vec2Module(
+            n_mel_channels=num_mels,
+            n_blocks=n_blocks,
+            d_model=d_model,
+            heads=heads,
+            kernel_size=kernel_size,
+            dropout_rate=dropout_rate,
+            proj_dim=proj_dim,
+            num_groups=num_groups,
+            num_vars=num_vars,
+            num_negatives=num_negatives
+        )
+
+    def get_batch(signals: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+        mels, lengths = processor(signals)
+        return mels, lengths
+
+    dataset = Wav2Vec2Dataset(manifest_path=data_path, processor=processor, num_examples=num_examples)
+    dataloader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=True, collate_fn=get_batch)
+
+    callbacks = [
+        ModelCheckpoint(dirpath=saved_checkpoint, filename="{epoch}", save_on_train_epoch_end=True, save_last=True),
+        EarlyStopping(monitor='train_loss', mode='min')
+    ]
+
+    if device == 'cpu' or not torch.cuda.is_available():
+        strategy = SingleDeviceStrategy(device='cpu')
+    else:
+        if torch.cuda.device_count() == 1:
+            strategy = SingleDeviceStrategy(device='cuda')
+        else:
+            strategy = DDPStrategy(process_group_backend='gloo', find_unused_parameters=True)
+
+    trainer = Trainer(max_epochs=num_epochs, callbacks=callbacks, precision='16-mixed', strategy=strategy)
+    
+    trainer.fit(module, train_dataloaders=dataloader, ckpt_path=checkpoint)
+
+if __name__ == '__main__':
+    fire.Fire(pretrain)

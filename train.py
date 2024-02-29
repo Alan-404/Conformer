@@ -15,7 +15,7 @@ from dataset import ConformerDataset
 from processing.noise import SpecAugment
 
 from dotenv import load_dotenv
-from typing import Optional, Union, Tuple
+from typing import Optional, Tuple
 
 load_dotenv()
 

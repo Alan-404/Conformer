@@ -1,5 +1,6 @@
 import torch
 import torch.optim as optim
+import torch.nn.functional as F
 import torch.optim.lr_scheduler as lr_scheduler
 
 import lightning as L
@@ -93,8 +94,8 @@ class ConformerModule(L.LightningModule):
         for params in self.model.encoder.subsampling.parameters():
             params.requires_grad = False
 
-class Wav2Vec2Conformer(L.LightningModule):
-    def __init__(self, n_mel_channels: int, n_blocks: int, d_model: int, heads: int, kernel_size: int, proj_dim: int, num_groups: int, num_vars: int, dropout_rate: float) -> None:
+class Wav2Vec2Module(L.LightningModule):
+    def __init__(self, n_mel_channels: int, n_blocks: int, d_model: int, heads: int, kernel_size: int, proj_dim: int = 256, num_groups: int = 2, num_vars: int = 320, dropout_rate: float = 0.0, num_negatives: int = 100) -> None:
         super().__init__()
         self.model = Wav2Vec2(
             n_blocks=n_blocks,
@@ -108,7 +109,12 @@ class Wav2Vec2Conformer(L.LightningModule):
             dropout_rate=dropout_rate
         )
 
+        self.num_groups = num_groups
+        self.num_vars = num_vars
+
         self.train_loss = []
+
+        self.num_negatives = num_negatives
 
         self.criterion = ConformerCriterion()
     
@@ -117,37 +123,75 @@ class Wav2Vec2Conformer(L.LightningModule):
 
         input_lengths = batch[1]
 
-        context, target, perplexity, mask_indexes = self.model(inputs, input_lengths)
+        context_features, quantized_features, perplexity, mask_indexes = self.model(inputs, input_lengths)
 
-        loss = self.criterion.contrastive_loss(context, target) + 0.2 * perplexity
+        batch_size, sequence_length, hidden_size = context_features.size()
 
-        self.train_loss.append(loss.item())
+        neg_indexes = self._sample_negative_indices(batch_size, sequence_length, self.num_negatives, mask_time_indices=mask_indexes)
 
-        return loss
+        negative_quantized_features = quantized_features.view(-1, hidden_size)[neg_indexes.long().view(-1)]
+        negative_quantized_features = negative_quantized_features.view(batch_size, sequence_length, -1, hidden_size).permute(2, 0, 1, 3)
+
+        logits = self.compute_contrastive_logits(
+            quantized_features[None, :],
+            negative_quantized_features,
+            context_features
+        )
+
+        neg_is_pos = (quantized_features == negative_quantized_features).all(-1)
+        if neg_is_pos.any():
+            logits[1:][neg_is_pos] = float('-inf')
+
+        logits = logits.transpose(0, 2).reshape(-1, logits.size(0))
+
+        target = ((1 - mask_indexes.long()) * -100).transpose(0, 1).flatten()
+
+        contrastive_loss = F.cross_entropy(logits.float(), target, reduction="sum")
+
+        num_codevectors = self.num_vars * self.num_groups
+        diversity_loss = ((num_codevectors - perplexity) / num_codevectors) * mask_indexes.sum()
+
+        return contrastive_loss + 0.1 * diversity_loss
     
-    def sample_negative(self, batch_size: int, length: int, num_negatives: int, mask_indexes: Optional[torch.Tensor] = None):
-        seq_range = torch.arange(length)
+    def _sample_negative_indices(self, batch_size: int, sequence_length: int, num_negatives: int, mask_time_indices: Optional[torch.Tensor] = None):
+        # generate indices of the positive vectors themselves, repeat them `num_negatives` times
+        sequence_length_range = torch.arange(sequence_length, dtype=torch.int)
 
-        neg_indexes = torch.zeros((batch_size, length, num_negatives), dtype=torch.int32)
+        # get `num_negatives` random vector indices from the same utterance
+        sampled_negative_indices = torch.zeros(size=(batch_size, sequence_length, num_negatives), dtype=torch.int)
 
-        if mask_indexes is None:
-            mask_indexes = torch.ones((batch_size, length), dtype=torch.bool)
+        mask_time_indices = (
+            mask_time_indices.type(torch.bool) if mask_time_indices is not None else torch.ones((batch_size, sequence_length), dtype=torch.bool)
+        )
 
         for batch_idx in range(batch_size):
-            high = mask_indexes[batch_idx].sum() - 1
-            mapped_masked_indices = seq_range[mask_indexes[batch_idx]]
+            high = mask_time_indices[batch_idx].sum() - 1
+            mapped_masked_indices = sequence_length_range[mask_time_indices[batch_idx]]
 
             feature_indices = torch.broadcast_to(torch.arange(high + 1)[:, None], (high + 1, num_negatives))
             sampled_indices = torch.randint(0, high, size=(high + 1, num_negatives))
-
+            # avoid sampling the same positive vector, but keep the distribution uniform
             sampled_indices[sampled_indices >= feature_indices] += 1
 
-            neg_indexes[batch_idx][mask_indexes[batch_idx]] = mapped_masked_indices[sampled_indices]
+            # remap to actual indices
+            sampled_negative_indices[batch_idx][mask_time_indices[batch_idx]] = mapped_masked_indices[sampled_indices]
 
-            neg_indexes[batch_idx] += batch_idx * length
+            # correct for batch size
+            sampled_negative_indices[batch_idx] += batch_idx * sequence_length
 
-        return neg_indexes
-        
+        return sampled_negative_indices
+    
+    def compute_contrastive_logits(self, target_features: torch.Tensor, negative_features: torch.Tensor, predicted_features: torch.Tensor, temperature: float = 0.2):
+        target_features = torch.cat([target_features, negative_features], dim=0)
+
+        logits = F.cosine_similarity(predicted_features.float(), target_features.float(), dim=-1).type_as(
+            target_features
+        )
+
+        # apply temperature
+        logits = logits / temperature
+        return logits
+            
     def configure_optimizers(self):
         optimizer = optim.Adam(params=self.parameters(), lr=3e-5, weight_decay=1e-6, betas=[0.9, 0.98], eps=1e-9)
         scheduler = lr_scheduler.CosineAnnealingLR(optimizer=optimizer, T_max=1000)
@@ -162,7 +206,6 @@ class Wav2Vec2Conformer(L.LightningModule):
         self.log('learning_rate', self.optimizers().param_groups[0]['lr'], rank_zero_only=True)
         
         self.train_loss.clear()
-
 
 class BYOLConformerModule(L.LightningModule):
     def __init__(self, n_mel_channels: int, n_blocks: int, d_model: int, heads: int, kernel_size: int, dropout_rate: float, alpha: float = 0.95) -> None:

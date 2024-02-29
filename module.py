@@ -163,9 +163,8 @@ class Wav2Vec2Module(L.LightningModule):
         # get `num_negatives` random vector indices from the same utterance
         sampled_negative_indices = torch.zeros(size=(batch_size, sequence_length, num_negatives), dtype=torch.int, device=device)
 
-        mask_time_indices = (
-            mask_time_indices.type(torch.bool) if mask_time_indices is not None else torch.ones((batch_size, sequence_length), dtype=torch.bool)
-        )
+        if mask_time_indices is None:
+            mask_time_indices = torch.ones((batch_size, sequence_length), dtype=torch.bool, device=device)
 
         for batch_idx in range(batch_size):
             high = mask_time_indices[batch_idx].sum() - 1

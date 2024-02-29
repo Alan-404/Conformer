@@ -15,7 +15,7 @@ from typing import Optional
 class Wav2Vec2(nn.Module):
     def __init__(self, n_blocks: int, n_mel_channels: int, d_model: int, heads: int, kernel_size: int, proj_dim: int, num_groups: int = 2, num_vars: int = 320, time_augment: int = 10, time_mask_ratio: float = 0.065, dropout_rate: float = 0.0) -> None:
         super().__init__()
-        self.subsampling = DownsamplingConvolution(channels=d_model)
+        self.downsampling_conv = DownsamplingConvolution(channels=d_model)
         self.linear = nn.Linear(in_features=d_model * (((n_mel_channels - 1) // 2 - 1) // 2), out_features=d_model)
         self.rel_pe = RelativePositionalEncoding(d_model=d_model)
         self.blocks = nn.ModuleList([ConformerBlock(d_model=d_model, heads=heads, kernel_size=kernel_size, dropout_rate=dropout_rate) for _ in range(n_blocks)])
@@ -28,7 +28,7 @@ class Wav2Vec2(nn.Module):
         self.quantization_projector = nn.Linear(in_features=proj_dim, out_features=proj_dim)
 
     def forward(self, x: torch.Tensor, lengths: Optional[torch.Tensor] = None):
-        x, lengths = self.subsampling(x, lengths)
+        x, lengths = self.downsampling_conv(x, lengths)
 
         context = self.masker(x.transpose(-1, -2))
         mask_indexes = (context.mean(dim=1) != 0)

@@ -92,12 +92,13 @@ class Wav2Vec2Dataset(Dataset):
         if "start" in self.prompts.columns  and "end" in self.prompts.columns :
             start = index_df["start"]
             end = index_df['end']
-            
+        
         role = None
-        if index_df['type'] == "up":
-            role = 0
-        elif index_df['type'] == "down":
-            role = 1
+        if 'type' in self.prompts.columns:
+            if index_df['type'] == "up":
+                role = 0
+            elif index_df['type'] == "down":
+                role = 1
 
         return self.processor.load_audio(audio_path, start=start, end=end, role=role)
 

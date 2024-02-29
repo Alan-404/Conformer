@@ -78,6 +78,9 @@ class Wav2Vec2Dataset(Dataset):
             self.prompts['duration'] = self.prompts['end'] - self.prompts['start']
             self.prompts = self.prompts[(self.prompts['duration'] >= min_duration) & (self.prompts['duration'] <= max_duration)].reset_index(drop=True)
 
+        if num_examples is not None:
+            self.prompts = self.prompts[:num_examples]
+
         self.processor = processor
 
     def __len__(self):

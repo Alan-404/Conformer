@@ -16,7 +16,7 @@ class ConformerDataset(Dataset):
         if num_examples is not None:
             self.prompts = self.prompts[:num_examples]
 
-        if "start" in self.columns and "end" in self.columns:
+        if "start" in self.prompts.columns and "end" in self.columns:
             self.prompts['duration'] = self.prompts['end'] - self.prompts['start']
             self.prompts = self.prompts[(self.prompts['duration'] >= min_duration) & (self.prompts['duration'] <= max_duration)].reset_index(drop=True)
         
@@ -89,7 +89,7 @@ class Wav2Vec2Dataset(Dataset):
         audio_path = index_df['path']
 
         start = end = None
-        if "start" in self.columns and "end" in self.columns:
+        if "start" in self.prompts.columns  and "end" in self.prompts.columns :
             start = index_df["start"]
             end = index_df['end']
             

@@ -151,7 +151,10 @@ class Wav2Vec2Module(L.LightningModule):
         num_codevectors = self.num_vars * self.num_groups
         diversity_loss = ((num_codevectors - perplexity) / num_codevectors) * mask_indexes.sum()
 
-        return contrastive_loss + 0.1 * diversity_loss
+        loss = contrastive_loss + 0.1 * diversity_loss
+        self.train_loss.append(loss.item())
+        
+        return loss
     
     def _sample_negative_indices(self, batch_size: int, sequence_length: int, num_negatives: int, mask_time_indices: Optional[torch.Tensor] = None, device: str = 'cuda'):
         # generate indices of the positive vectors themselves, repeat them `num_negatives` times

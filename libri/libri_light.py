@@ -14,6 +14,8 @@ def convert(path: str, source_dir: str = "."):
         for item in items:
             item = item[0]
 
+            print(f"{path}/{folder}/{item}")
+
             files = glob.glob(f"{path}/{folder}/{item}/*.json")
 
             for json_item in files:

@@ -12,9 +12,6 @@ def convert(path: str, source_dir: str = "."):
     for folder in tqdm(folders):
         items = os.listdir(f'{path}/{folder}')
         for item in items:
-            item = item[0]
-
-            print(f"{path}/{folder}/{item}")
 
             files = glob.glob(f"{path}/{folder}/{item}/*.json")
 

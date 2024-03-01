@@ -95,7 +95,7 @@ class ConformerModule(L.LightningModule):
             params.requires_grad = False
 
 class Wav2Vec2Module(L.LightningModule):
-    def __init__(self, n_mel_channels: int, n_blocks: int, d_model: int, heads: int, kernel_size: int, proj_dim: int = 256, num_groups: int = 2, num_vars: int = 320, dropout_rate: float = 0.0, num_negatives: int = 100) -> None:
+    def __init__(self, n_mel_channels: int, n_blocks: int, d_model: int, heads: int, kernel_size: int, proj_dim: int = 256, num_groups: int = 2, num_vars: int = 320, dropout_rate: float = 0.0, num_negatives: int = 100, diversity_weight: float = 0.1) -> None:
         super().__init__()
         self.model = Wav2Vec2(
             n_blocks=n_blocks,
@@ -115,6 +115,7 @@ class Wav2Vec2Module(L.LightningModule):
         self.train_loss = []
 
         self.num_negatives = num_negatives
+        self.diversity_weight = diversity_weight
 
         self.criterion = ConformerCriterion()
     
@@ -151,7 +152,7 @@ class Wav2Vec2Module(L.LightningModule):
         num_codevectors = self.num_vars * self.num_groups
         diversity_loss = ((num_codevectors - perplexity) / num_codevectors) * mask_indexes.sum()
 
-        loss = contrastive_loss + 0.1 * diversity_loss
+        loss = contrastive_loss + self.diversity_weight * diversity_loss
         self.train_loss.append(loss.item())
         
         return loss

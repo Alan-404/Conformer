@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 from typing import Optional
 
-class GumbelQuantization(nn.Module):
+class Quantization(nn.Module):
     def __init__(self, d_model: int, n_mel_channels: int, num_codevector_groups: int, num_codevectors_per_group: int, codevector_dim: int):
         super().__init__()
         self.num_groups = num_codevector_groups

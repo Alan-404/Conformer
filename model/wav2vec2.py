@@ -8,7 +8,7 @@ from model.utils.block import ConformerBlock
 from model.utils.position import RelativePositionalEncoding
 from model.utils.masking import generate_mask
 
-from model.modules.quantization import GumbelQuantization
+from model.modules.quantization import Quantization
 
 from typing import Optional
 
@@ -22,7 +22,7 @@ class Wav2Vec2(nn.Module):
 
         self.masker = TimeMasking(time_mask_param=time_augment, p=time_mask_ratio)
 
-        self.quantization = GumbelQuantization(d_model=d_model, n_mel_channels=n_mel_channels, num_codevector_groups=num_groups, num_codevectors_per_group=num_vars, codevector_dim=proj_dim)
+        self.quantization = Quantization(d_model=d_model, n_mel_channels=n_mel_channels, num_codevector_groups=num_groups, num_codevectors_per_group=num_vars, codevector_dim=proj_dim)
 
         self.hidden_projector = nn.Linear(in_features=d_model, out_features=proj_dim)
         self.quantization_projector = nn.Linear(in_features=proj_dim, out_features=proj_dim)

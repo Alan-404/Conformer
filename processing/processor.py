@@ -143,10 +143,6 @@ class ConformerProcessor:
 
         graphemes = self.split_voiced_item(graphemes, self.patterns['voiced'], self.vowels)
 
-        # graphemes = self.split_voiceless_item(graphemes, self.patterns['voiceless'], self.vowels)
-        
-        # graphemes = self.split_voiced_item(graphemes, self.patterns['type_1'], self.patterns['voiced'] + self.vowels)
-
         graphemes = self.concat_item(graphemes)
         graphemes = self.mixed_vowel_handle(graphemes, self.patterns['mixed_vowel'], self.vowels)
 
@@ -154,12 +150,20 @@ class ConformerProcessor:
 
         return graphemes
     
+    def text2tokens(self, sentence: str):
+        graphemes = self.sentence2graphemes(sentence)
+        return self.dictionary(graphemes)
+    
+    def decode(self, tokens: Union[torch.Tensor, np.ndarray, List[int]], group_token: bool = True):
+        if group_token:
+            tokens = self.group_tokens(tokens)
+        return "".join(self.token2text(tokens)).replace(self.delim_token, " ")
+    
     def decode_batch(self, digits: Union[torch.Tensor, np.ndarray, list], group_token: bool = True) -> List[str]:
         sentences = []
         for logit in digits:
-            if group_token:
-                logit = self.group_tokens(logit)
-            sentences.append(self.token2text(logit))
+            sentence = self.decode(logit, group_token=group_token)
+            sentences.append(sentence)
         return sentences
     
     def group_tokens(self, logits: Union[torch.Tensor, np.ndarray], length: Optional[int] = None) -> Union[np.ndarray, torch.Tensor]:
@@ -455,8 +459,7 @@ class ConformerProcessor:
         intervals = []
 
         for top_db in range(30, 5, -5):
-            intervals = librosa.effects.split(
-            signal, top_db=top_db, frame_length=4096, hop_length=1024)
+            intervals = librosa.effects.split(signal, top_db=top_db, frame_length=4096, hop_length=1024)
             if len(intervals) != 0 and max((intervals[:, 1] - intervals[:, 0]) / self.sampling_rate) <= threshold_length_segment_max:
                 break
             

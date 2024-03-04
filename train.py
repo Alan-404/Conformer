@@ -1,6 +1,6 @@
 import os
 import torch
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, ConcatDataset
 
 from lightning import Trainer
 from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping
@@ -15,11 +15,11 @@ from dataset import ConformerDataset
 
 from torchaudio.transforms import SpecAugment
 
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union, List
 
 def train(
         # Processor Config
-        train_path: str,
+        train_path: Union[str, List[str]],
         checkpoint: Optional[str] = None,
         saved_checkpoint: str = './checkpoints/',
         vocab_path: str = './vocabulary/dictionary.json',
@@ -48,11 +48,9 @@ def train(
         num_workers: int = 1,
         # Augment Config
         set_augment: bool = True,
-        n_time_masks: int = 1,
-        time_mask_param: int = 10,
+        n_masks: int = 10,
+        mask_param: int = 27,
         mask_ratio: float = 0.05,
-        n_freq_masks: int = 1,
-        freq_mask_param: int = 27,
         # Validation Config
         val_path: Optional[str] = None,
         num_val: Optional[int] = None,
@@ -93,9 +91,16 @@ def train(
         module = ConformerModule.load_from_checkpoint(checkpoint, pad_token=processor.pad_token, metric_fx=processor.decode_batch)
 
     if set_augment:
-        spec_augment = SpecAugment(n_time_masks=n_time_masks, time_mask_param=time_mask_param, n_freq_masks=n_freq_masks, freq_mask_param=freq_mask_param, p=mask_ratio)
+        spec_augment = SpecAugment(
+            n_time_masks=n_masks,
+            n_freq_masks=n_masks,
+            time_mask_param=mask_param,
+            freq_mask_param=mask_param,
+            p=mask_ratio,
+            zero_masking=True
+        )
     
-    def get_batch(batch, augment: bool) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    def get_batch(batch, augment: bool) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         signals, transcripts = zip(*batch)
         mels, mel_lengths = processor(signals)
 
@@ -112,7 +117,17 @@ def train(
     if val_path is not None:
         callbacks.append(EarlyStopping(monitor='val_score', verbose=True, mode='min', patience=early_stopping_patience))
 
-    dataset = ConformerDataset(train_path, processor=processor, num_examples=num_train)
+    if type(train_path) == str:
+        os.path.exists(train_path)
+        dataset = ConformerDataset(train_path, processor=processor, num_examples=num_train)
+    elif type(train_path) == list:
+        dataset = ConformerDataset(train_path[0], processor=processor, num_examples=num_train)
+        for i in range(len(train_path) - 1):
+            other_dataset = ConformerDataset(train_path[i + 1], processor=processor, num_examples=num_train)
+            dataset = ConcatDataset([dataset, other_dataset])
+    else:
+        print("ERROR DATASET")
+        return
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, collate_fn=lambda batch: get_batch(batch, set_augment), num_workers=num_workers)
     
     val_dataloader = None

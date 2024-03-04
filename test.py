@@ -4,8 +4,6 @@ from torch.utils.data import DataLoader
 
 import torchsummary
 
-import io
-
 from ignite.engine import Engine, Events
 from ignite.contrib.handlers.tqdm_logger import ProgressBar
 
@@ -100,35 +98,27 @@ def test(result_folder: str,
 
     def get_batch(signals: torch.Tensor):
         mels, mel_lengths = processor(signals)
-
-        sorted_indexes = torch.argsort(mel_lengths, descending=True)
-        mel_lengths = mel_lengths[sorted_indexes]
-        mels = mels[sorted_indexes]
-
-        return mels, mel_lengths, sorted_indexes
+        return mels, mel_lengths
 
     dataset = ConformerInferenceDataset(manifest_path=test_path, processor=processor, num_examples=num_examples)
     dataloader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=False, collate_fn=get_batch, num_workers=num_workers)
 
     predicts = []
 
-    def infer_step(_: Engine, batch: Tuple[torch.Tensor]) -> None:
-        mels, lengths, sorted_indexes = batch[0].to(device), batch[1].to(device), batch[2]
+    def test_step(_: Engine, batch: Tuple[torch.Tensor]) -> None:
+        mels, lengths = batch[0].to(device), batch[1].to(device)
         
         with torch.inference_mode():
             outputs, lengths = model(mels, lengths)
-        
-        origin_indexes = torch.argsort(sorted_indexes)
-        outputs = outputs[origin_indexes]
-        lengths = lengths[origin_indexes].cpu().numpy()
-        
+
+        lengths = lengths.cpu().numpy()
         outputs = outputs.cpu().numpy()
         
         for index, output in enumerate(outputs):
             output = output[:lengths[index]]
             predicts.append(processor.decode_beam_search(output))
 
-    engine = Engine(infer_step)
+    engine = Engine(test_step)
     ProgressBar().attach(engine)
 
     @engine.on(Events.COMPLETED)

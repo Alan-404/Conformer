@@ -10,6 +10,8 @@ from model.utils.masking import generate_mask
 
 from model.modules.quantization import Quantization
 
+import math
+
 from typing import Optional
 
 class Wav2Vec2(nn.Module):
@@ -30,7 +32,9 @@ class Wav2Vec2(nn.Module):
     def forward(self, x: torch.Tensor, lengths: Optional[torch.Tensor] = None):
         x, lengths = self.downsampling_conv(x, lengths)
 
-        context = self.masker(x.transpose(-1, -2))
+        context = x.transpose(-1, -2)
+        for _ in range(math.ceil(x.size(1) // 300)):
+            context = self.masker(context)
         mask_indexes = (context.mean(dim=1) != 0)
 
         target, perplexity = self.quantization(x, mask_indexes)

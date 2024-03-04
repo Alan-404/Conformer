@@ -13,7 +13,7 @@ from module import ConformerModule
 from processing.processor import ConformerProcessor
 from dataset import ConformerDataset
 
-from processing.noise import SpecAugment
+from torchaudio.transforms import SpecAugment
 
 from typing import Optional, Tuple
 
@@ -48,9 +48,11 @@ def train(
         num_workers: int = 1,
         # Augment Config
         set_augment: bool = True,
-        freq_augment: int = 27,
-        time_augment: int = 10,
-        time_mask_ratio: float = 0.05,
+        n_time_masks: int = 1,
+        time_mask_param: int = 10,
+        mask_ratio: float = 0.05,
+        n_freq_masks: int = 1,
+        freq_mask_param: int = 27,
         # Validation Config
         val_path: Optional[str] = None,
         num_val: Optional[int] = None,
@@ -91,7 +93,7 @@ def train(
         module = ConformerModule.load_from_checkpoint(checkpoint, pad_token=processor.pad_token, metric_fx=processor.decode_batch)
 
     if set_augment:
-        spec_augment = SpecAugment(freq_augment=freq_augment, time_augment=time_augment, time_mask_ratio=time_mask_ratio)
+        spec_augment = SpecAugment(n_time_masks=n_time_masks, time_mask_param=time_mask_param, n_freq_masks=n_freq_masks, freq_mask_param=freq_mask_param, p=mask_ratio)
     
     def get_batch(batch, augment: bool) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         signals, transcripts = zip(*batch)

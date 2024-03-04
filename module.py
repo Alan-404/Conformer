@@ -15,7 +15,7 @@ from typing import Tuple, Callable, Optional
 import statistics
 
 class ConformerModule(L.LightningModule):
-    def __init__(self, vocab_size: int, n_mel_channels: int, n_blocks: int, d_model: int, heads: int, kernel_size: int, dropout_rate: float, pad_token: int, metric_fx: Callable[[str, bool], torch.Tensor]) -> None:
+    def __init__(self, vocab_size: int, n_mel_channels: int, n_blocks: int, d_model: int, heads: int, kernel_size: int, dropout_rate: float, pad_token: int, metric_fx: Callable[[str, bool], torch.Tensor], set_augment: bool = True) -> None:
         super().__init__()
         self.metric_fx = metric_fx
 
@@ -36,7 +36,9 @@ class ConformerModule(L.LightningModule):
         self.criterion = ConformerCriterion(blank_id=pad_token)
         self.metric = ConformerMetric()
 
-        self.save_hyperparameters(ignore=["pad_token", "metric_fx"])
+        self.set_augment = set_augment
+
+        self.save_hyperparameters(ignore=["pad_token", "metric_fx", "set_augment"])
     
     def training_step(self, batch: Tuple[torch.Tensor], _: int):
         inputs = batch[0]

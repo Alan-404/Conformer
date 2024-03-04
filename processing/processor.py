@@ -128,18 +128,19 @@ class ConformerProcessor:
     def word2graphemes(self, word: str):
         word = self.spec_replace(word)
 
-        special_items, word = self.lookup(word, self.patterns['special'])
+        special_items = []
+        if len(self.patterns['special']) != 0:
+            special_items, word = self.lookup(word, self.patterns['special'])
 
-        splitted_items = []
         suffixes = []
         graphemes = []
         specials = ''
 
-        if word != '':
+        if word != '' and len(self.patterns['split_condition']) != 0:
             word, specials = self.split_by_condition(word, self.patterns['split_condition'])
-        if word != '':
+        if word != '' and len(self.patterns['split']) != 0:
             word, splitted_items = self.split_handle(word, self.patterns['split'])
-        if word != '':
+        if word != '' and len(self.patterns['suffix']) != 0:
             word, suffixes = self.get_suffixes(word, self.patterns['suffix'])
         if word != '':
             graphemes = self.stride_graphemes(word, self.vowels + self.consonants)
@@ -153,10 +154,13 @@ class ConformerProcessor:
 
         graphemes = special_items + graphemes
 
-        graphemes = self.split_voiced_item(graphemes, self.patterns['voiced'], self.vowels)
+        if len(self.patterns['voiced']) != 0:
+            graphemes = self.split_voiced_item(graphemes, self.patterns['voiced'], self.vowels)
 
         graphemes = self.concat_item(graphemes)
-        graphemes = self.mixed_vowel_handle(graphemes, self.patterns['mixed_vowel'], self.vowels)
+
+        if len(self.patterns['mixed_vowel']) != 0:
+            graphemes = self.mixed_vowel_handle(graphemes, self.patterns['mixed_vowel'], self.vowels)
 
         graphemes = self.handle_exception(graphemes)
 

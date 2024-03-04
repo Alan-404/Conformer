@@ -9,7 +9,7 @@ from ignite.contrib.handlers.tqdm_logger import ProgressBar
 
 import fire
 
-from processing._processor import ConformerProcessor
+from processing.processor import ConformerProcessor
 from model.conformer import Conformer
 from dataset import ConformerInferenceDataset
 

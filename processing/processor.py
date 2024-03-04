@@ -10,6 +10,7 @@ from torchaudio.transforms import MelSpectrogram
 import torch
 import torch.nn.functional as F
 from torchtext.vocab import Vocab, vocab as create_vocab
+from pyctcdecode import build_ctcdecoder
 
 MAX_AUDIO_VALUE = 32768
 
@@ -60,6 +61,17 @@ class ConformerProcessor:
             self.pad_idx = self.find_idx(pad_token)
             self.delim_idx = self.find_idx(word_delim_token)
             self.unk_token = self.find_idx(unk_token)
+
+            if lm_path is not None and os.path.exists(lm_path):
+                self.ctc_lm = build_ctcdecoder(
+                    labels=self.dictionary.get_itos(),
+                    kenlm_model_path=lm_path,
+                    alpha=beam_alpha,
+                    beta=beam_beta
+                )
+
+                self.replace_dict = self.patterns['replace']
+                self.hotwords_dict = self.patterns['hotword']
 
     def find_specs(self, word: str):
         for index, item in enumerate(list(self.patterns['replace'].values())):
@@ -165,6 +177,28 @@ class ConformerProcessor:
             sentence = self.decode(logit, group_token=group_token)
             sentences.append(sentence)
         return sentences
+    
+    def decode_beam_search(self, digits: np.ndarray, beam_width: int = 170, beam_prune_logp: float = -20.0):
+        text = self.ctc_lm.decode(
+                    digits,
+                    beam_width=beam_width,
+                    beam_prune_logp=beam_prune_logp,
+                    hotword_weight=self.hotwords_dict['weight'],
+                    hotwords=self.hotwords_dict['items']
+                )
+        
+        return self.post_process(text)
+    
+    def post_process(self, text: str):
+        words = text.split(" ")
+        items = []
+        for word in words:
+            patterns = self.find_specs(word)
+            if patterns is None or word.split(patterns[1])[1] == '':
+                items.append(word)
+            else:
+                items.append(word.replace(patterns[1], patterns[0]))
+        return " ".join(items)
     
     def group_tokens(self, logits: Union[torch.Tensor, np.ndarray], length: Optional[int] = None) -> Union[np.ndarray, torch.Tensor]:
         items = []

@@ -78,14 +78,20 @@ class ConformerModule(L.LightningModule):
         print(f"Train Loss: {(loss):.4f}")
         print(f"Current Learning Rate: {self.optimizers().param_groups[0]['lr']}")
 
-        self.log("train_loss", loss, rank_zero_only=True)
-        self.log('learning_rate', self.optimizers().param_groups[0]['lr'], rank_zero_only=True)
+        self.log("train_loss", loss)
+        self.log('learning_rate', self.optimizers().param_groups[0]['lr'])
         
         self.train_loss.clear()
 
     def on_validation_epoch_end(self):
-        print(f"Validation Loss: {(statistics.mean(self.val_loss)):.4f}")
-        print(f"Validation Score: {(statistics.mean(self.val_score)):.4f}")
+        loss = statistics.mean(self.val_loss)
+        score = statistics.mean(self.val_score)
+
+        print(f"Validation Loss: {(loss):.4f}")
+        print(f"Validation Score: {(score):.4f}")
+
+        self.log('val_loss', loss)
+        self.log('val_score', score)
 
         self.val_loss.clear()
         self.val_score.clear()

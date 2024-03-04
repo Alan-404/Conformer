@@ -17,7 +17,7 @@ from typing import Tuple, Callable, Optional
 import statistics
 
 class ConformerModule(L.LightningModule):
-    def __init__(self, vocab_size: int, n_mel_channels: int, n_blocks: int, d_model: int, heads: int, kernel_size: int, dropout_rate: float, pad_token: int, metric_fx: Callable[[str, bool], torch.Tensor], set_augment: float, n_masks: int, mask_param: int, mask_ratio: float) -> None:
+    def __init__(self, vocab_size: int, n_mel_channels: int, n_blocks: int, d_model: int, heads: int, kernel_size: int, dropout_rate: float, pad_token: int, metric_fx: Callable[[str, bool], torch.Tensor]) -> None:
         super().__init__()
         self.metric_fx = metric_fx
 
@@ -31,17 +31,6 @@ class ConformerModule(L.LightningModule):
             dropout_rate=dropout_rate
         )
 
-        self.set_augment = set_augment
-        if self.set_augment:
-            self.spec_augment = SpecAugment(
-                n_time_masks=n_masks,
-                n_freq_masks=n_masks,
-                time_mask_param=mask_param,
-                freq_mask_param=mask_param,
-                p=mask_ratio,
-                zero_masking=True
-            )
-
         self.train_loss = []
         self.val_loss = []
         self.val_score = []
@@ -49,7 +38,7 @@ class ConformerModule(L.LightningModule):
         self.criterion = ConformerCriterion(blank_id=pad_token)
         self.metric = ConformerMetric()
 
-        self.save_hyperparameters(ignore=["pad_token", "metric_fx", "set_augment", "n_masks", "mask_param", "mask_ratio"])
+        self.save_hyperparameters(ignore=["pad_token", "metric_fx"])
     
     def training_step(self, batch: Tuple[torch.Tensor], _: int):
         inputs = batch[0]
@@ -57,9 +46,6 @@ class ConformerModule(L.LightningModule):
 
         input_lengths = batch[2]
         target_lengths = batch[3]
-
-        if self.set_augment:
-            inputs = self.spec_augment(inputs)
 
         outputs, input_lengths = self.model(inputs, input_lengths)
 

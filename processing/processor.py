@@ -135,6 +135,7 @@ class ConformerProcessor:
         suffixes = []
         graphemes = []
         specials = ''
+        splitted_items = []
 
         if word != '' and len(self.patterns['split_condition']) != 0:
             word, specials = self.split_by_condition(word, self.patterns['split_condition'])

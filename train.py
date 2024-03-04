@@ -4,7 +4,7 @@ from torch.utils.data import DataLoader, ConcatDataset
 
 from lightning import Trainer
 from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping
-from lightning.pytorch.strategies import SingleDeviceStrategy, DDPStrategy
+from lightning.pytorch.strategies import DDPStrategy
 from lightning.pytorch.loggers import WandbLogger
 
 import fire

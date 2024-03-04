@@ -33,6 +33,7 @@ class ConformerModule(L.LightningModule):
         self.val_loss = []
         self.val_score = []
 
+        print(pad_token)
         self.criterion = ConformerCriterion(blank_id=pad_token)
         self.metric = ConformerMetric()
 

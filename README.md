@@ -4,6 +4,9 @@
 ## Model Architecture
 <img src="./assets/model.png"/>
 
+## Unsupervised Training
+<img src="./assets/pretrain.png"/>
+
 ### Multi - Head Attention Module
 <img src="assets/attention.png"/>
 

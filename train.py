@@ -84,27 +84,18 @@ def train(
             kernel_size=kernel_size,
             dropout_rate=dropout_rate,
             pad_token=processor.pad_idx,
-            metric_fx=processor.decode_batch
+            metric_fx=processor.decode_batch,
+            set_augment=set_augment,
+            n_masks=n_masks,
+            mask_param=mask_param,
+            mask_ratio=mask_ratio
         )
     else: 
-        module = ConformerModule.load_from_checkpoint(checkpoint, pad_token=processor.pad_idx, metric_fx=processor.decode_batch)
-
-    if set_augment:
-        spec_augment = SpecAugment(
-            n_time_masks=n_masks,
-            n_freq_masks=n_masks,
-            time_mask_param=mask_param,
-            freq_mask_param=mask_param,
-            p=mask_ratio,
-            zero_masking=True
-        )
+        module = ConformerModule.load_from_checkpoint(checkpoint, pad_token=processor.pad_idx, metric_fx=processor.decode_batch, set_augment=set_augment, n_masks=n_masks, mask_param=mask_param, mask_ratio=mask_ratio)
     
-    def get_batch(batch, augment: bool) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    def get_batch(batch: Tuple[torch.Tensor]) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         signals, transcripts = zip(*batch)
         mels, mel_lengths = processor(signals)
-
-        if augment:
-            mels = spec_augment(mels)
 
         tokens, token_lengths = processor.tokenize(transcripts)
 

@@ -112,7 +112,9 @@ def test(result_folder: str,
         
         for index, output in enumerate(outputs):
             output = output[:lengths[index]]
-            predicts.append(processor.decode_beam_search(output))
+            sentence = processor.decode_beam_search(output)
+            print(sentence)
+            predicts.append(sentence)
 
     engine = Engine(test_step)
     ProgressBar().attach(engine)

@@ -19,6 +19,7 @@ class Conformer(nn.Module):
 
     def forward(self, x: torch.Tensor, lengths: Optional[torch.Tensor] = None) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
         x, lengths = self.encoder(x, lengths)
+        print(x.shape)
         x = self.decoder(x)
         
         return x, lengths

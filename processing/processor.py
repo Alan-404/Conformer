@@ -111,7 +111,7 @@ class ConformerProcessor:
         for index, word in enumerate(words):
             graphemes += self.word2graphemes(word)
             if index != length - 1:
-                graphemes.append("|")
+                graphemes.append(self.delim_token)
         
         return graphemes
     
@@ -178,7 +178,7 @@ class ConformerProcessor:
             sentences.append(sentence)
         return sentences
     
-    def decode_beam_search(self, digits: np.ndarray, beam_width: int = 170, beam_prune_logp: float = -20.0):
+    def decode_beam_search(self, digits: np.ndarray, beam_width: int = 150, beam_prune_logp: float = -10.0):
         text = self.ctc_lm.decode(
                     digits,
                     beam_width=beam_width,
@@ -186,6 +186,9 @@ class ConformerProcessor:
                     hotword_weight=self.hotwords_dict['weight'],
                     hotwords=self.hotwords_dict['items']
                 )
+        
+        if len(self.replace_dict) == 0:
+            return text
         
         return self.post_process(text)
     

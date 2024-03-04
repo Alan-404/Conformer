@@ -44,7 +44,6 @@ def test(result_folder: str,
          num_workers: int = 1,
          device: str = 'cuda',
          num_examples: int = None):
-    
     assert os.path.exists(test_path) and os.path.exists(checkpoint)
 
     if os.path.exists(result_folder) == False:

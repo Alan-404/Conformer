@@ -12,7 +12,7 @@ class Conformer(nn.Module):
                  d_model: int, 
                  heads: int, 
                  kernel_size: int,
-                 dropout_rate: float = 0.0) -> None:
+                 dropout_rate: float) -> None:
         super().__init__()
         self.encoder = Encoder(n_mel_channels=n_mel_channels, n=n_blocks, d_model=d_model, heads=heads, kernel_size=kernel_size, dropout_rate=dropout_rate)
         self.decoder = Decoder(vocab_size=vocab_size, d_model=d_model)

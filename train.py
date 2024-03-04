@@ -21,7 +21,7 @@ def train(
         # Processor Config
         train_path: Union[str, List[str]],
         checkpoint: Optional[str] = None,
-        saved_checkpoint: str = './checkpoints/',
+        saved_checkpoint: str = './checkpoints/conformer/',
         vocab_path: str = './vocabulary/dictionary.json',
         pad_token: str = "<pad>", 
         unk_token: str = "<unk>", 
@@ -44,7 +44,6 @@ def train(
         batch_size: int = 1,
         num_epochs: int = 1,
         early_stopping_patience: int = 3,
-        device: str = "cuda",
         num_workers: int = 1,
         # Augment Config
         set_augment: bool = True,

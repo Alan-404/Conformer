@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from torchaudio.transforms import TimeMasking
+from torchaudio.transforms import SpecAugment
 
 from model.utils.convolution import DownsamplingConvolution
 from model.utils.block import ConformerBlock
@@ -9,8 +9,6 @@ from model.utils.position import RelativePositionalEncoding
 from model.utils.masking import generate_mask
 
 from model.modules.quantization import Quantization
-
-import math
 
 from typing import Optional
 
@@ -22,7 +20,7 @@ class Wav2Vec2(nn.Module):
         self.rel_pe = RelativePositionalEncoding(d_model=d_model)
         self.blocks = nn.ModuleList([ConformerBlock(d_model=d_model, heads=heads, kernel_size=kernel_size, dropout_rate=dropout_rate) for _ in range(n_blocks)])
 
-        self.masker = TimeMasking(time_mask_param=time_augment, p=time_mask_ratio)
+        self.masker = SpecAugment(n_time_masks=10 ,time_mask_param=time_augment, p=time_mask_ratio, n_freq_masks=0, freq_mask_param=0, zero_masking=True)
 
         self.quantization = Quantization(d_model=d_model, n_mel_channels=n_mel_channels, num_codevector_groups=num_groups, num_codevectors_per_group=num_vars, codevector_dim=proj_dim)
 
@@ -33,8 +31,8 @@ class Wav2Vec2(nn.Module):
         x, lengths = self.downsampling_conv(x, lengths)
 
         context = x.transpose(-1, -2)
-        for _ in range(math.ceil(x.size(1) // 300)):
-            context = self.masker(context)
+        context = self.masker(context)
+
         mask_indexes = (context.mean(dim=1) != 0)
 
         target, perplexity = self.quantization(x, mask_indexes)

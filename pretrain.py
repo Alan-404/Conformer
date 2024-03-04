@@ -19,9 +19,8 @@ from typing import Optional, Tuple
 
 def pretrain(
         data_path: str,
-        saved_checkpoint: str,
+        saved_checkpoint: str = "./checkpoint/unsupervised_wav2vec2/",
         checkpoint: Optional[str] = None,
-        device: str = 'cuda',
         batch_size: int = 1,
         num_epochs: int = 1,
         sampling_rate: int = 16000, 
@@ -81,13 +80,9 @@ def pretrain(
         EarlyStopping(monitor='train_loss', mode='min')
     ]
 
-    if device == 'cpu' or not torch.cuda.is_available():
-        strategy = SingleDeviceStrategy(device='cpu')
-    else:
-        if torch.cuda.device_count() == 1:
-            strategy = SingleDeviceStrategy(device='cuda')
-        else:
-            strategy = DDPStrategy(process_group_backend='gloo', find_unused_parameters=True)
+    strategy = 'auto'
+    if torch.cuda.device_count() > 1:
+        strategy = DDPStrategy(process_group_backend='gloo', find_unused_parameters=True)
 
     logger = WandbLogger(project=project_name)
 

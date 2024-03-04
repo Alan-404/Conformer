@@ -75,6 +75,7 @@ class ConformerModule(L.LightningModule):
 
     def on_train_epoch_end(self):
         loss = statistics.mean(self.train_loss)
+        
         print(f"Train Loss: {(loss):.4f}")
         print(f"Current Learning Rate: {self.optimizers().param_groups[0]['lr']}")
 

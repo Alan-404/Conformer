@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from torchaudio.transforms import SpecAugment
+from torchaudio.transforms import TimeMasking
 
 from model.utils.convolution import DownsamplingConvolution
 from model.utils.block import ConformerBlock
@@ -13,14 +13,14 @@ from model.modules.quantization import Quantization
 from typing import Optional
 
 class Wav2Vec2(nn.Module):
-    def __init__(self, n_blocks: int, n_mel_channels: int, d_model: int, heads: int, kernel_size: int, proj_dim: int, num_groups: int = 2, num_vars: int = 320, time_augment: int = 10, time_mask_ratio: float = 0.065, dropout_rate: float = 0.0) -> None:
+    def __init__(self, n_blocks: int, n_mel_channels: int, d_model: int, heads: int, kernel_size: int, proj_dim: int, num_groups: int = 2, num_vars: int = 320, time_augment: int = 30, time_mask_ratio: float = 0.065, dropout_rate: float = 0.0) -> None:
         super().__init__()
         self.downsampling_conv = DownsamplingConvolution(channels=d_model)
         self.linear = nn.Linear(in_features=d_model * (((n_mel_channels - 1) // 2 - 1) // 2), out_features=d_model)
         self.rel_pe = RelativePositionalEncoding(d_model=d_model)
         self.blocks = nn.ModuleList([ConformerBlock(d_model=d_model, heads=heads, kernel_size=kernel_size, dropout_rate=dropout_rate) for _ in range(n_blocks)])
 
-        self.masker = SpecAugment(n_time_masks=10 ,time_mask_param=time_augment, p=time_mask_ratio, n_freq_masks=0, freq_mask_param=0, zero_masking=True)
+        self.masker = TimeMasking(time_mask_param=time_augment, p=time_mask_ratio)
 
         self.quantization = Quantization(d_model=d_model, n_mel_channels=n_mel_channels, num_codevector_groups=num_groups, num_codevectors_per_group=num_vars, codevector_dim=proj_dim)
 

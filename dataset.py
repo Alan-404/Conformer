@@ -138,6 +138,9 @@ class ConformerInferenceDataset(Dataset):
         signal = self.processor.load_audio(audio_path, start=start, end=end, role=role)
 
         return signal
+    
+    def get_labels(self):
+        return self.prompts['text'].to_list()
 
 class UnsupervisedConformerDataset(Dataset):
     def __init__(self, manifest_path: str, processor: ConformerProcessor, min_duration: float = 0.3, max_duration: float = 30.0, num_examples: Optional[int] = None, make_grapheme: bool = False) -> None:

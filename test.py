@@ -39,8 +39,6 @@ def test(result_folder: str,
          d_model: int = 512,
          heads: int = 8,
          kernel_size: int = 31,
-         n_layers: int = 1,
-         hidden_dim: int = 640,
          dropout_rate: float = 0.0,
          batch_size: int = 1,
          num_workers: int = 1,
@@ -82,8 +80,6 @@ def test(result_folder: str,
         d_model=d_model,
         heads=heads,
         kernel_size=kernel_size,
-        n_layers=n_layers,
-        hidden_dim=hidden_dim,
         dropout_rate=dropout_rate
     ).to(device)
     model.eval()
@@ -123,7 +119,7 @@ def test(result_folder: str,
 
     @engine.on(Events.COMPLETED)
     def _(_: Engine):
-        answers = df['text'].to_list()
+        answers = dataset.get_labels()
         print(f"WER Score: {metric.wer_score(predicts, answers)}")
         print(f"CER Score: {metric.cer_score(predicts, answers)}")
         
@@ -140,7 +136,6 @@ def test(result_folder: str,
     
     print(f"Inference Time: {end_time - start_time}")
     print("Done Inference")
-
         
 if __name__ == '__main__':
     fire.Fire(test)

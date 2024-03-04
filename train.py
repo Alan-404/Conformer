@@ -104,11 +104,6 @@ def train(
 
         tokens, token_lengths = processor.tokenize(transcripts)
 
-        print(mels.shape)
-        print(tokens.shape)
-        print(mel_lengths)
-        print(token_lengths)
-
         return mels, tokens, mel_lengths, token_lengths
     
     callbacks = []

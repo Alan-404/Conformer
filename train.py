@@ -137,13 +137,9 @@ def train(
             val_batch_size = batch_size
         val_dataloader = DataLoader(dataset=val_dataset, batch_size=val_batch_size, shuffle=True)
 
-    if device == 'cpu' or not torch.cuda.is_available():
-        strategy = SingleDeviceStrategy(device='cpu')
-    else:
-        if torch.cuda.device_count() == 1:
-            strategy = SingleDeviceStrategy(device='cuda')
-        else:
-            strategy = DDPStrategy(process_group_backend='gloo', find_unused_parameters=True)
+    strategy = "auto"
+    if torch.cuda.device_count() > 1:
+        strategy = DDPStrategy(process_group_backend='gloo', find_unused_parameters=True)
 
     logger = WandbLogger(name=project_name, project=project_name)
 

@@ -87,6 +87,8 @@
     },
     "split_condition": {
     },
+    "special": {
+    },
     "replace":{
         "oà": "òa",
         "oá": "óa",

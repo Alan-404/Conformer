@@ -4,7 +4,8 @@ from torch.utils.data import DataLoader
 
 import torchsummary
 
-from tqdm import tqdm
+from ignite.engine import Engine, Events
+from ignite.contrib.handlers.tqdm_logger import ProgressBar
 
 import fire
 
@@ -15,18 +16,15 @@ from dataset import ConformerInferenceDataset
 from evaluation import ConformerMetric
 
 from common import map_weights
+from typing import Tuple
 
 import time
 
 def test(result_folder: str,
          test_path: str,
          vocab_path: str,
-         checkpoint: str,
-         # BEAM Search
          arpa_path: str,
-         beam_alpha: float = 2.0,
-         beam_beta: float = 1.0,
-         # Audio Process
+         checkpoint: str,
          num_mels: int = 80,
          sampling_rate: int = 16000,
          fft_size: int = 400,
@@ -37,13 +35,11 @@ def test(result_folder: str,
          pad_token: str = "<pad>",
          unk_token: str = "<unk>",
          word_delim_token: str = "|",
-         # Model
          n_blocks: int = 17,
          d_model: int = 512,
          heads: int = 8,
          kernel_size: int = 31,
          dropout_rate: float = 0.0,
-         # Data
          batch_size: int = 1,
          num_workers: int = 1,
          device: str = 'cuda',
@@ -72,9 +68,7 @@ def test(result_folder: str,
         pad_token=pad_token,
         unk_token=unk_token,
         word_delim_token=word_delim_token,
-        lm_path=arpa_path,
-        beam_alpha=beam_alpha,
-        beam_beta=beam_beta
+        lm_path=arpa_path
     )
 
     # Model Setup
@@ -105,27 +99,40 @@ def test(result_folder: str,
     dataloader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=False, collate_fn=get_batch, num_workers=num_workers)
 
     predicts = []
-    labels = dataset.get_labels()
+
+    def test_step(_: Engine, batch: Tuple[torch.Tensor]) -> None:
+        mels, lengths = batch[0].to(device), batch[1].to(device)
+        
+        with torch.inference_mode():
+            outputs, lengths = model(mels, lengths)
+
+        lengths = lengths.cpu().numpy()
+        outputs = outputs.cpu().numpy()
+        
+        for index, output in enumerate(outputs):
+            output = output[:lengths[index]]
+            sentence = processor.decode_beam_search(output)
+            predicts.append(sentence)
+
+    engine = Engine(test_step)
+    ProgressBar().attach(engine)
+
+    @engine.on(Events.COMPLETED)
+    def _(_: Engine):
+        answers = dataset.get_labels()
+        print(f"WER Score: {metric.wer_score(predicts, answers)}")
+        print(f"CER Score: {metric.cer_score(predicts, answers)}")
+        
+        df = dataset.prompts
+        df['transcript'] = answers
+        df['pred'] = predicts
+
+        filename = os.path.basename(test_path)
+        df.to_csv(f"{result_folder}/{filename}", index=False, sep="\t")
 
     start_time = time.time()
-
-    for data in tqdm(enumerate(dataloader, 0)):
-        inputs = data[0].to(device)
-        lengths = data[1].to(device)
-
-        with torch.inference_mode():
-            outputs, lengths = model(inputs, lengths)
-
-        outputs = outputs.cpu().numpy()
-        lengths = lengths.cpu().numpy()
-
-        for i in range(len(outputs)):
-            predicts.append(processor.decode_beam_search(outputs[i][:lengths[i]]))
-
+    engine.run(dataloader, max_epochs=1)
     end_time = time.time()
-
-    print(f"WER Score: {metric.wer_score(predicts, labels)}")
-    print(f"CER Score: {metric.cer_score(predicts, labels)}")
     
     print(f"Inference Time: {end_time - start_time}")
     print("Done Inference")

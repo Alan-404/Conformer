@@ -7,6 +7,8 @@ import torchsummary
 from ignite.engine import Engine, Events
 from ignite.contrib.handlers.tqdm_logger import ProgressBar
 
+from tqdm import tqdm
+
 import fire
 
 from processing.processor import ConformerProcessor
@@ -16,15 +18,15 @@ from dataset import ConformerInferenceDataset
 from evaluation import ConformerMetric
 
 from common import map_weights
-from typing import Tuple
+from typing import Tuple, Optional
 
 import time
 
 def test(result_folder: str,
          test_path: str,
          vocab_path: str,
-         arpa_path: str,
          checkpoint: str,
+         arpa_path: Optional[str] = None,
          num_mels: int = 80,
          sampling_rate: int = 16000,
          fft_size: int = 400,
@@ -99,40 +101,34 @@ def test(result_folder: str,
     dataloader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=False, collate_fn=get_batch, num_workers=num_workers)
 
     predicts = []
-
-    def test_step(_: Engine, batch: Tuple[torch.Tensor]) -> None:
-        mels, lengths = batch[0].to(device), batch[1].to(device)
-        
-        with torch.inference_mode():
-            outputs, lengths = model(mels, lengths)
-
-        lengths = lengths.cpu().numpy()
-        outputs = outputs.cpu().numpy()
-        
-        for index, output in enumerate(outputs):
-            output = output[:lengths[index]]
-            sentence = processor.decode_beam_search(output)
-            predicts.append(sentence)
-
-    engine = Engine(test_step)
-    ProgressBar().attach(engine)
-
-    @engine.on(Events.COMPLETED)
-    def _(_: Engine):
-        answers = dataset.get_labels()
-        print(f"WER Score: {metric.wer_score(predicts, answers)}")
-        print(f"CER Score: {metric.cer_score(predicts, answers)}")
-        
-        df = dataset.prompts
-        df['transcript'] = answers
-        df['pred'] = predicts
-
-        filename = os.path.basename(test_path)
-        df.to_csv(f"{result_folder}/{filename}", index=False, sep="\t")
+    labels = dataset.get_labels()
 
     start_time = time.time()
-    engine.run(dataloader, max_epochs=1)
+
+    for data in tqdm(dataloader):
+        inputs = data[0].to(device)
+        lengths = data[1].to(device)
+
+        with torch.inference_mode():
+            outputs, lengths = model(inputs, lengths)
+
+        outputs = outputs.cpu().numpy()
+        lengths = lengths.cpu().numpy()
+
+        for index, item in enumerate(range(len(outputs))):
+            item = item[:lengths[index]]
+
+            if arpa_path is not None:
+                sentence = processor.decode_beam_search(item)
+            else:
+                sentence = processor.decode(item)
+
+            predicts.append(sentence)
+
     end_time = time.time()
+
+    print(f"WER Score: {metric.wer_score(predicts, labels)}")
+    print(f"CER Score: {metric.cer_score(predicts, labels)}")
     
     print(f"Inference Time: {end_time - start_time}")
     print("Done Inference")

@@ -121,7 +121,7 @@ def test(result_folder: str,
             if arpa_path is not None:
                 sentence = processor.decode_beam_search(item)
             else:
-                item = torch.argmax(item)
+                item = np.argmax(item, axis=0)
                 sentence = processor.decode(item)
 
             predicts.append(sentence)

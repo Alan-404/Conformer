@@ -47,7 +47,8 @@ def train(
         num_workers: int = 1,
         # Augment Config
         set_augment: bool = True,
-        n_masks: int = 10,
+        n_time_masks: int = 10,
+        n_freq_masks: int = 2,
         mask_param: int = 27,
         mask_ratio: float = 0.05,
         # Validation Config
@@ -91,9 +92,9 @@ def train(
     
     if set_augment:
         spec_augment = SpecAugment(
-            n_time_masks=n_masks,
+            n_time_masks=n_time_masks,
             time_mask_param=mask_param,
-            n_freq_masks=n_masks,
+            n_freq_masks=n_freq_masks,
             freq_mask_param=mask_param,
             p=mask_ratio,
             zero_masking=True

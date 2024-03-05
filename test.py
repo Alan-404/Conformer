@@ -2,10 +2,10 @@ import os
 import torch
 from torch.utils.data import DataLoader
 
+import numpy as np
+
 import torchsummary
 
-from ignite.engine import Engine, Events
-from ignite.contrib.handlers.tqdm_logger import ProgressBar
 
 from tqdm import tqdm
 

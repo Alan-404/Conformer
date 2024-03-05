@@ -15,7 +15,7 @@ from pyctcdecode import build_ctcdecoder
 MAX_AUDIO_VALUE = 32768
 
 class ConformerProcessor:
-    def __init__(self, vocab_path: Optional[str] = None, unk_token: str = "<unk>", pad_token: str = "<pad>", word_delim_token: str = "|", sampling_rate: int = 16000, num_mels: int = 80, n_fft: int = 400, hop_length: int = 160, win_length: int = 400, fmin: float = 0.0, fmax: float = 8000.0, puncs: str = r"([:./,?!@#$%^&=`~*\(\)\[\]\"\-\\])", lm_path: Optional[str] = None, beam_alpha: float = 2.1, beam_beta: float = 9.2, device: str = 'cpu') -> None:
+    def __init__(self, vocab_path: Optional[str] = None, unk_token: str = "<unk>", pad_token: str = "<pad>", word_delim_token: str = "|", sampling_rate: int = 16000, num_mels: int = 80, n_fft: int = 400, hop_length: int = 160, win_length: int = 400, fmin: float = 0.0, fmax: float = 8000.0, puncs: str = r"([:./,?!@#$%^&=`~*\(\)\[\]\"\-\\])", lm_path: Optional[str] = None, beam_alpha: float = 2.0, beam_beta: float = 1.0, device: str = 'cpu') -> None:
         self.params = {k: v for k, v in locals().items() if k != 'self'}
         
         if device != 'cpu':
@@ -43,6 +43,7 @@ class ConformerProcessor:
             self.patterns = json.load(open(vocab_path, 'r', encoding='utf8'))
 
             self.vowels = self.patterns['single_vowel'] + self.patterns['composed_vowel']
+            self.single_vowels = self.patterns['single_vowel']
             self.consonants = self.patterns['single_consonant'] + self.patterns['composed_consonant']
 
             self.puncs = puncs
@@ -156,7 +157,7 @@ class ConformerProcessor:
         graphemes = special_items + graphemes
 
         if len(self.patterns['voiced']) != 0:
-            graphemes = self.split_voiced_item(graphemes, self.patterns['voiced'], self.vowels)
+            graphemes = self.split_voiced_item(graphemes, self.patterns['voiced'], self.single_vowels)
 
         graphemes = self.concat_item(graphemes)
 
@@ -183,7 +184,7 @@ class ConformerProcessor:
             sentences.append(sentence)
         return sentences
     
-    def decode_beam_search(self, digits: np.ndarray, beam_width: int = 150, beam_prune_logp: float = -10.0):
+    def decode_beam_search(self, digits: np.ndarray, beam_width: int = 128, beam_prune_logp: float = -10.0):
         text = self.ctc_lm.decode(
                     digits,
                     beam_width=beam_width,
@@ -353,7 +354,7 @@ class ConformerProcessor:
                 else:
                     if i+1 == length - 1 and graphemes[i+1] == "e":
                         items.append(graphemes[i])
-                    elif graphemes[i+1] in valid_items:
+                    elif graphemes[i+1][0] in valid_items:
                         items += [*graphemes[i]]
                     else:
                         items.append(graphemes[i])

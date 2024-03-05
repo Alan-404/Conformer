@@ -30,6 +30,20 @@ class ConvolutionModule(nn.Module):
         x = x.transpose(-1, -2)
         return x
 
+class PositionalConvEmbedding(nn.Module):
+    def __init__(self, d_model: int, kernel_size: int, n_groups: int) -> None:
+        super().__init__()
+        padding = kernel_size // 2
+        self.conv = nn.Conv1d(in_channels=d_model, out_channels=d_model, kernel_size=kernel_size, padding=padding, groups=n_groups)
+        self.activation = nn.GELU()
+
+    def forward(self, x: torch.Tensor):
+        x = x.transpose(-1, -2)
+        x = self.conv(x)
+        x = x[:, :, :-1]
+        x = self.activation(x)
+
+        return x
 
 class ConvolutionSubsampling(nn.Module):
     def __init__(self, channels: int) -> None:

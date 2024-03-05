@@ -5,8 +5,6 @@ import torch.optim.lr_scheduler as lr_scheduler
 
 import lightning as L
 
-from torchaudio.transforms import SpecAugment
-
 from model.conformer import Conformer
 from model.byol import BYOL
 from model.wav2vec2 import Wav2Vec2

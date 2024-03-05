@@ -134,7 +134,7 @@ def train(
         val_dataset = ConformerDataset(val_path, processor=processor, num_examples=num_val)
         if val_batch_size is None:
             val_batch_size = batch_size
-        val_dataloader = DataLoader(dataset=val_dataset, batch_size=val_batch_size, shuffle=True)
+        val_dataloader = DataLoader(dataset=val_dataset, batch_size=val_batch_size, shuffle=True, collate_fn=lambda batch: get_batch(batch, False))
 
     strategy = "auto"
     if torch.cuda.device_count() > 1:

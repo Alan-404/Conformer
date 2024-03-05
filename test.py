@@ -115,8 +115,8 @@ def test(result_folder: str,
         outputs = outputs.cpu().numpy()
         lengths = lengths.cpu().numpy()
 
-        for index, item in enumerate(range(len(outputs))):
-            item = item[:lengths[index]]
+        for i in range(len(outputs)):
+            item = outputs[i][:lengths[i]]
 
             if arpa_path is not None:
                 sentence = processor.decode_beam_search(item)

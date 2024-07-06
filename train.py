@@ -78,7 +78,7 @@ def train(
         project: str = "STT_Conformer",
         name: Optional[str] = None,
     ):
-    assert checkpoint is None or os.path.exists(checkpoint)
+    # assert checkpoint is None or os.path.exists(checkpoint)
     if os.path.exists(saved_folder):
         os.makedirs(saved_folder)
     checkpoint_manager = CheckpointManager(saved_folder, n_saved_checkpoints)
@@ -123,7 +123,7 @@ def train(
 
     global_steps = 0
     n_epochs = 0
-    if os.path.exists(checkpoint):
+    if checkpoint is not None and os.path.exists(checkpoint):
         model, optimizer, scheduler, global_steps, n_epochs = checkpoint_manager.load_checkpoint(checkpoint, model, optimizer, scheduler)
 
     collate_fn = ConformerCollate(processor=processor, training=True)

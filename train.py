@@ -124,8 +124,12 @@ def train(
 
     global_steps = 0
     n_epochs = 0
-    if checkpoint is not None and os.path.exists(checkpoint):
-        global_steps, n_epochs = checkpoint_manager.load_checkpoint(checkpoint, model, optimizer, scheduler)
+    if checkpoint is not None:
+        if os.path.exists(checkpoint):
+            global_steps, n_epochs = checkpoint_manager.load_checkpoint(checkpoint, model, optimizer, scheduler)
+            print(f"Loaded Model from checkpoint: {checkpoint}")
+        else:
+            print("Checkpoint is not found, your model will be randomly initilized weights")
 
     collate_fn = ConformerCollate(processor=processor, training=True)
 

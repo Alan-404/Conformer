@@ -19,8 +19,6 @@ class Encoder(nn.Module):
         # Subsampling Mel - Spectrogram
         x, lengths = self.downsampling_conv(x, lengths)
 
-        print(x.shape)
-
         # Pre - Project
         x = self.linear(x)
         

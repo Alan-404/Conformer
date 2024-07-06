@@ -152,17 +152,17 @@ def train(
             print(f"Epoch {epoch + 1}")
 
         model.train()
-        for _, (mels, tokens, mel_lengths, token_lengths) in enumerate(tqdm(train_dataloader, leave=False)):
-            mels = mels.to(rank)
+        for _, (inputs, tokens, input_lengths, token_lengths) in enumerate(tqdm(train_dataloader, leave=False)):
+            inputs = inputs.to(rank)
             tokens = tokens.to(rank)
             mel_lengths = mel_lengths.to(rank)
             token_lengths = token_lengths.to(rank)
 
             with autocast(enabled=fp16):
-                outputs, output_lengths = model(mels, mel_lengths)
+                inputs, input_lengths = model(inputs, mel_lengths)
 
                 with autocast(enabled=False):
-                    loss = criterion.ctc_loss(outputs, tokens, output_lengths, token_lengths)
+                    loss = criterion.ctc_loss(inputs, tokens, input_lengths, token_lengths)
                     assert torch.isnan(loss) == False
 
             optimizer.zero_grad()

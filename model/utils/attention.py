@@ -39,6 +39,8 @@ class RelativeMultiHeadAttention(nn.Module):
 
         self.out_proj = nn.Linear(d_model, d_model)
 
+        self.mask_value = None
+
         torch.nn.init.xavier_uniform_(self.content_bias)
         torch.nn.init.xavier_uniform_(self.position_bias)
 
@@ -55,7 +57,9 @@ class RelativeMultiHeadAttention(nn.Module):
 
         # (Optional) Apply Mask
         if mask is not None:
-            attention_score = attention_score.masked_fill(mask, float('-inf'))
+            if self.mask_value is None:
+                self.mask_value = torch.iinfo(q.dtype).min
+            attention_score = attention_score.masked_fill(mask, self.mask_value)
 
         # Softmax
         attention_weights = F.softmax(attention_score, dim=-1)

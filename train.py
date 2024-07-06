@@ -155,11 +155,11 @@ def train(
         for _, (inputs, tokens, input_lengths, token_lengths) in enumerate(tqdm(train_dataloader, leave=False)):
             inputs = inputs.to(rank)
             tokens = tokens.to(rank)
-            mel_lengths = mel_lengths.to(rank)
+            input_lengths = input_lengths.to(rank)
             token_lengths = token_lengths.to(rank)
 
             with autocast(enabled=fp16):
-                inputs, input_lengths = model(inputs, mel_lengths)
+                inputs, input_lengths = model(inputs, input_lengths)
 
                 with autocast(enabled=False):
                     loss = criterion.ctc_loss(inputs, tokens, input_lengths, token_lengths)

@@ -260,7 +260,7 @@ class ConformerProcessor:
             else:
                 if item[0] == graphemes[-1]:
                     concat = f"{item[0]}{item[0]}"
-                    if concat in self.tokenizer.get_itos():
+                    if concat in self.vocab:
                         graphemes[-1] = concat
                         if len(item) > 1:
                             graphemes.append(item[1:])
@@ -303,7 +303,7 @@ class ConformerProcessor:
     def grammar_handle(self, item: str, prev: str):
         if item[0] == prev:
             concat = f"{prev}{prev}"
-            if concat in self.tokenizer.get_itos():
+            if concat in self.vocab:
                 if len(item) > 1:
                     return [concat, item[1:]]
                 else:
@@ -354,7 +354,7 @@ class ConformerProcessor:
     def token2text(self, tokens: np.ndarray, get_string: bool = False) -> str:
         words = []
         for token in tokens:
-            words.append(self.dictionary.get_itos()[token])
+            words.append(self.dictionary.vocab[token])
 
         if get_string:
             return "".join(words).replace(self.delim_token, " ")

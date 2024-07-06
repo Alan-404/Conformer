@@ -161,7 +161,7 @@ def train(
                 inputs, input_lengths = model(inputs, input_lengths)
 
                 with autocast(enabled=False):
-                    loss = criterion.ctc_loss(inputs.type(torch.float), tokens, input_lengths, token_lengths)
+                    loss = criterion.ctc_loss(inputs, tokens, input_lengths, token_lengths)
                     assert torch.isnan(loss) == False
 
             optimizer.zero_grad()

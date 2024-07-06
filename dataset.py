@@ -80,4 +80,10 @@ class ConformerCollate:
             signals, signal_lengths = self.processor(signals)
             tokens, token_lengths = self.processor.as_target(graphemes)
 
+            signal_lengths, sorted_indices = torch.argsort(signal_lengths)
+
+            signals = signals[sorted_indices]
+            tokens = tokens[sorted_indices]
+            token_lengths = token_lengths[sorted_indices]
+
             return signals, tokens, signal_lengths, token_lengths

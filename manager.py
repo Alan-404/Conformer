@@ -11,7 +11,7 @@ class CheckpointManager:
         self.n_saved = n_saved
         
         self.saved_samples = []
-
+        print("Init Checkpoint Manager")
         if os.path.exists(saved_folder):
             os.makedirs(saved_folder)
 

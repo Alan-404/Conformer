@@ -94,8 +94,7 @@ def train(
         path=tokenizer_path,
         pad_token=pad_token,
         delim_token=delim_token,
-        unk_token=unk_token,
-        device=rank
+        unk_token=unk_token
     )
     
     model = Conformer(

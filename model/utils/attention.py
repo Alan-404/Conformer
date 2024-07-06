@@ -58,7 +58,7 @@ class RelativeMultiHeadAttention(nn.Module):
         # (Optional) Apply Mask
         if mask is not None:
             if self.mask_value is None:
-                self.mask_value = torch.iinfo(q.dtype).min
+                self.mask_value = torch.finfo(q.dtype).min
             attention_score = attention_score.masked_fill(mask, self.mask_value)
 
         # Softmax

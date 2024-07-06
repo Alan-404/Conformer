@@ -99,7 +99,7 @@ def train(
     )
     
     model = Conformer(
-        vocab_size=len(processor.dictionary),
+        vocab_size=len(processor.vocab),
         sample_rate=sampling_rate,
         n_fft=n_fft,
         win_length=win_length,

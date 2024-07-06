@@ -196,8 +196,8 @@ def train(
                 val_scores.append(wer_score)
 
         if rank == 0:
-            if epoch % saved_checkpoint_after == saved_index - 1:
-                checkpoint_manager.save_checkpoint(model, optimizer, scheduler, global_steps, n_epochs)
+            # if epoch % saved_checkpoint_after == saved_index - 1:
+            checkpoint_manager.save_checkpoint(model, optimizer, scheduler, global_steps, n_epochs)
             train_loss = statistics.mean(train_losses)
             grad_norm = statistics.mean(grad_norms)
             if val_path is not None:

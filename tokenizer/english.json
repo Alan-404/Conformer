@@ -1,0 +1,127 @@
+{
+    "single_vowel": ["A", "E", "I", "O", "U", "Y"],
+    "composed_vowel": [
+        "AA", "AE", "AH", "AI", "AO", "AU", "AY",
+        "EA", "EAU", "EE", "EI", "EO", "EOU", "EU", "EY",
+        "IA", "IE", "IEU", "II",
+        "OA", "OE", "OH", "OI", "OO", "OU", "OY", "O'",
+        "UU", "UE", "UI", "UO", "UY",
+
+        "IEW", "IGH",
+        "AW", "EW", "OW",
+
+        "OUGH", "AUGH", "EIGH"
+    ],
+    "single_consonant": ["B", "C", "D", "F", "G", "H", "J", "K", "L", "M", "N", "P", "Q", "R", "S", "T", "V", "W", "X", "Z"],
+    
+    "no_split": [
+        "BB", "BP",
+        "CC", "CCH", "CH", "CK", "CQ", "CQU", "CZ",
+        "DD", "DG", "DJ",
+        "FF",
+        "GG", "GH",
+        "HH",
+        "KK", "KH", "KN",
+        "LL", "LF", "LK", "JJ", 
+        "MM", "MN",
+        "NN",
+        "PP", "PH", "PN", "PB",
+        "QQ", "QU",
+        "RR", "RH", 
+        "SS", "SH", "SSH",
+        "TT", "TH", "TTH", "TCH",
+        "WW", "WH", "WR", "ZZ",
+        "VV",
+        "ES", "ED"
+    ],
+
+    "voiced": [
+        "GN", "NG", "GM",
+        "LV",
+        "MB", "DN",
+        "RH"
+    ],
+
+    "voiceless": [
+        "FT", "SC", "ST", "PS", "PT"
+    ],
+
+    "voiceless_special": [
+        "SSHI", "SHI", "SSI", "SCI", "CI", "TI", "SI"
+    ],
+
+    "voiced_special": [
+        "DI", "GI"
+    ],
+
+    "exceptions": [
+        "BT", "CT", "SL", "LD",
+        "SCH", "ND", "SW", "TW", "ET", "LH"
+    ],
+
+    "short_item": [
+        "'VE", "N'T", "'RE", "'M", "'S", "S'", "'LL", "'D", "N'", "'T", "'"
+    ],
+
+    "single_suffix": [
+        "AL", "AR", "AN",
+        "ON", "EN"
+    ],
+
+    "composed_suffix": [
+        "OUS", "ENCE", "ANT", "ANCE", "ENT"
+    ],
+
+    "no_split_suffix": ["LE"],
+
+    "grammar": {
+        "ES": ["TCH", "SH", "XX", "SS", "ZZ", "DG", "CC", "CH", "G", "C", "X", "S", "Z"],
+        "ED": ["T", "D"]
+    },
+
+    "dictionary": {
+        "BERET": ["B", "E", "R", "ET"],
+        "PARQUET": ["P", "A", "R", "QU", "ET"],
+        "SCHISM": ["SCH", "I", "S", "M"],
+        "TOUGH": ["T", "OU", "GH"],
+        "COUGH": ["C", "OU", "GH"],
+        "ROUGH": ["R", "OU", "GH"],
+        "ENOUGH": ["E", "N", "OU", "GH"],
+        "TWO": ["TW", "O"],
+        "SWORD": ["SW", "O", "R", "D"],
+        "ANSWER": ["A", "N", "SW", "E", "R"],
+        "SCIENCE": ["SC", "I", "E", "N", "C", "E"],
+        "SCIENTIST": ["SC", "I", "E", "N", "T", "I", "S", "T"],
+        "SCIENTIF": ["SC", "I", "E", "N", "T", "I", "F"],
+        "SHOUDER": ["SH", "OU", "L", "D", "E", "R"],
+        "COXSWAIN": ["C", "O", "X", "SW", "AI", "N"],
+        "BUSINESS": ["B", "U", "SI", "N", "E", "SS"],
+        "RECEIPT": ["R", "E", "C", "EI", "PT"],
+        "SANDWICH": ["S", "A", "ND", "W", "I", "CH"],
+        "SHOULD": ["SH", "OU", "LD"],
+        "COULD": ["C", "OU", "LD"],
+        "WOULD": ["W", "OU", "LD"],
+        "LAUGH": ["L", "AU", "GH"],
+        "INDICT": ["I", "N", "D", "I", "CT"],
+        "VICTUALS": ["V", "I", "CT", "U", "A", "L", "S"],
+        "VICTUALLER": ["V", "I", "CT", "U", "A", "LL", "E", "R"],
+        "CHRISMAS": ["CH", "I", "R", "ST", "M", "A", "S"],
+        "ISLAND": ["I", "SL", "A", "N", "D"],
+        "WHILE": ["WH", "I", "L", "E"],
+        "DEBT": ["D", "E", "BT"],
+        "DOUBT": ["D", "OU", "BT"],
+        "SUBTLE": ["S", "U", "BT", "LE"],
+        "INDIAN": ["I", "N", "D", "I", "A", "N"],
+        "INDIA": ["I", "N", "D", "I", "A"],
+        "VIDEO": ["V", "I", "D", "E", "O"],
+        "CHAOS": ["CH", "A", "O", "S"],
+        "OSCAR": ["O", "S", "C", "A", "R"],
+        "SHOULDER": ["SH", "OU", "L", "D", "E", "R"],
+        "IATED": ["I", "A", "T", "E", "D"],
+        "IATING": ["I", "A", "T", "I", "NG"],
+        "IATE": ["I", "A", "T", "E"],
+        "OING": ["O", "I", "NG"]
+    },
+
+    "replace": {}
+}

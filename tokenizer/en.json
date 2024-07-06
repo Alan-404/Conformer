@@ -1,0 +1,69 @@
+{
+    "single_vowel": ["A", "E", "I", "O", "U", "Y"],
+    "composed_vowel": [
+        "AE", "AH", "AI", "AO", "AU", "AY",
+        "EA", "EAU", "EE", "EI", "EO", "EOU", "EU", "EY",
+        "IA", "IE", "IEU", "II",
+        "OA", "OE", "OH", "OI", "OO", "OU", "OY", "O'",
+        "UE", "UI", "UO", "UY", "YE",
+
+        "IEW", "IGH",
+        "AW", "EW", "OW",
+
+        "OUGH", "AUGH"
+    ],
+    "single_consonant": ["B", "C", "D", "F", "G", "H", "J", "K", "L", "M", "N", "P", "Q", "R", "S", "T", "V", "W", "X", "Z"],
+    "composed_consonant": [
+        "BB", "BT",
+        "CC", "CCH", "CH", "CHT", "CK", "CQ", "CZ",
+        "DD", "DG", "DJ",
+        "FF",
+        "GG", "GH",  "GM", "GN",
+        "KH", "KN",
+        "LD", "LF", "LM", "LK", "LL", "LV",
+        "MB", "MM", "MN",
+        "NN", "NG",
+        "PB", "PH", "PN", "PP", "PS", "PPH",
+        "QU", "RH", "RR",
+        "SC", "SH", "SS",
+        "TCH", "TG", "TH", "TT",
+        "WH", "WR",
+        "ZZ", "'"
+    ],
+    "special": [
+        "CE", "CI", "DI",
+        "GI", "GUE",
+        "SCI", "SI", "SSI", "SHI",
+        "TI", "CQU",
+        "SCH"
+    ],
+    "short_item": [
+        "'VE", "N'T", "'RE", "'M", "'S", "S'", "'LL", "'D", "N'", "'T"
+    ],
+    "suffix": [
+        "ACY", "ANCE", "ENCE", "ER", "OR", "ISM", "IST", "ITY", "TY", "ENT", "UL", "LY", "ANT", "IFY", "IFI", "IC",
+        "OUS", "ERENCE", "ILE", "ARY", "IC",
+        "ER", "AN", "ETY",
+        "AL", "EL", "EN", "IL", "IN", "OL", "ON",
+        "EST", "IA", "IST", "IZE",
+        "EEN", "LE", "ET",
+        "MENT", "NESS", "TIF", "ONE", "FY", "FI"
+    ],
+    "voiced": [
+        "GM", "GN", "NG",
+        "LD", "LM", "LV",
+        "MB", "MN",
+        "RH"
+    ],
+    "exception": [
+       "SW", "TW", "CT", "CQU", "ET", "SCH", "LE", "ED", "ES", "BP"
+    ],
+    "dictionary": {
+        "DEBT": ["D", "E", "BT"],
+        "SUBPOENA": ["S", "U", "BP", "OE", "N", "A"]
+    },
+    "grammar": {
+        "ES": ["X", "S", "SH", "CH", "G", "X", "C"],
+        "ED": ["T", "D"]
+    }
+}

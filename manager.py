@@ -24,7 +24,7 @@ class CheckpointManager:
         n_steps = checkpoint_data['n_steps']
         n_epochs = checkpoint_data['n_epochs']
 
-        return model, optimizer, scheduler, n_steps, n_epochs
+        return n_steps, n_epochs
     
     def save_checkpoint(self, model: nn.Module, optimizer: optim.Optimizer, scheduler: lr_scheduler.LRScheduler, n_steps: int, n_epochs: int):
         checkpoint_data = {

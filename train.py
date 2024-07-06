@@ -8,6 +8,7 @@ import torch.optim.lr_scheduler as lr_scheduler
 from torch.cuda.amp import GradScaler, autocast
 
 from torch.utils.data import DataLoader
+from torch.utils.data import RandomSampler
 from torch.utils.data.distributed import DistributedSampler
 from torch.nn.parallel import DistributedDataParallel as DDP
 import torch.distributed as dist
@@ -124,13 +125,13 @@ def train(
     global_steps = 0
     n_epochs = 0
     if checkpoint is not None and os.path.exists(checkpoint):
-        model, optimizer, scheduler, global_steps, n_epochs = checkpoint_manager.load_checkpoint(checkpoint, model, optimizer, scheduler)
+        global_steps, n_epochs = checkpoint_manager.load_checkpoint(checkpoint, model, optimizer, scheduler)
 
     collate_fn = ConformerCollate(processor=processor, training=True)
 
     train_dataset = ConformerDataset(train_path, processor=processor, num_examples=num_train_samples)
-    train_sampler = DistributedSampler(dataset=train_dataset, num_replicas=world_size, rank=rank) if world_size > 1 else None
-    train_dataloader = DataLoader(train_dataset, batch_size=train_batch_size, sampler=train_sampler, collate_fn=collate_fn, shuffle=(~(world_size > 1)))
+    train_sampler = DistributedSampler(dataset=train_dataset, num_replicas=world_size, rank=rank) if world_size > 1 else RandomSampler(train_dataset)
+    train_dataloader = DataLoader(train_dataset, batch_size=train_batch_size, sampler=train_sampler, collate_fn=collate_fn)
 
     if val_path is not None and os.path.exists(val_path):
         val_dataset = ConformerDataset(val_path, processor=processor, num_examples=num_val_samples)
@@ -142,6 +143,8 @@ def train(
     metric = ConformerMetric()
 
     for epoch in range(num_epochs):
+        if world_size > 1:
+            train_dataloader.sampler.set_epoch(epoch)
         if rank == 0:
             train_losses = []
             grad_norms = []
@@ -169,6 +172,8 @@ def train(
             scaler.unscale_(optimizer)
             grad_norm = grad_clip_value_(model.parameters())
             scaler.step(optimizer)
+
+            scaler.update()
 
             train_losses.append(loss.item())
             grad_norms.append(grad_norm)

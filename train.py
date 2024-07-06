@@ -161,8 +161,11 @@ def train(
             with autocast(enabled=fp16):
                 outputs, output_lengths = model(mels, mel_lengths)
 
+                with autocast(enabled=False):
+                    loss = criterion.ctc_loss(outputs, tokens, output_lengths, token_lengths)
+                    assert torch.isnan(loss) == False
+
             optimizer.zero_grad()
-            loss = criterion.ctc_loss(outputs, tokens, output_lengths, token_lengths)
             scaler.scale(loss).backward()
             scaler.unscale_(optimizer)
             grad_norm = grad_clip_value_(model.parameters())

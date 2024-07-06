@@ -12,7 +12,7 @@ class CheckpointManager:
         
         self.saved_samples = []
         print("Init Checkpoint Manager")
-        if os.path.exists(saved_folder):
+        if os.path.exists(saved_folder) == False:
             os.makedirs(saved_folder)
 
     def load_checkpoint(self, checkpoint: str, model: nn.Module, optimizer: optim.Optimizer, scheduler: lr_scheduler.LRScheduler):

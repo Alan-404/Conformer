@@ -79,7 +79,7 @@ def train(
         name: Optional[str] = None,
     ):
     # assert checkpoint is None or os.path.exists(checkpoint)
-    if os.path.exists(saved_folder):
+    if os.path.exists(saved_folder) == False:
         os.makedirs(saved_folder)
     checkpoint_manager = CheckpointManager(saved_folder, n_saved_checkpoints)
 

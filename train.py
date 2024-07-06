@@ -116,9 +116,6 @@ def train(
         dropout_rate=dropout_rate
     ).to(rank)
 
-    if world_size > 1:
-        model = DDP(model, device_ids=[rank])
-
     optimizer = optim.Adam(model.parameters(), lr=lr, betas=[0.9, 0.98], eps=1e-9)
     scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max=1000)
 
@@ -131,6 +128,9 @@ def train(
         else:
             print("Checkpoint is not found, your model will be randomly initilized weights")
 
+    if world_size > 1:
+        model = DDP(model, device_ids=[rank])
+    
     collate_fn = ConformerCollate(processor=processor, training=True)
 
     train_dataset = ConformerDataset(train_path, processor=processor, num_examples=num_train_samples)

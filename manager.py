@@ -18,9 +18,9 @@ class CheckpointManager:
     def load_checkpoint(self, checkpoint: str, model: nn.Module, optimizer: optim.Optimizer, scheduler: lr_scheduler.LRScheduler):
         checkpoint_data = torch.load(checkpoint, map_location='cpu')
 
-        model = model.load_state_dict(checkpoint_data['model'])
-        optimizer = optimizer.load_state_dict(checkpoint_data['optimizer'])
-        scheduler = scheduler.load_state_dict(checkpoint_data['scheduler'])
+        model.load_state_dict(checkpoint_data['model'])
+        optimizer.load_state_dict(checkpoint_data['optimizer'])
+        scheduler.load_state_dict(checkpoint_data['scheduler'])
         n_steps = checkpoint_data['n_steps']
         n_epochs = checkpoint_data['n_epochs']
 

@@ -141,7 +141,6 @@ def train(
     criterion = ConformerCriterion(blank_id=processor.pad_id)
     metric = ConformerMetric()
 
-    saved_index = saved_checkpoint_after - 1
     for epoch in range(num_epochs):
         if rank == 0:
             train_losses = []
@@ -196,8 +195,8 @@ def train(
                 val_scores.append(wer_score)
 
         if rank == 0:
-            # if epoch % saved_checkpoint_after == saved_index - 1:
-            checkpoint_manager.save_checkpoint(model, optimizer, scheduler, global_steps, n_epochs)
+            if n_epochs % saved_checkpoint_after == saved_checkpoint_after - 1 or n_epochs == num_epochs - 1:
+                checkpoint_manager.save_checkpoint(model, optimizer, scheduler, global_steps, n_epochs)
             train_loss = statistics.mean(train_losses)
             grad_norm = statistics.mean(grad_norms)
             if val_path is not None:

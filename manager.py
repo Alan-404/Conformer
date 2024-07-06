@@ -11,7 +11,7 @@ class CheckpointManager:
         self.n_saved = n_saved
         
         self.saved_samples = []
-        print("Init Checkpoint Manager")
+
         if os.path.exists(saved_folder) == False:
             os.makedirs(saved_folder)
 
@@ -40,4 +40,5 @@ class CheckpointManager:
 
         if len(self.saved_samples) == self.n_saved:
             os.remove(f"{self.saved_folder}/{self.saved_samples[0]}.pt")
+        
         self.saved_samples.append(n_steps)

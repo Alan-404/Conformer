@@ -40,5 +40,6 @@ class CheckpointManager:
 
         if len(self.saved_samples) == self.n_saved:
             os.remove(f"{self.saved_folder}/{self.saved_samples[0]}.pt")
+            self.saved_samples.pop(0)
         
         self.saved_samples.append(n_steps)

@@ -287,7 +287,7 @@ def main(
         train(
             0, n_gpus,
             train_path, num_train_samples, num_epochs, train_batch_size,
-            lr, fp16, checkpoint, saved_folder, n_saved_checkpoints, saved_checkpoint_after,
+            lr, bool(fp16), checkpoint, saved_folder, n_saved_checkpoints, saved_checkpoint_after,
             val_path, val_batch_size, num_val_samples,
             sampling_rate, num_mels, n_fft, hop_length, win_length, fmin, fmax, tokenizer_path, pad_token, delim_token, unk_token,
             n_blocks, d_model, n_heads, kernel_size, hidden_dim, n_layers, dropout_rate,
@@ -299,7 +299,7 @@ def main(
             args=(
                 n_gpus,
                 train_path, num_train_samples, num_epochs, train_batch_size,
-                lr, fp16, checkpoint, saved_folder, n_saved_checkpoints, saved_checkpoint_after,
+                lr, bool(fp16), checkpoint, saved_folder, n_saved_checkpoints, saved_checkpoint_after,
                 val_path, val_batch_size, num_val_samples,
                 sampling_rate, num_mels, n_fft, hop_length, win_length, fmin, fmax, tokenizer_path, pad_token, delim_token, unk_token,
                 n_blocks, d_model, n_heads, kernel_size, hidden_dim, n_layers, dropout_rate,

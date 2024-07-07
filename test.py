@@ -1,137 +1,108 @@
-# import os
-# import torch
-# from torch.utils.data import DataLoader
-# import pandas as pd
+import os
 
-# import torchsummary
+import torch
+import torch.distributed as distributed
+from torch.utils.data.dataloader import DataLoader
+from torch.utils.data import DistributedSampler, SequentialSampler
+from torch.nn.parallel import DistributedDataParallel as DDP
 
-# from tqdm import tqdm
+import pandas as pd
+from tqdm import tqdm
+from typing import Optional
 
-# import fire
+from model.conformer import Conformer
+from processing.processor import ConformerProcessor
+from dataset import ConformerDataset, ConformerCollate
 
-# from processing.processor import ConformerProcessor
-# from model.conformer import Conformer
+def setup(rank: int, world_size: int) -> None:
+    os.environ['MASTER_ADDR'] = 'localhost'
+    os.environ['MASTER_PORT'] = '12355'
+    distributed.init_process_group('nccl', rank=rank, world_size=world_size)
 
-# from evaluation import ConformerMetric
+def cleanup() -> None:
+    distributed.destroy_process_group()
 
-# from common import map_weights
-# from typing import Optional
+def test(
+        rank: int,
+        world_size: int,
+        # Data
+        test_path: str,
+        checkpoint: str,
+        # Tokenizer:
+        tokenizer_path: str,
+        pad_token: str = "<PAD>",
+        delim_token: str = "|",
+        unk_token: str = "<UNK>",
+        # Inference Config
+        batch_size: int = 1,
+        num_samples: Optional[int] = None,
+        lm_path: Optional[str] = None,
+        # Model Config
+        sample_rate: int = 16000,
+        n_fft: int = 400,
+        win_length: int = 400,
+        hop_length: int = 160,
+        fmin: float = 0.0,
+        fmax: float = 8000.0,
+        n_mel_channels: int = 80,
+        n_conformer_blocks: int = 17,
+        d_model: int = 512,
+        n_heads: int = 8,
+        kernel_size: int = 31,
+        hidden_dim: int = 640,
+        n_lstm_layers: int = 1,
+        dropout_rate: float = 0.0
+    ) -> None:
+    assert os.path.exists(test_path) and os.path.exists(checkpoint)
+    prompts = pd.read_csv(test_path)
 
-# import time
-
-# def create_folder_path(path: str) -> None:
-#     if path is not None:
-#         folders = path.split("/")[:-1]
-#         result_path_item = ""
-#         for folder in folders:
-#             result_path_item += folder
-#             if os.path.exists(result_path_item) == False:
-#                 os.mkdir(result_path_item)
-#             result_path_item += "/"
-
-# def test(test_path: str,
-#          vocab_path: str,
-#          checkpoint: str,
-#          arpa_path: Optional[str] = None,
-#          result_path: Optional[str] = None,
-#          num_mels: int = 80,
-#          sampling_rate: int = 16000,
-#          fft_size: int = 400,
-#          hop_length: int = 160,
-#          win_length: int = 400,
-#          fmin: float = 0.0,
-#          fmax: float = 8000.0,
-#          pad_token: str = "<PAD>",
-#          unk_token: str = "<UNK>",
-#          word_delim_token: str = "|",
-#          n_blocks: int = 17,
-#          d_model: int = 512,
-#          heads: int = 8,
-#          kernel_size: int = 31,
-#          dropout_rate: float = 0.0,
-#          batch_size: int = 1,
-#          num_workers: int = 1,
-#          device: str = 'cuda',
-#          num_examples: int = None):
-#     assert os.path.exists(test_path) and os.path.exists(checkpoint)
-
-#     create_folder_path(result_path)
-
-#     # Device Config
-#     if device == 'cpu' or torch.cuda.is_available() == False:
-#         device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
-#     else:
-#         device = torch.device('cuda')
-
-#     # Processor Setup
-#     processor = ConformerProcessor(
-#         path=vocab_path,
-#         num_mels=num_mels,
-#         sampling_rate=sampling_rate,
-#         n_fft=fft_size,
-#         hop_length=hop_length,
-#         win_length=win_length,
-#         fmin=fmin,
-#         fmax=fmax,
-#         pad_token=pad_token,
-#         unk_token=unk_token,
-#         delim_token=word_delim_token,
-#         lm_path=arpa_path
-#     )
-
-#     # Model Setup
-#     model = Conformer(
-#         vocab_size=len(processor.tokenizer),
-#         n_mel_channels=num_mels,
-#         n_blocks=n_blocks,
-#         d_model=d_model,
-#         heads=heads,
-#         kernel_size=kernel_size,
-#         dropout_rate=dropout_rate
-#     )
-
-#     torchsummary.summary(model)
-#     model.load_state_dict(map_weights(torch.load(checkpoint, map_location='cpu')['state_dict']))
-#     model.to(device)
-#     model.eval()
-        
-#     metric = ConformerMetric()
-
-#     def get_batch(signals: torch.Tensor):
-#         mels, mel_lengths = processor(signals)
-#         return mels, mel_lengths
-
-#     dataset = ConformerInferenceDataset(manifest_path=test_path, processor=processor, num_examples=num_examples)
-#     dataloader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=False, collate_fn=get_batch, num_workers=num_workers)
-
-#     predicts = []
-#     labels = dataset.get_labels()
-
-#     start_time = time.time()
-
-#     for data in tqdm(dataloader):
-#         inputs = data[0].to(device)
-#         lengths = data[1].to(device)
-
-#         with torch.inference_mode():
-#             outputs, lengths = model(inputs, lengths)
-
-#         predicts += processor.decode_beam_search(outputs.cpu(), lengths.cpu())
-
-#     end_time = time.time()
-
-#     if result_path is not None:
-#         pd.DataFrame({
-#             'path': dataset.prompts['path'].to_list(),
-#             'label': labels,
-#             'predict': predicts
-#         }).to_csv(f'{result_path}', index=False)
-
-#     print(f"WER Score: {metric.wer_score(predicts, labels)}")
-#     print(f"CER Score: {metric.cer_score(predicts, labels)}")
+    if world_size > 1:
+        setup(rank, world_size)
     
-#     print(f"Inference Time: {end_time - start_time}")
-#     print("Done Inference")
+    processor = ConformerProcessor(
+        sampling_rate=sample_rate,
+        path=tokenizer_path,
+        pad_token=pad_token,
+        delim_token=delim_token,
+        unk_token=unk_token,
+        lm_path=lm_path
+    )
+
+    model = Conformer(
+        vocab_size=len(processor.vocab),
+        sample_rate=sample_rate,
+        n_fft=n_fft,
+        win_length=win_length,
+        hop_length=hop_length,
+        fmin=fmin,
+        fmax=fmax,
+        n_mel_channels=n_mel_channels,
+        n_conformer_blocks=n_conformer_blocks,
+        d_model=d_model,
+        heads=n_heads,
+        kernel_size=kernel_size,
+        hidden_dim=hidden_dim,
+        n_lstm_layers=n_lstm_layers,
+        dropout_rate=dropout_rate
+    )
+
+    model.load_state_dict(torch.load(checkpoint, map_location='cpu')['model'])
+    model.to(rank)
+    model.eval()
+
+    if world_size > 1:
+        model = DDP(model, device_ids=[rank])
+
+    collate_fn = ConformerCollate()
+    
+    dataset = ConformerDataset(processor, prompts=prompts, num_examples=num_samples)
+    sampler = DistributedSampler(dataset, num_replicas=world_size, rank=rank) if world_size > 1 else SequentialSampler(dataset)
+    dataloader = DataLoader(dataset, batch_size=batch_size, sampler=sampler, collate_fn=collate_fn)
+
+    for (inputs, input_lengths) in tqdm(dataloader):
+        outputs, output_lengths = model.infer(inputs, input_lengths)
+
         
-# if __name__ == '__main__':
-#     fire.Fire(test)
+
+    if world_size > 1:
+        cleanup()

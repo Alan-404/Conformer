@@ -7,13 +7,13 @@ from model.utils.position import RelativePositionalEncoding
 from typing import Optional
 
 class Encoder(nn.Module):
-    def __init__(self, n_mel_channels: int, n: int, d_model: int, heads: int, kernel_size: int, dropout_rate: float = 0.0) -> None:
+    def __init__(self, n_mel_channels: int, n_blocks: int, d_model: int, n_heads: int, kernel_size: int, dropout_rate: float = 0.0) -> None:
         super().__init__()
         self.downsampling_conv = ConvolutionSubsampling(channels=d_model)
         self.linear = nn.Linear(in_features=d_model * (((n_mel_channels - 1) // 2 - 1) // 2), out_features=d_model)
         self.dropout = nn.Dropout(p=dropout_rate)
         self.rel_pe = RelativePositionalEncoding(d_model=d_model)
-        self.layers = nn.ModuleList([ConformerBlock(d_model=d_model, heads=heads, kernel_size=kernel_size, dropout_rate=dropout_rate) for _ in range(n)])
+        self.layers = nn.ModuleList([ConformerBlock(d_model=d_model, n_heads=n_heads, kernel_size=kernel_size, dropout_rate=dropout_rate) for _ in range(n_blocks)])
     
     def forward(self, x: torch.Tensor, lengths: Optional[torch.Tensor] = None) -> torch.Tensor:
         # Subsampling Mel - Spectrogram

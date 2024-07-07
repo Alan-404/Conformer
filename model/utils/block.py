@@ -6,10 +6,10 @@ from model.utils.convolution import ConvolutionModule
 from typing import Optional
 
 class ConformerBlock(nn.Module):
-    def __init__(self, d_model: int, heads: int, kernel_size: int, dropout_rate: float = 0.0) -> None:
+    def __init__(self, d_model: int, n_heads: int, kernel_size: int, dropout_rate: float = 0.0) -> None:
         super().__init__()
         self.ffn_1 = FeedForwardModule(dim=d_model, dropout_rate=dropout_rate)
-        self.attention = MultiHeadSelfAttentionModule(heads=heads, d_model=d_model, dropout_rate=dropout_rate)
+        self.attention = MultiHeadSelfAttentionModule(n_heads=n_heads, d_model=d_model, dropout_rate=dropout_rate)
         self.conv = ConvolutionModule(channels=d_model, kernel_size=kernel_size, dropout_rate=dropout_rate)
         self.ffn_2 = FeedForwardModule(dim=d_model, dropout_rate=dropout_rate)
         self.layer_norm = nn.LayerNorm(normalized_shape=d_model)

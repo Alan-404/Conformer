@@ -5,10 +5,14 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.optim.lr_scheduler as lr_scheduler
 
+def load_checkpoint(checkponit_path: str, model: nn.Module) -> None:
+    checkpoint = torch.load(checkponit_path, map_location='cpu')['model']
+    model.load_state_dict(checkpoint)
+
 class CheckpointManager:
-    def __init__(self, saved_folder: str, n_saved: int = 3) -> None:
+    def __init__(self, saved_folder: str, n_savings: int = 3) -> None:
         self.saved_folder = saved_folder
-        self.n_saved = n_saved
+        self.n_savings = n_savings
         
         self.saved_samples = []
 
@@ -38,7 +42,7 @@ class CheckpointManager:
         saved_path = f"{self.saved_folder}/{n_steps}.pt"
         torch.save(checkpoint_data, saved_path)
 
-        if len(self.saved_samples) == self.n_saved:
+        if len(self.saved_samples) == self.n_savings:
             os.remove(f"{self.saved_folder}/{self.saved_samples[0]}.pt")
             self.saved_samples.pop(0)
         

@@ -5,10 +5,10 @@ import math
 from typing import Optional, Tuple
 
 class MultiHeadSelfAttentionModule(nn.Module):
-    def __init__(self, d_model: int, heads: int, dropout_rate: float = 0.0) -> None:
+    def __init__(self, d_model: int, n_heads: int, dropout_rate: float = 0.0) -> None:
         super().__init__()
         self.layer_norm = nn.LayerNorm(normalized_shape=d_model)
-        self.attention = RelativeMultiHeadAttention(d_model=d_model, heads=heads, dropout_rate=dropout_rate)
+        self.attention = RelativeMultiHeadAttention(d_model=d_model, n_heads=n_heads, dropout_rate=dropout_rate)
         self.dropout = nn.Dropout(p=dropout_rate)
 
     def forward(self, x: torch.Tensor, pos_embedding: torch.Tensor, mask: Optional[torch.Tensor] = None):
@@ -18,12 +18,12 @@ class MultiHeadSelfAttentionModule(nn.Module):
         return x
 
 class RelativeMultiHeadAttention(nn.Module):
-    def __init__(self, d_model: int, heads: int, dropout_rate: float = 0.0):
+    def __init__(self, d_model: int, n_heads: int, dropout_rate: float = 0.0):
         super().__init__()
-        assert d_model % heads == 0
+        assert d_model % n_heads == 0
         self.d_model = d_model
-        self.heads = heads
-        self.head_samples = int(d_model / heads)
+        self.n_heads = n_heads
+        self.head_samples = int(d_model / n_heads)
         
         self.sqrt_dim = math.sqrt(self.head_samples)
 
@@ -34,8 +34,8 @@ class RelativeMultiHeadAttention(nn.Module):
 
         self.dropout = nn.Dropout(p=dropout_rate)
 
-        self.content_bias = nn.Parameter(torch.Tensor(self.heads, self.head_samples))
-        self.position_bias = nn.Parameter(torch.Tensor(self.heads, self.head_samples))
+        self.content_bias = nn.Parameter(torch.Tensor(self.n_heads, self.head_samples))
+        self.position_bias = nn.Parameter(torch.Tensor(self.n_heads, self.head_samples))
 
         self.out_proj = nn.Linear(d_model, d_model)
 
@@ -75,10 +75,10 @@ class RelativeMultiHeadAttention(nn.Module):
         batch_size, ctx, _ = q.size()
 
         # Project and Split Heads
-        q = self.query_proj(q).view(batch_size, ctx, self.heads, self.head_samples)
-        k = self.key_proj(k).view(batch_size, ctx, self.heads, self.head_samples).permute(0, 2, 1, 3)
-        v = self.value_proj(v).view(batch_size, ctx, self.heads, self.head_samples).permute(0, 2, 1, 3)
-        pos_embedding = self.pos_proj(pos_embedding).view(batch_size, -1, self.heads, self.head_samples).permute(0, 2, 3, 1)
+        q = self.query_proj(q).view(batch_size, ctx, self.n_heads, self.head_samples)
+        k = self.key_proj(k).view(batch_size, ctx, self.n_heads, self.head_samples).permute(0, 2, 1, 3)
+        v = self.value_proj(v).view(batch_size, ctx, self.n_heads, self.head_samples).permute(0, 2, 1, 3)
+        pos_embedding = self.pos_proj(pos_embedding).view(batch_size, -1, self.n_heads, self.head_samples).permute(0, 2, 3, 1)
 
         # Scaled - dot Product Attention with Relative Position
         attention_context = self.scaled_dot_product_relative_attention(q, k, v, pos_embedding, mask)
@@ -100,48 +100,3 @@ class RelativeMultiHeadAttention(nn.Module):
         pos_score = padded_pos_score[:, :, 1:].view_as(pos_score)[:, :, :, : seq_length2 // 2 + 1]
 
         return pos_score
-
-class MultiHeadLinearAttention(nn.Module):
-    def __init__(self, heads: int, d_model: int, dropout_rate: float = 0.0) -> None:
-        super().__init__()
-        self.d_model = d_model
-        self.heads = heads
-        self.dropout_rate = dropout_rate
-
-        assert self.d_model % self.heads == 0
-
-        self.head_samples = self.d_model // self.heads
-        self.scaled_dim = math.sqrt(math.sqrt(self.head_samples))
-
-        self.linear_q = nn.Linear(in_features=d_model, out_features=d_model)
-        self.linear_k = nn.Linear(in_features=d_model, out_features=d_model)
-        self.linear_v = nn.Linear(in_features=d_model, out_features=d_model)
-
-        self.linear_out = nn.Linear(in_features=d_model, out_features=d_model)
-
-    def linear_attention(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor):
-        q = (q / self.scaled_dim).softmax(dim=-2)
-        k = (k / self.scaled_dim).softmax(dim=-1).transpose(-1, -2)
-
-        attention_weights = torch.matmul(k, v)
-        attention_context = torch.matmul(q, attention_weights)
-
-        return attention_context
-
-
-    def forward(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: Optional[torch.Tensor] = None):
-        batch_size, n_ctx, _ = q.size()
-
-        q = self.linear_q(q)
-        k = self.linear_k(k)
-        v = self.linear_v(v)
-
-        q = q.reshape((batch_size, n_ctx, self.heads, self.head_samples)).permute([0, 2, 1, 3])
-        k = k.reshape((batch_size, n_ctx, self.heads, self.head_samples)).permute([0, 2, 1, 3])
-        v = v.reshape((batch_size, n_ctx, self.heads, self.head_samples)).permute([0, 2, 1, 3])
-
-        attention = self.linear_attention(q, k, v)
-        attention = attention.permute([0, 2, 1, 3]).reshape((batch_size, n_ctx, self.d_model))
-        attention = self.linear_out(attention)
-
-        return attention

@@ -20,8 +20,8 @@ class ConformerMetric:
     def __init__(self) -> None:
         pass
 
-    def wer_score(self, hypothesis: Union[str, List[str]], references: Union[str, List[str]]):
+    def wer_score(self, hypothesis: Union[str, List[str]], references: Union[str, List[str]]) -> float:
         return jiwer.wer(references, hypothesis)
     
-    def cer_score(self, hypothesis: Union[str, List[str]], references: Union[str, List[str]]):
+    def cer_score(self, hypothesis: Union[str, List[str]], references: Union[str, List[str]]) -> float:
         return jiwer.cer(references, hypothesis)

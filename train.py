@@ -14,6 +14,8 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 import torch.distributed as dist
 import torch.multiprocessing as mp
 
+import torchsummary
+
 from processing.processor import ConformerProcessor
 from model.conformer import Conformer
 from evaluation import ConformerCriterion, ConformerMetric
@@ -68,12 +70,12 @@ def train(
         delim_token: str = "|",
         unk_token: str = "<UNK>",
         # Model Config
-        n_blocks: int = 17,
+        n_conformer_blocks: int = 17,
         d_model: int = 512,
         n_heads: int = 8,
         kernel_size: int = 31,
-        hidden_dim: int = 640,
-        n_layers: int = 1,
+        lstm_hidden_dim: int = 640,
+        n_lstm_layers: int = 1,
         dropout_rate: float = 0.1,
         # Logger Config
         project: str = "STT_Conformer",
@@ -107,15 +109,19 @@ def train(
         fmin=fmin,
         fmax=fmax,
         n_mel_channels=num_mels,
-        n_blocks=n_blocks,
+        n_conformer_blocks=n_conformer_blocks,
         d_model=d_model,
-        heads=n_heads,
+        n_heads=n_heads,
         kernel_size=kernel_size,
-        hidden_dim=hidden_dim,
-        n_layers=n_layers,
+        lstm_hidden_dim=lstm_hidden_dim,
+        n_lstm_layers=n_lstm_layers,
         dropout_rate=dropout_rate
-    ).to(rank)
+    )
 
+    if rank == 0:
+        torchsummary.summary(model)
+    
+    model.to(rank)
     optimizer = optim.Adam(model.parameters(), lr=lr, betas=[0.9, 0.98], eps=1e-9)
     scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max=1000)
 
@@ -133,7 +139,7 @@ def train(
     
     collate_fn = ConformerCollate(processor=processor, training=True)
 
-    train_dataset = ConformerDataset(train_path, processor=processor, num_examples=num_train_samples)
+    train_dataset = ConformerDataset(train_path, processor=processor, num_examples=num_train_samples, training=True)
     train_sampler = DistributedSampler(dataset=train_dataset, num_replicas=world_size, rank=rank) if world_size > 1 else RandomSampler(train_dataset)
     train_dataloader = DataLoader(train_dataset, batch_size=train_batch_size, sampler=train_sampler, collate_fn=collate_fn)
 
@@ -149,9 +155,10 @@ def train(
     for epoch in range(num_epochs):
         if world_size > 1:
             train_dataloader.sampler.set_epoch(epoch)
+        
         if rank == 0:
             train_losses = []
-            grad_norms = []
+
             val_losses = []
             val_scores = []
 
@@ -174,13 +181,14 @@ def train(
             optimizer.zero_grad()
             scaler.scale(loss).backward()
             scaler.unscale_(optimizer)
-            grad_norm = grad_clip_value_(model.parameters())
+
             scaler.step(optimizer)
 
             scaler.update()
 
-            train_losses.append(loss.item())
-            grad_norms.append(grad_norm)
+            if rank == 0:
+                train_losses.append(loss.item())
+
             global_steps += 1
         n_epochs += 1
         scheduler.step()
@@ -207,17 +215,17 @@ def train(
             if n_epochs % saved_checkpoint_after == saved_checkpoint_after - 1 or n_epochs == num_epochs - 1:
                 checkpoint_manager.save_checkpoint(model, optimizer, scheduler, global_steps, n_epochs)
             train_loss = statistics.mean(train_losses)
-            grad_norm = statistics.mean(grad_norms)
+
             if val_path is not None:
                 val_loss = statistics.mean(val_losses)
                 val_score = statistics.mean(val_scores)
 
+            print("--------------------------------")
             print(f"Train Loss: {(train_loss):.4f}")
-            print(f"Gradient Norm: {(grad_norm):.4f}")
             wandb.log({
-                'train_loss': train_loss,
-                'grad_norm': grad_norm
+                'train_loss': train_loss
             }, global_steps)
+            
             if val_path is not None:
                 print(f"Val Loss: {(val_loss):.4f}")
                 print(f"Val Score: {(val_score):.4f}")
@@ -230,23 +238,6 @@ def train(
 
     if world_size > 1:
         cleanup()
-
-def grad_clip_value_(paramters: torch.Tensor, clip_value: Optional[float] = None, norm_type: int = 2):
-    if isinstance(paramters, torch.Tensor):
-        paramters = [paramters]
-    paramters = list(filter(lambda p: p.grad is not None, paramters))
-    norm_type = float(norm_type)
-    if clip_value is not None:
-        clip_value = float(clip_value)
-
-    total_norm = 0
-    for p in paramters:
-        param_norm = p.grad.data.norm(norm_type)
-        total_norm += param_norm.item() ** norm_type
-        if clip_value is not None:
-            p.grad.data.clamp_(min=-clip_value, max=clip_value)
-    total_norm = total_norm ** (1. / norm_type)
-    return total_norm
 
 def main(
         # Train Config

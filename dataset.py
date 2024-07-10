@@ -8,7 +8,7 @@ from tqdm import tqdm
 class ConformerDataset(Dataset):
     def __init__(self, processor: ConformerProcessor, manifest_path: Optional[str] = None, training: bool = False, min_duration: float = 0.3, max_duration: float = 30.0, num_examples: Optional[int] = None, make_grapheme: bool = False) -> None:
         super().__init__()
-        self.promts = pd.read_csv(manifest_path)
+        self.prompts = pd.read_csv(manifest_path)
 
         self.prompts['text'] = self.prompts['text'].fillna('')
 

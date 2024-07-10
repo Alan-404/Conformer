@@ -44,7 +44,7 @@ class Conformer(nn.Module):
 
         self.spec_augment = SpecAugment(
             n_time_masks=n_masks,
-            n_freq_masks=n_masks,
+            n_freq_masks=1,
             time_mask_param=mask_param,
             freq_mask_param=mask_param,
             p=mask_ratio

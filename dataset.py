@@ -84,7 +84,7 @@ class ConformerDataset(Dataset):
             elif index_df['type'] == "down":
                 role = 1
 
-        signal = self.processor.load_audio(audio_path, start=start, end=end, role=role),
+        signal = self.processor.load_audio(audio_path, start=start, end=end, role=role)
         if self.training:
             transcript = index_df['grapheme']
             if type(transcript) != str:

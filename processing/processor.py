@@ -140,7 +140,7 @@ class ConformerProcessor:
         sentence = sentence.strip()
         return sentence
     
-    def slide_graphemes(self, text: str, patterns: List[str], n_grams: int = 9, reverse: bool = True):
+    def slide_graphemes(self, text: str, patterns: List[str], n_grams: int = 4, reverse: bool = True):
         if len(text) == 1:
             if text in patterns:
                 return [text]
@@ -317,30 +317,20 @@ class ConformerProcessor:
         return None
     
     def word2graphemes(self, text: str, check: bool = True):
-        graphs = self.slide_graphemes(text, patterns=self.slide_patterns, reverse=True)
-        graphs = self.post_handle(graphs)
-
-        count = 0
-        for item in graphs:
-            count += len(item)
-
-        if check:
-            if count != len(text):
-                print(text)
-            
-            assert count == len(text)
-
-        return graphs
+        extracted_graphemes = self.slide_graphemes(text, patterns=self.slide_patterns, reverse=True)
+        
+        return extracted_graphemes
     
     def sentence2graphemes(self, sentence: str):
-        sentence = self.spec_replace(self.clean_text(sentence.upper()))
+        # sentence = self.spec_replace(self.clean_text(sentence.upper()))
+        sentence = self.clean_text(sentence.upper())
         words = sentence.split(" ")
         graphemes = []
 
         length = len(words)
 
         for index, word in enumerate(words):
-            graphemes += self.word2graphemes(word)
+            graphemes += self.word2graphemes(self.spec_replace(word))
             if index != length - 1:
                 graphemes.append(self.delim_token)
 
@@ -416,7 +406,12 @@ class ConformerProcessor:
     
     def spec_replace(self, word: str):
         for key in self.replace_dict:
-            word = word.replace(key, self.replace_dict[key])
+            arr = word.split(key)
+            if len(arr) == 2:
+                if arr[1] in self.single_vowels:
+                    return word
+                else:
+                    return word.replace(key, self.replace_dict[key])
         return word
     
     def graphemes2tokens(self, graphemes: List[str]):

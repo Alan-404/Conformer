@@ -1,9 +1,12 @@
 import torch
 import torch.nn as nn
+from torch.cuda.amp import autocast
+
 from model.modules.encoder import Encoder
 from model.modules.decoder import Decoder
 from model.modules.audio import MelSpectrogram
 from model.modules.augment import SpecAugment
+
 from typing import Optional, Tuple
     
 class Conformer(nn.Module):
@@ -39,7 +42,8 @@ class Conformer(nn.Module):
             f_max=fmax,
             f_min=fmin,
             norm='slaney',
-            n_mels=n_mel_channels
+            n_mels=n_mel_channels,
+            mel_scale='slaney'
         )
 
         self.spec_augment = SpecAugment(
@@ -54,7 +58,8 @@ class Conformer(nn.Module):
         self.decoder = Decoder(vocab_size=vocab_size, d_model=d_model, hidden_dim=lstm_hidden_dim, n_layers=n_lstm_layers)
     
     def forward(self, x: torch.Tensor, lengths: Optional[torch.Tensor] = None) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
-        x = self.mel_spectrogram(x)
+        with autocast(enabled=False):
+            x = self.mel_spectrogram(x)
         if lengths is not None:
             lengths = (lengths // self.hop_length) + 1
         if self.training:

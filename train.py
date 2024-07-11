@@ -78,8 +78,8 @@ def train(
         n_lstm_layers: int = 1,
         dropout_rate: float = 0.1,
         # Logger Config
-        project: str = "STT_Conformer",
-        name: Optional[str] = None,
+        logger_project: str = "STT_Conformer",
+        logger_name: Optional[str] = None,
     ):
     # assert checkpoint is None or os.path.exists(checkpoint)
     if os.path.exists(saved_folder) == False:
@@ -90,7 +90,7 @@ def train(
         setup(rank, world_size)
 
     if rank == 0:
-        wandb.init(project=project, name=name)
+        wandb.init(project=logger_project, name=logger_name)
 
     processor = ConformerProcessor(
         sampling_rate=sampling_rate,
@@ -277,8 +277,8 @@ def main(
         n_layers: int = 1,
         dropout_rate: float = 0.1,
         # Logger Config
-        project: str = "STT_Conformer",
-        name: Optional[str] = None,
+        logger_project: str = "STT_Conformer",
+        logger_name: Optional[str] = None,
     ):
     if torch.cuda.is_available() == False:
         raise("CUDA is required")
@@ -292,7 +292,7 @@ def main(
             val_path, val_batch_size, num_val_samples,
             sampling_rate, num_mels, n_fft, hop_length, win_length, fmin, fmax, tokenizer_path, pad_token, delim_token, unk_token,
             n_blocks, d_model, n_heads, kernel_size, hidden_dim, n_layers, dropout_rate,
-            project, name
+            logger_project, logger_name
         )
     else:
         mp.spawn(
@@ -304,7 +304,7 @@ def main(
                 val_path, val_batch_size, num_val_samples,
                 sampling_rate, num_mels, n_fft, hop_length, win_length, fmin, fmax, tokenizer_path, pad_token, delim_token, unk_token,
                 n_blocks, d_model, n_heads, kernel_size, hidden_dim, n_layers, dropout_rate,
-                project, name
+                logger_project, logger_name
             ),
             nprocs=n_gpus,
             join=True

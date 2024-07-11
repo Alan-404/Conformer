@@ -19,15 +19,15 @@ MAX_AUDIO_VALUE = 32768.0
 class ConformerProcessor:
     def __init__(self, 
                  sampling_rate: int = 16000,
-                 path: Optional[str] = None, pad_token: str = "<PAD>", delim_token: str = "|", unk_token: str = "<UNK>", puncs: str = r"([:./,?!@#$%^&=`~;*\(\)\[\]\"\\])",
+                 tokenizer_path: Optional[str] = None, pad_token: str = "<PAD>", delim_token: str = "|", unk_token: str = "<UNK>", puncs: str = r"([:./,?!@#$%^&=`~;*\(\)\[\]\"\\])",
                  lm_path: Optional[str] = None) -> None:
         
         self.sampling_rate = sampling_rate
 
         self.puncs = puncs
         
-        if path is not None:
-            patterns = json.load(open(path, 'r', encoding='utf8'))
+        if tokenizer_path is not None:
+            patterns = json.load(open(tokenizer_path, 'r', encoding='utf8'))
 
             self.slide_patterns = self.sort_pattern(
                 patterns['single_vowel'] + patterns['composed_vowel'] + patterns['single_consonant'] + patterns['no_split'] + patterns['voiced'] + patterns['voiceless'] + patterns['voiced_special'] + patterns['voiceless_special'] + patterns['short_item'] + patterns['single_suffix'] + patterns['composed_suffix'] + patterns['no_split_suffix'] + list(patterns['dictionary'].keys())

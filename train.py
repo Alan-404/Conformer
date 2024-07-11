@@ -94,7 +94,7 @@ def train(
 
     processor = ConformerProcessor(
         sampling_rate=sampling_rate,
-        path=tokenizer_path,
+        tokenizer_path=tokenizer_path,
         pad_token=pad_token,
         delim_token=delim_token,
         unk_token=unk_token

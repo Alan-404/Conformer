@@ -48,7 +48,7 @@ class Conformer(nn.Module):
 
         self.spec_augment = SpecAugment(
             n_time_masks=n_masks,
-            n_freq_masks=1,
+            n_freq_masks=n_masks,
             time_mask_param=mask_param,
             freq_mask_param=mask_param,
             p=mask_ratio
@@ -58,8 +58,9 @@ class Conformer(nn.Module):
         self.decoder = Decoder(vocab_size=vocab_size, d_model=d_model, hidden_dim=lstm_hidden_dim, n_layers=n_lstm_layers)
     
     def forward(self, x: torch.Tensor, lengths: Optional[torch.Tensor] = None) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
-        with autocast(enabled=False):
-            x = self.mel_spectrogram(x)
+        with torch.no_grad():
+            with autocast(enabled=False):
+                x = self.mel_spectrogram(x.float(), log_mel=True)
         if lengths is not None:
             lengths = (lengths // self.hop_length) + 1
         if self.training:

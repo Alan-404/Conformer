@@ -157,14 +157,10 @@ def train(
             train_dataloader.sampler.set_epoch(epoch)
         
         if rank == 0:
-            train_losses = []
-
-            val_losses = []
-            val_scores = []
-
             print(f"Epoch {epoch + 1}")
 
         model.train()
+        train_loss = 0.0
         for _, (inputs, tokens, input_lengths, token_lengths) in enumerate(tqdm(train_dataloader, leave=False)):
             inputs = inputs.to(rank)
             tokens = tokens.to(rank)
@@ -186,15 +182,15 @@ def train(
 
             scaler.update()
 
-            if rank == 0:
-                train_losses.append(loss.item())
-
+            train_loss += loss
             global_steps += 1
         n_epochs += 1
         scheduler.step()
         
         if val_path is not None:
             model.eval()
+            val_loss = 0.0
+            val_score = 0.0
             for _, (mels, tokens, mel_lengths, token_lengths) in enumerate(tqdm(val_dataloader, leave=False)):
                 mels = mels.to(rank)
                 tokens = tokens.to(rank)
@@ -208,22 +204,36 @@ def train(
                 loss = criterion.ctc_loss(outputs, tokens, output_lengths, token_lengths).item()
                 wer_score = metric.wer_score(processor.decode_batch(outputs), processor.decode_batch(tokens, group_token=False))
 
-                val_losses.append(loss)
-                val_scores.append(wer_score)
+                val_loss += loss
+                val_score += wer_score
 
+        train_loss = train_loss / len(train_dataloader)
+        if val_path is not None:
+            val_loss = val_loss / len(val_dataloader)
+            val_score = val_score / len(val_dataloader)
+        
+        # Gather all Threads for multi-gpu
+        if world_size > 1:
+            dist.all_reduce(train_loss)
+            if val_path is not None:
+                dist.all_reduce(val_loss)
+                dist.all_reduce(val_score)
+        
         if rank == 0:
-            if n_epochs % saved_checkpoint_after == saved_checkpoint_after - 1 or n_epochs == num_epochs - 1:
-                checkpoint_manager.save_checkpoint(model, optimizer, scheduler, global_steps, n_epochs)
-            train_loss = statistics.mean(train_losses)
+            train_loss = train_loss.item() / world_size
+            current_lr = optimizer.param_groups[0]['lr']
 
             if val_path is not None:
-                val_loss = statistics.mean(val_losses)
-                val_score = statistics.mean(val_scores)
+                val_loss = val_loss.item() / world_size
+                val_score = val_score / world_size
 
             print("--------------------------------")
             print(f"Train Loss: {(train_loss):.4f}")
+            print("================================")
+            print(f"Current Learning Rate {current_lr}")
             wandb.log({
-                'train_loss': train_loss
+                'train_loss': train_loss,
+                "learning_rate": current_lr
             }, global_steps)
             
             if val_path is not None:
@@ -235,6 +245,9 @@ def train(
                 }, global_steps)
 
             print("\n")
+
+            if n_epochs % saved_checkpoint_after == saved_checkpoint_after - 1 or n_epochs == num_epochs - 1:
+                checkpoint_manager.save_checkpoint(model, optimizer, scheduler, global_steps, n_epochs)
 
     if world_size > 1:
         cleanup()

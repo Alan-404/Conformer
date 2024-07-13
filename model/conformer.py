@@ -61,14 +61,23 @@ class Conformer(nn.Module):
         with torch.no_grad():
             with autocast(enabled=False):
                 x = self.mel_spectrogram(x.float(), log_mel=True)
+                if self.training:
+                    x = self.spec_augment(x)
         if lengths is not None:
             lengths = (lengths // self.hop_length) + 1
-        if self.training:
-            x = self.spec_augment(x)
+        
         x, lengths = self.encoder(x, lengths)
         x = self.decoder(x, lengths)
         return x, lengths
     
     @torch.inference_mode()
     def infer(self, x: torch.Tensor, lengths: Optional[torch.Tensor] = None) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
-        return self.forward(x, lengths)
+        with autocast(enabled=False):
+            x = self.mel_spectrogram(x.float(), log_mel=True)
+        if lengths is not None:
+            lengths = (lengths // self.hop_length) + 1
+
+        x, lengths = self.encoder(x, lengths)
+        x = self.decoder(x, lengths)
+        
+        return x, lengths

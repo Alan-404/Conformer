@@ -17,6 +17,7 @@ import torch.multiprocessing as mp
 import torchsummary
 
 from processing.processor import ConformerProcessor
+from processing.target import TargetConformerProcessor
 from model.conformer import Conformer
 from evaluation import ConformerCriterion, ConformerMetric
 from dataset import ConformerDataset, ConformerCollate
@@ -99,15 +100,13 @@ def train(
         delim_token=delim_token,
         unk_token=unk_token
     )
+
+    handler = TargetConformerProcessor(
+        tokenizer_path=tokenizer_path
+    )
     
     model = Conformer(
         vocab_size=len(processor.vocab),
-        sample_rate=sampling_rate,
-        n_fft=n_fft,
-        win_length=win_length,
-        hop_length=hop_length,
-        fmin=fmin,
-        fmax=fmax,
         n_mel_channels=num_mels,
         n_conformer_blocks=n_conformer_blocks,
         d_model=d_model,
@@ -137,7 +136,7 @@ def train(
     if world_size > 1:
         model = DDP(model, device_ids=[rank])
     
-    collate_fn = ConformerCollate(processor=processor, training=True)
+    collate_fn = ConformerCollate(processor=processor, handler=handler, training=True)
 
     train_dataset = ConformerDataset(manifest_path=train_path, processor=processor, num_examples=num_train_samples, training=True)
     train_sampler = DistributedSampler(dataset=train_dataset, num_replicas=world_size, rank=rank) if world_size > 1 else RandomSampler(train_dataset)

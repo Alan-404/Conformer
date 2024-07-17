@@ -12,242 +12,69 @@ import librosa
 
 from scipy.io import wavfile
 
-from torchaudio.models.decoder._ctc_decoder import ctc_decoder
-from torchaudio.transforms import MelSpectrogram
-
-MAX_AUDIO_VALUE = 32768.0
-
-class ConformerProcessor:
+class TargetConformerProcessor:
     def __init__(self, 
-                 sample_rate: int = 16000, 
-                 n_fft: int = 400, 
-                 win_length: int = 400, 
-                 hop_length: int = 160, 
-                 n_mels: int = 80, 
-                 fmin: float = 0.0, 
-                 fmax: float = 8000.0,
-                 norm: Optional[str] = "slaney",
-                 mel_scale: str = 'htk',
-                 device: str = 'cpu') -> None:
-        assert mel_scale in ['htk', 'slaney'], "Invalid Mel Scale, Only HTK or Slaney"
-        if norm is not None:
-            assert norm == 'slaney', "Invalid Norm, we only support Slaney Norm"
-        
-        self.sample_rate = sample_rate
-        self.n_fft = n_fft
-        self.hop_length = hop_length
-
-        self.__mel_spectrogram = MelSpectrogram(
-            sample_rate=sample_rate,
-            n_fft=n_fft,
-            win_length=win_length,
-            hop_length=hop_length,
-            f_min=fmin,
-            f_max=fmax,
-            n_mels=n_mels,
-            norm=norm,
-            mel_scale=mel_scale
-        ).to(device)
-
-        self.device = device
-
-    def read_audio(self, path: str) -> torch.Tensor:
-        sr, signal = wavfile.read(path)
-        signal = signal / MAX_AUDIO_VALUE
-
-        if sr != self.sample_rate:
-            signal = librosa.resample(signal, orig_sr=sr, target_sr=self.sample_rate)
-        
-        return torch.tensor(signal, dtype=torch.float).to(self.device)
-
-    def read_pickle(self, path: str) -> np.ndarray:
-        with open(path, 'rb') as file:
-            signal = pickle.load(file)
-
-        signal = librosa.resample(y=signal, orig_sr=8000, target_sr=self.sample_rate)
-
-        return signal
-    
-    def read_pcm(self, path: str) -> np.ndarray:
-        audio = AudioSegment.from_file(path, frame_rate=8000, channels=1, sample_width=2).set_frame_rate(self.sample_rate).get_array_of_samples()
-        return np.array(audio).astype(np.float64) / MAX_AUDIO_VALUE
-    
-    def read_signal(self, path: str, role: Optional[int] = None) -> np.ndarray:
-        if role is not None:
-            signal, _ = librosa.load(path, sr=self.sample_rate, mono=False)
-            signal = signal[role]
-        else:
-            signal, _ = librosa.load(path, sr=self.sample_rate, mono=True)
-
-        return signal
-    
-    def split_segment(self, signal: torch.Tensor, start: float, end: float):
-        return signal[int(start * self.sample_rate) : int(end * self.sample_rate)]
-
-    def load_audio(self, path: str, start: Optional[float] = None, end: Optional[float] = None, role: Optional[int] = None) -> torch.Tensor:
-        if ".pickle" in path:
-            signal = self.read_pickle(path)
-        elif ".pcm" in path:
-            signal = self.read_pcm(path)
-        else:
-            signal = self.read_signal(path, role)
-
-        if start is not None and end is not None:
-            signal = self.split_segment(signal, start, end)
-
-        signal = torch.tensor(signal, dtype=torch.float)
-
-        return signal
-    
-    def mel_spectrogram(self, signal: Union[torch.Tensor, np.ndarray]) -> Union[torch.Tensor, np.ndarray]:
-        is_numpy = False
-        if isinstance(signal, np.ndarray):
-            is_numpy = True
-            signal = torch.tensor(signal, dtype=torch.float)
-        
-        mel = self.__mel_spectrogram(signal)
-        if is_numpy:
-            mel = mel.numpy()
-        
-        return mel
-    
-    def __call__(self, audios: List[torch.Tensor]) -> Tuple[torch.Tensor, torch.Tensor]:
-        padded_audios = []
-        lengths = []
-        max_length = 0
-
-        for audio in audios:
-            length = len(audio)
-            if length > max_length:
-                max_length = length
-            lengths.append(length)
-
-        for index, audio in enumerate(audios):
-            padded_audios.append(
-                F.pad(audio, pad=(0, max_length - lengths[index]), value=0.0)
-            )
-
-        mels = self.mel_spectrogram(torch.stack(padded_audios))
-        lengths = torch.tensor(lengths) // self.hop_length + 1
-
-        return mels, lengths
-
-class __ConformerProcessor:
-    def __init__(self, 
-                 sample_rate: int = 16000,
-                 tokenizer_path: Optional[str] = None, pad_token: str = "<PAD>", delim_token: str = "|", unk_token: str = "<UNK>", puncs: str = r"([:./,?!@#$%^&=`~;*\(\)\[\]\"\\])",
-                 lm_path: Optional[str] = None) -> None:
-        
-        self.sample_rate = sample_rate
+                 tokenizer_path: str, pad_token: str = "<PAD>", delim_token: str = "|", unk_token: str = "<UNK>", puncs: str = r"([:./,?!@#$%^&=`~;*\(\)\[\]\"\\])",
+                ) -> None:
 
         self.puncs = puncs
         
-        if tokenizer_path is not None:
-            patterns = json.load(open(tokenizer_path, 'r', encoding='utf8'))
+        patterns = json.load(open(tokenizer_path, 'r', encoding='utf8'))
 
-            self.slide_patterns = self.sort_pattern(
-                patterns['single_vowel'] + patterns['composed_vowel'] + patterns['single_consonant'] + patterns['no_split'] + patterns['voiced'] + patterns['voiceless'] + patterns['voiced_special'] + patterns['voiceless_special'] + patterns['short_item'] + patterns['single_suffix'] + patterns['composed_suffix'] + patterns['no_split_suffix'] + list(patterns['dictionary'].keys())
-            )
+        self.slide_patterns = self.sort_pattern(
+            patterns['single_vowel'] + patterns['composed_vowel'] + patterns['single_consonant'] + patterns['no_split'] + patterns['voiced'] + patterns['voiceless'] + patterns['voiced_special'] + patterns['voiceless_special'] + patterns['short_item'] + patterns['single_suffix'] + patterns['composed_suffix'] + patterns['no_split_suffix'] + list(patterns['dictionary'].keys())
+        )
 
-            self.dictionary = patterns['dictionary']
+        self.dictionary = patterns['dictionary']
 
-            self.single_vowels = patterns['single_vowel']
-            self.composed_vowels = patterns['composed_vowel']
+        self.single_vowels = patterns['single_vowel']
+        self.composed_vowels = patterns['composed_vowel']
 
-            self.voiced_special = patterns['voiced_special']
-            self.voiceless_special = patterns['voiceless_special']
+        self.voiced_special = patterns['voiced_special']
+        self.voiceless_special = patterns['voiceless_special']
 
-            self.single_consonants = patterns['single_consonant']
-            self.no_split = patterns['no_split']
-            self.voiced = patterns['voiced']
-            self.voiceless = patterns['voiceless']
+        self.single_consonants = patterns['single_consonant']
+        self.no_split = patterns['no_split']
+        self.voiced = patterns['voiced']
+        self.voiceless = patterns['voiceless']
             
-            self.single_suffixes = patterns['single_suffix']
-            self.composed_suffixes = patterns['composed_suffix']
-            self.no_split_suffixes = patterns['no_split_suffix']
+        self.single_suffixes = patterns['single_suffix']
+        self.composed_suffixes = patterns['composed_suffix']
+        self.no_split_suffixes = patterns['no_split_suffix']
 
-            self.short_items = patterns['short_item']
+        self.short_items = patterns['short_item']
 
-            self.grammar = patterns['grammar']
+        self.grammar = patterns['grammar']
 
-            self.replace_dict = patterns['replace']
-            self.reverse_replace = {v: k for k, v in self.replace_dict.items()}
+        self.replace_dict = patterns['replace']
+        self.reverse_replace = {v: k for k, v in self.replace_dict.items()}
 
-            self.delim_token = delim_token
-            self.unk_token = unk_token
-            self.pad_token = pad_token
+        self.delim_token = delim_token
+        self.unk_token = unk_token
+        self.pad_token = pad_token
 
-            self.vocab = [pad_token] + patterns['single_vowel'] + patterns['composed_vowel'] + patterns['single_consonant'] + patterns['no_split'] + patterns['voiced'] + patterns['voiceless'] + patterns['voiced_special'] + patterns['voiceless_special'] + patterns['exceptions'] + patterns['short_item'] + patterns['no_split_suffix'] + [delim_token, unk_token]
+        self.vocab = [pad_token] + patterns['single_vowel'] + patterns['composed_vowel'] + patterns['single_consonant'] + patterns['no_split'] + patterns['voiced'] + patterns['voiceless'] + patterns['voiced_special'] + patterns['voiceless_special'] + patterns['exceptions'] + patterns['short_item'] + patterns['no_split_suffix'] + [delim_token, unk_token]
 
-            self.pad_id = self.find_token_id(pad_token)
-            self.unk_id = self.find_token_id(unk_token)
-            self.delim_id = self.find_token_id(delim_token)
+        self.pad_id = self.find_token_id(pad_token)
+        self.unk_id = self.find_token_id(unk_token)
+        self.delim_id = self.find_token_id(delim_token)
             
-            self.decoder = None
-            if lm_path is not None:
-                self.decoder = ctc_decoder(
-                    lexicon='./lm/lexicon.txt',
-                    tokens=self.tokenizer.get_itos(),
-                    lm=lm_path,
-                    sil_token=delim_token,
-                    blank_token=pad_token,
-                    unk_word=unk_token
-                )
 
     def sort_pattern(self, patterns: List[str]):
         patterns = sorted(patterns, key=len)
         patterns.reverse()
 
         return patterns
-
-    def read_pickle(self, path: str) -> np.ndarray:
-        with open(path, 'rb') as file:
-            signal = pickle.load(file)
-
-        signal = librosa.resample(y=signal, orig_sr=8000, target_sr=self.sample_rate)
-
-        return signal
-    
-    def read_pcm(self, path: str) -> np.ndarray:
-        audio = AudioSegment.from_file(path, frame_rate=8000, channels=1, sample_width=2).set_frame_rate(self.sample_rate).get_array_of_samples()
-        return np.array(audio).astype(np.float64) / MAX_AUDIO_VALUE
-    
-    def read_signal(self, path: str, role: Optional[int] = None) -> np.ndarray:
-        if role is not None:
-            signal, _ = librosa.load(path, sr=self.sample_rate, mono=False)
-            signal = signal[role]
-        else:
-            signal, _ = librosa.load(path, sr=self.sample_rate, mono=True)
-
-        return signal
-    
-    def split_segment(self, signal: torch.Tensor, start: float, end: float):
-        return signal[int(start * self.sample_rate) : int(end * self.sample_rate)]
-
-    def load_audio(self, path: str, start: Optional[float] = None, end: Optional[float] = None, role: Optional[int] = None) -> torch.Tensor:
-        if ".pickle" in path:
-            signal = self.read_pickle(path)
-        elif ".pcm" in path:
-            signal = self.read_pcm(path)
-        else:
-            signal = self.read_signal(path, role)
-
-        if start is not None and end is not None:
-            signal = self.split_segment(signal, start, end)
-
-        signal = torch.tensor(signal, dtype=torch.float)
-
-        return signal
     
     def split_signal(self, signal: np.ndarray, threshold_length_segment_max: float = 60.0, threshold_length_segment_min: float = 0.1):
         intervals = []
 
         for top_db in range(30, 5, -5):
             intervals = librosa.effects.split(signal, top_db=top_db, frame_length=4096, hop_length=1024)
-            if len(intervals) != 0 and max((intervals[:, 1] - intervals[:, 0]) / self.sample_rate) <= threshold_length_segment_max:
+            if len(intervals) != 0 and max((intervals[:, 1] - intervals[:, 0]) / self.sampling_rate) <= threshold_length_segment_max:
                 break
             
-        return np.array([i for i in intervals if threshold_length_segment_min < (i[1] - i[0]) / self.sample_rate <= threshold_length_segment_max])
+        return np.array([i for i in intervals if threshold_length_segment_min < (i[1] - i[0]) / self.sampling_rate <= threshold_length_segment_max])
 
     def clean_text(self, sentence: str) -> str:
         sentence = str(sentence)
@@ -432,13 +259,12 @@ class __ConformerProcessor:
                 return [prev, item]
         return None
     
-    def word2graphemes(self, text: str, check: bool = True):
-        extracted_graphemes = self.slide_graphemes(text, patterns=self.slide_patterns, reverse=True)
+    def word2graphemes(self, text: str, reverse: bool = False):
+        extracted_graphemes = self.slide_graphemes(text, patterns=self.slide_patterns, reverse=reverse)
         
         return extracted_graphemes
     
     def sentence2graphemes(self, sentence: str):
-        # sentence = self.spec_replace(self.clean_text(sentence.upper()))
         sentence = self.clean_text(sentence.upper())
         words = sentence.split(" ")
         graphemes = []
@@ -536,7 +362,7 @@ class __ConformerProcessor:
             tokens.append(self.find_token_id(grapheme))
         return tokens
 
-    def as_target(self, texts: List[List[str]]) -> Tuple[torch.Tensor, torch.Tensor]:
+    def __call__(self, texts: List[List[str]]) -> Tuple[torch.Tensor, torch.Tensor]:
         tokens = []
         lengths = []
         max_length = 0
@@ -553,27 +379,3 @@ class __ConformerProcessor:
             padded_tokens.append(F.pad(torch.tensor(token_list), (0, max_length - lengths[index]), mode='constant', value=self.pad_id))
 
         return torch.stack(padded_tokens), torch.tensor(lengths)
-    
-    def __call__(self, signals: List[torch.Tensor]) -> Tuple[torch.Tensor, torch.Tensor]:
-        lengths = []
-        max_length = 0
-        
-        for signal in signals:
-            length = len(signal)
-            lengths.append(length)
-            if max_length < length:
-                max_length = length
-
-        padded_signals = []
-        for index, signal in enumerate(signals):
-            padded_signals.append(F.pad(signal, (0, max_length - lengths[index]), mode='constant', value=0.0))
-
-        return torch.stack(padded_signals), torch.tensor(lengths)
-    
-    def decode_beam_search(self, logits: torch.Tensor, lengths: torch.Tensor):
-        assert self.decoder is not None
-        decoder_outputs = self.decoder(logits, lengths)
-        texts = []
-        for item in decoder_outputs:
-            texts.append(" ".join(item[0].words))
-        return texts

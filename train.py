@@ -308,8 +308,8 @@ def main(
         logging_name: Optional[str] = None
     ) -> None:
 
-    fp16 = float(fp16)
-    logging = float(logging)
+    fp16 = bool(fp16 == 1)
+    logging = bool(logging == 1)
 
     n_gpus = torch.cuda.device_count()
     if n_gpus == 0:

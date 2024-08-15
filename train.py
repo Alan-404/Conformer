@@ -17,7 +17,7 @@ import torch.multiprocessing as mp
 import torchsummary
 
 from processing.processor import ConformerProcessor
-from processing.target import TargetConformerProcessor
+from processing.assessor import ConformerAssessor
 from model.conformer import Conformer
 from evaluation import ConformerCriterion, ConformerMetric
 from dataset import ConformerDataset, ConformerCollate
@@ -25,18 +25,17 @@ from manager import CheckpointManager
 
 from tqdm import tqdm
 from typing import Optional
-import statistics
 import wandb
 
 import fire
 
-def setup(rank: int, world_size: int):
+def setup(rank: int, world_size: int) -> None:
     os.environ['MASTER_ADDR'] = 'localhost'
     os.environ['MASTER_PORT'] = '12355'
-    dist.init_process_group('nccl', world_size=world_size, rank=rank)
-    print(f"Initialize Thread at {rank+1}/{world_size}")
+    dist.init_process_group(backend='nccl', init_method='env://', rank=rank, world_size=world_size)
+    torch.cuda.set_device(rank)
 
-def cleanup():
+def cleanup() -> None:
     dist.destroy_process_group()
 
 def train(
@@ -44,70 +43,81 @@ def train(
         world_size: int,
         # Train Config
         train_path: str,
-        num_train_samples: Optional[int] = None,
-        num_epochs: int = 1,
         train_batch_size: int = 1,
-        lr: float = 7e-5,
-        fp16: bool = False,
+        num_epochs: int = 1,
+        lr: float = 2e-5,
+        set_lr: bool = False,
+        fp16: float = False,
+        num_train_samples: Optional[int] = None,
         # Checkpoint Config
+        checkpoint_folder: str = "./checkpoints",
         checkpoint: Optional[str] = None,
-        saved_folder: str = "./checkpoints",
+        save_checkpoint_after_steps: int = 2000,
+        save_checkpoint_after_epochs: int = 1,
         n_saved_checkpoints: int = 3,
-        saved_checkpoint_after: int = 1,
-        # Valdation Config
+        # Validation Config
         val_path: Optional[str] = None,
         val_batch_size: int = 1,
         num_val_samples: Optional[int] = None,
         # Processor Config
         sampling_rate: int = 16000,
-        num_mels: int = 80,
+        n_mels: int = 80,
         n_fft: int = 400,
+        win_length: Optional[int] = 400,
         hop_length: int = 160,
-        win_length: int = 400,
-        fmin: float = 0.,
-        fmax: float = 8000.,
-        tokenizer_path: str = "./tokenizer/vietnamese.json",
+        fmin: float = 0.0,
+        fmax: Optional[float] = 8000.0,
+        mel_norm: str = "slaney",
+        mel_scale: str = 'slaney',
+        # Assessor Config
+        tokenizer_path: str = "./tokenizers/vi.json",
         pad_token: str = "<PAD>",
         delim_token: str = "|",
         unk_token: str = "<UNK>",
         # Model Config
-        n_conformer_blocks: int = 17,
-        d_model: int = 512,
-        n_heads: int = 8,
+        n_conformer_blocks: int = 16, 
+        d_model: int = 256, 
+        n_heads: int = 4, 
         kernel_size: int = 31,
         lstm_hidden_dim: int = 640,
         n_lstm_layers: int = 1,
         dropout_rate: float = 0.1,
-        # Logger Config
-        logger_project: str = "STT_Conformer",
-        logger_name: Optional[str] = None,
-    ):
-    # assert checkpoint is None or os.path.exists(checkpoint)
-    if os.path.exists(saved_folder) == False:
-        os.makedirs(saved_folder)
-    checkpoint_manager = CheckpointManager(saved_folder, n_saved_checkpoints)
+        # Logging Config
+        logging: bool = True,
+        logging_project: str = "Conformer S2T",
+        logging_name: Optional[str] = None
+    ) -> None:
+    assert os.path.exists(train_path), "Cannot Find the train path"
 
     if world_size > 1:
         setup(rank, world_size)
 
     if rank == 0:
-        wandb.init(project=logger_project, name=logger_name)
+        if logging:
+            wandb.init(project=logging_project, name=logging_name)
 
     processor = ConformerProcessor(
-        sampling_rate=sampling_rate,
+        sample_rate=sampling_rate,
+        n_fft=n_fft,
+        win_length=win_length if win_length is not None else n_fft,
+        hop_length=hop_length,
+        n_mels=n_mels,
+        fmin=fmin,
+        fmax=fmax if fmax is not None else sampling_rate//2,
+        mel_scale=mel_scale,
+        norm=mel_norm
+    )
+
+    assessor = ConformerAssessor(
         tokenizer_path=tokenizer_path,
         pad_token=pad_token,
         delim_token=delim_token,
         unk_token=unk_token
     )
 
-    handler = TargetConformerProcessor(
-        tokenizer_path=tokenizer_path
-    )
-    
     model = Conformer(
-        vocab_size=len(processor.vocab),
-        n_mel_channels=num_mels,
+        vocab_size=len(assessor.dictionary),
+        n_mel_channels=n_mels,
         n_conformer_blocks=n_conformer_blocks,
         d_model=d_model,
         n_heads=n_heads,
@@ -117,206 +127,179 @@ def train(
         dropout_rate=dropout_rate
     )
 
-    if rank == 0:
-        torchsummary.summary(model)
-    
     model.to(rank)
-    optimizer = optim.Adam(model.parameters(), lr=lr, betas=[0.9, 0.98], eps=1e-9)
-    scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max=1000)
-
-    global_steps = 0
-    n_epochs = 0
-    if checkpoint is not None:
-        if os.path.exists(checkpoint):
-            global_steps, n_epochs = checkpoint_manager.load_checkpoint(checkpoint, model, optimizer, scheduler)
-            print(f"Loaded Model from checkpoint: {checkpoint}")
-        else:
-            print("Checkpoint is not found, your model will be randomly initilized weights")
-
     if world_size > 1:
         model = DDP(model, device_ids=[rank])
-    
-    collate_fn = ConformerCollate(processor=processor, handler=handler, training=True)
 
-    train_dataset = ConformerDataset(manifest_path=train_path, processor=processor, num_examples=num_train_samples, training=True)
-    train_sampler = DistributedSampler(dataset=train_dataset, num_replicas=world_size, rank=rank) if world_size > 1 else RandomSampler(train_dataset)
+    optimizer = optim.Adam(params=model.parameters(), lr=lr)
+    scheduler = lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=0.9999)
+
+    checkpoint_manager = CheckpointManager(saved_folder=checkpoint_folder, n_savings=n_saved_checkpoints)
+    if checkpoint is not None and os.path.exists(checkpoint):
+        n_steps, n_epochs = checkpoint_manager.load_checkpoint(checkpoint, model, optimizer, scheduler)
+    else:
+        n_steps, n_epochs = 0, 0
+
+    if set_lr:
+        optimizer.param_groups[0]['lr'] = lr
+
+    collate_fn = ConformerCollate(processor, assessor)
+
+    train_dataset = ConformerDataset(train_path, processor, assessor, num_examples=num_train_samples)
+    train_sampler = DistributedSampler(train_dataset, num_replicas=world_size, rank=rank, shuffle=True) if world_size > 1 else RandomSampler(train_dataset)
     train_dataloader = DataLoader(train_dataset, batch_size=train_batch_size, sampler=train_sampler, collate_fn=collate_fn)
 
+    run_validation = False
     if val_path is not None and os.path.exists(val_path):
-        val_dataset = ConformerDataset(manifest_path=val_path, processor=processor, num_examples=num_val_samples)
-        val_sampler = DistributedSampler(dataset=val_dataset, num_replicas=world_size, rank=rank, shuffle=False) if world_size > 1 else None
-        val_dataloader = DataLoader(train_dataset, batch_size=val_batch_size, sampler=val_sampler, collate_fn=collate_fn, shuffle=(~(world_size > 1)))
-
+        if val_batch_size > train_batch_size:
+            val_batch_size = train_batch_size
+        val_dataset = ConformerDataset(val_path, processor, assessor, num_examples=num_val_samples)
+        val_sampler = DistributedSampler(val_dataset, num_replicas=world_size, rank=rank, shuffle=False) if world_size > 1 else RandomSampler(val_dataset)
+        val_dataloader = DataLoader(val_dataset, batch_size=val_batch_size, sampler=val_sampler, collate_fn=collate_fn)
+        run_validation = True
+    
+    criterion = ConformerCriterion(blank_id=assessor.pad_id)
     scaler = GradScaler(enabled=fp16)
-    criterion = ConformerCriterion(blank_id=processor.pad_id)
-    metric = ConformerMetric()
 
     for epoch in range(num_epochs):
         if world_size > 1:
             train_dataloader.sampler.set_epoch(epoch)
-        
-        if rank == 0:
-            print(f"Epoch {epoch + 1}")
+
+        ctc_loss = 0.0
 
         model.train()
-        train_loss = 0.0
-        for _, (inputs, tokens, input_lengths, token_lengths) in enumerate(tqdm(train_dataloader, leave=False)):
-            inputs = inputs.to(rank)
-            tokens = tokens.to(rank)
-            input_lengths = input_lengths.to(rank)
-            token_lengths = token_lengths.to(rank)
+        for _, (x, y, x_lengths, y_lengths) in enumerate(tqdm(train_dataloader, leave=False)):
+            x = x.to(rank)
+            y = y.to(rank)
+            x_lengths = x_lengths.to(rank)
+            y_lengths = y_lengths.to(rank)
 
             with autocast(enabled=fp16):
-                inputs, input_lengths = model(inputs, input_lengths)
-
+                outputs, x_lengths = model(x, x_lengths)
                 with autocast(enabled=False):
-                    loss = criterion.ctc_loss(inputs, tokens, input_lengths, token_lengths)
+                    loss = criterion.ctc_loss(outputs, y, x_lengths, y_lengths)
                     assert torch.isnan(loss) == False
 
             optimizer.zero_grad()
             scaler.scale(loss).backward()
             scaler.unscale_(optimizer)
-
             scaler.step(optimizer)
 
             scaler.update()
 
-            train_loss += loss
-            global_steps += 1
-        n_epochs += 1
+            ctc_loss += loss
+            n_steps += 1
+
+            if rank == 0 and n_steps % save_checkpoint_after_steps == save_checkpoint_after_steps - 1:
+                checkpoint_manager.save_checkpoint(model, optimizer, scheduler, n_steps, n_epochs)
+        
         scheduler.step()
-        
-        if val_path is not None:
-            model.eval()
-            val_loss = 0.0
-            val_score = 0.0
-            for _, (mels, tokens, mel_lengths, token_lengths) in enumerate(tqdm(val_dataloader, leave=False)):
-                mels = mels.to(rank)
-                tokens = tokens.to(rank)
-                mel_lengths = mel_lengths.to(rank)
-                token_lengths = token_lengths.to(rank)
+        n_epochs += 1
 
-                with torch.no_grad():
-                    with autocast(enabled=fp16):
-                        outputs, output_lengths = model(mels, mel_lengths)
-                
-                loss = criterion.ctc_loss(outputs, tokens, output_lengths, token_lengths).item()
-                wer_score = metric.wer_score(processor.decode_batch(outputs), processor.decode_batch(tokens, group_token=False))
-
-                val_loss += loss
-                val_score += wer_score
-
-        train_loss = train_loss / len(train_dataloader)
-        if val_path is not None:
-            val_loss = val_loss / len(val_dataloader)
-            val_score = val_score / len(val_dataloader)
-        
-        # Gather all Threads for multi-gpu
+        ctc_loss = ctc_loss / len(train_dataloader)
         if world_size > 1:
-            dist.all_reduce(train_loss)
-            if val_path is not None:
-                dist.all_reduce(val_loss)
-                dist.all_reduce(val_score)
+            dist.all_reduce(ctc_loss, dist.ReduceOp.AVG)
         
         if rank == 0:
-            train_loss = train_loss.item() / world_size
             current_lr = optimizer.param_groups[0]['lr']
 
-            if val_path is not None:
-                val_loss = val_loss.item() / world_size
-                val_score = val_score / world_size
+            print(f"CTC Loss: {(ctc_loss.item()):.4f}")
+            print(f"Current Learning Rate: {current_lr}")
 
-            print("--------------------------------")
-            print(f"Train Loss: {(train_loss):.4f}")
-            print("================================")
-            print(f"Current Learning Rate {current_lr}")
-            wandb.log({
-                'train_loss': train_loss,
-                "learning_rate": current_lr
-            }, global_steps)
-            
-            if val_path is not None:
-                print(f"Val Loss: {(val_loss):.4f}")
-                print(f"Val Score: {(val_score):.4f}")
+            if logging:
                 wandb.log({
-                    'val_loss': val_loss,
-                    'val_score': val_score
-                }, global_steps)
+                    'ctc_loss': ctc_loss.item(),
+                    'learning_rate': current_lr
+                }, n_steps)
 
-            print("\n")
+            if n_epochs % save_checkpoint_after_epochs == save_checkpoint_after_epochs - 1:
+                checkpoint_manager.save_checkpoint(model, optimizer, scheduler, n_steps, n_epochs)
 
-            if n_epochs % saved_checkpoint_after == saved_checkpoint_after - 1 or n_epochs == num_epochs - 1:
-                checkpoint_manager.save_checkpoint(model, optimizer, scheduler, global_steps, n_epochs)
+        if run_validation:
+            pass
 
     if world_size > 1:
         cleanup()
+    print("Finish Training")
 
 def main(
         # Train Config
         train_path: str,
-        num_train_samples: Optional[int] = None,
-        num_epochs: int = 1,
         train_batch_size: int = 1,
-        lr: float = 7e-5,
-        fp16: bool = False,
+        num_epochs: int = 1,
+        lr: float = 2e-5,
+        set_lr: bool = False,
+        fp16: float = False,
+        num_train_samples: Optional[int] = None,
         # Checkpoint Config
+        checkpoint_folder: str = "./checkpoints",
         checkpoint: Optional[str] = None,
-        saved_folder: str = "./checkpoints",
+        save_checkpoint_after_steps: int = 2000,
+        save_checkpoint_after_epochs: int = 1,
         n_saved_checkpoints: int = 3,
-        saved_checkpoint_after: int = 1,
-        # Valdation Config
+        # Validation Config
         val_path: Optional[str] = None,
         val_batch_size: int = 1,
         num_val_samples: Optional[int] = None,
         # Processor Config
         sampling_rate: int = 16000,
-        num_mels: int = 80,
+        n_mels: int = 80,
         n_fft: int = 400,
+        win_length: Optional[int] = 400,
         hop_length: int = 160,
-        win_length: int = 400,
-        fmin: float = 0.,
-        fmax: float = 8000.,
-        tokenizer_path: str = "./tokenizer/vietnamese.json",
+        fmin: float = 0.0,
+        fmax: Optional[float] = 8000.0,
+        mel_norm: str = "slaney",
+        mel_scale: str = 'slaney',
+        # Assessor Config
+        tokenizer_path: str = "./tokenizers/vi.json",
         pad_token: str = "<PAD>",
         delim_token: str = "|",
         unk_token: str = "<UNK>",
         # Model Config
-        n_blocks: int = 17,
-        d_model: int = 512,
-        n_heads: int = 8,
+        n_conformer_blocks: int = 17, 
+        d_model: int = 512, 
+        n_heads: int = 8, 
         kernel_size: int = 31,
-        hidden_dim: int = 640,
-        n_layers: int = 1,
+        lstm_hidden_dim: int = 640,
+        n_lstm_layers: int = 1,
         dropout_rate: float = 0.1,
-        # Logger Config
-        logger_project: str = "STT_Conformer",
-        logger_name: Optional[str] = None,
-    ):
-    if torch.cuda.is_available() == False:
-        raise("CUDA is required")
+        # Logging Config
+        logging: bool = True,
+        logging_project: str = "Conformer S2T",
+        logging_name: Optional[str] = None
+    ) -> None:
+
+    fp16 = float(fp16)
+    logging = float(logging)
+
     n_gpus = torch.cuda.device_count()
+    if n_gpus == 0:
+        print("Not Support CPU training")
 
     if n_gpus == 1:
         train(
             0, n_gpus,
-            train_path, num_train_samples, num_epochs, train_batch_size,
-            lr, bool(fp16), checkpoint, saved_folder, n_saved_checkpoints, saved_checkpoint_after,
+            train_path, train_batch_size, num_epochs, lr, set_lr, fp16, num_train_samples,
+            checkpoint_folder, checkpoint, save_checkpoint_after_steps, save_checkpoint_after_epochs, n_saved_checkpoints,
             val_path, val_batch_size, num_val_samples,
-            sampling_rate, num_mels, n_fft, hop_length, win_length, fmin, fmax, tokenizer_path, pad_token, delim_token, unk_token,
-            n_blocks, d_model, n_heads, kernel_size, hidden_dim, n_layers, dropout_rate,
-            logger_project, logger_name
+            sampling_rate, n_mels, n_fft, win_length, hop_length, fmin, fmax, mel_norm, mel_scale,
+            tokenizer_path, pad_token, delim_token, unk_token,
+            n_conformer_blocks, d_model, n_heads, kernel_size, lstm_hidden_dim, n_lstm_layers, dropout_rate,
+            logging, logging_project, logging_name
         )
     else:
         mp.spawn(
-            train,
+            fn=train,
             args=(
                 n_gpus,
-                train_path, num_train_samples, num_epochs, train_batch_size,
-                lr, bool(fp16), checkpoint, saved_folder, n_saved_checkpoints, saved_checkpoint_after,
+                train_path, train_batch_size, num_epochs, lr, set_lr, fp16, num_train_samples,
+                checkpoint_folder, checkpoint, save_checkpoint_after_steps, save_checkpoint_after_epochs, n_saved_checkpoints,
                 val_path, val_batch_size, num_val_samples,
-                sampling_rate, num_mels, n_fft, hop_length, win_length, fmin, fmax, tokenizer_path, pad_token, delim_token, unk_token,
-                n_blocks, d_model, n_heads, kernel_size, hidden_dim, n_layers, dropout_rate,
-                logger_project, logger_name
+                sampling_rate, n_mels, n_fft, win_length, hop_length, fmin, fmax, mel_norm, mel_scale,
+                tokenizer_path, pad_token, delim_token, unk_token,
+                n_conformer_blocks, d_model, n_heads, kernel_size, lstm_hidden_dim, n_lstm_layers, dropout_rate,
+                logging, logging_project, logging_name
             ),
             nprocs=n_gpus,
             join=True

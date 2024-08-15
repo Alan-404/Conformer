@@ -1,18 +1,14 @@
 import os
 import numpy as np
 import json
-from pydub import AudioSegment
 import librosa
-from typing import Union, Optional, List, Tuple, Dict
+from typing import Union, Optional, List, Tuple
 import re
-import pickle
 import torch
 import torch.nn.functional as F
 import librosa
 
-from scipy.io import wavfile
-
-class TargetConformerProcessor:
+class ConformerAssessor:
     def __init__(self, 
                  tokenizer_path: str, pad_token: str = "<PAD>", delim_token: str = "|", unk_token: str = "<UNK>", puncs: str = r"([:./,?!@#$%^&=`~;*\(\)\[\]\"\\])",
                 ) -> None:
@@ -77,13 +73,12 @@ class TargetConformerProcessor:
         return np.array([i for i in intervals if threshold_length_segment_min < (i[1] - i[0]) / self.sampling_rate <= threshold_length_segment_max])
 
     def clean_text(self, sentence: str) -> str:
-        sentence = str(sentence)
-        sentence = re.sub(self.puncs, "", sentence)
+        sentence = re.sub(self.puncs, " ", sentence)
         sentence = re.sub(r"\s\s+", " ", sentence)
         sentence = sentence.strip()
         return sentence
     
-    def slide_graphemes(self, text: str, patterns: List[str], n_grams: int = 4, reverse: bool = True):
+    def slide_graphemes(self, text: str, patterns: List[str], n_grams: int = 4, reverse: bool = False):
         if len(text) == 1:
             if text in patterns:
                 return [text]

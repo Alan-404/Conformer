@@ -16,6 +16,7 @@ class ConformerCriterion:
         
         return self.ctc_criterion(outputs.log_softmax(dim=-1).transpose(0,1), targets, input_lengths, target_lengths)
 
+
 class ConformerMetric:
     def __init__(self) -> None:
         pass

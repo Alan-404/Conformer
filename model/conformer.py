@@ -18,7 +18,6 @@ class Conformer(nn.Module):
                  n_lstm_layers: int = 1,
                  dropout_rate: float = 0.0) -> None:
         super().__init__()
-
         self.encoder = Encoder(n_mel_channels=n_mel_channels, n_blocks=n_conformer_blocks, d_model=d_model, n_heads=n_heads, kernel_size=kernel_size, dropout_rate=dropout_rate)
         self.decoder = Decoder(vocab_size=vocab_size, d_model=d_model, hidden_dim=lstm_hidden_dim, n_layers=n_lstm_layers)
     

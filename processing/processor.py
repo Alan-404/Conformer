@@ -25,7 +25,7 @@ class ConformerProcessor:
                  norm: Optional[str] = "slaney",
                  mel_scale: str = 'slaney',
                  vocab_dictionary: Optional[Dict[str, int]] = None,
-                 device: str = 'cpu') -> None:
+                 device: Union[str, int] = 'cpu') -> None:
         assert mel_scale in ['htk', 'slaney'], "Invalid Mel Scale, Only HTK or Slaney"
         if norm is not None:
             assert norm == 'slaney', "Invalid Norm, we only support Slaney Norm"

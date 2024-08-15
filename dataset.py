@@ -57,7 +57,7 @@ class ConformerCollate:
             signals, graphemes = zip(*batch)
 
             signals, signal_lengths = self.processor(signals)
-            tokens, token_lengths = self.handler(graphemes)
+            tokens, token_lengths = self.assessor(graphemes)
 
             signal_lengths, sorted_indices = torch.sort(signal_lengths, descending=True)
 

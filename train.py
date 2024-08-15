@@ -236,9 +236,10 @@ def train(
         
         if rank == 0:
             current_lr = optimizer.param_groups[0]['lr']
-
+            print(f"Epoch {epoch + 1}")
             print(f"CTC Loss: {(ctc_loss.item()):.4f}")
             print(f"Current Learning Rate: {current_lr}")
+            print("\n")
 
             if logging:
                 wandb.log({

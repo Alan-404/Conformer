@@ -14,8 +14,6 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 import torch.distributed as dist
 import torch.multiprocessing as mp
 
-import torchsummary
-
 from processing.processor import ConformerProcessor
 from processing.assessor import ConformerAssessor
 from model.conformer import Conformer
@@ -37,6 +35,42 @@ def setup(rank: int, world_size: int) -> None:
 
 def cleanup() -> None:
     dist.destroy_process_group()
+
+def validate(
+        rank: int,
+        world_size: int,
+        model: Conformer ,
+        dataloader: DataLoader,
+        criterion: ConformerCriterion,
+        n_steps: int,
+        fp16: float,
+    ) -> None:
+
+    model.eval()
+    for _, (x, y, x_lengths, y_lengths) in enumerate(tqdm(dataloader, leave=False)):
+        x = x.to(rank)
+        y = y.to(rank)
+        x_lengths = x_lengths.to(rank)
+        y_lengths = y_lengths.to(rank)
+
+        with torch.no_grad():
+            with autocast(enabled=fp16):
+                outputs, x_lengths = model(x, x_lengths)
+                with autocast(enabled=False):
+                    loss = criterion.ctc_loss(outputs, y, x_lengths, y_lengths)
+        ctc_loss += loss
+
+    ctc_loss = ctc_loss / len(dataloader)
+    if world_size > 1:
+        dist.all_reduce(ctc_loss, dist.ReduceOp.AVG)
+    
+    if rank == 0:
+        print("Validation:")
+        print(f"Val CTC Loss: {(ctc_loss):.4f}")
+
+        wandb.log({
+            'val_ctc_loss': ctc_loss
+        }, n_steps)
 
 def train(
         rank: int,
@@ -216,7 +250,11 @@ def train(
                 checkpoint_manager.save_checkpoint(model, optimizer, scheduler, n_steps, n_epochs)
 
         if run_validation:
-            pass
+            validate(
+                rank, world_size,
+                model, val_dataloader,
+                criterion, n_steps, fp16
+            )
 
     if world_size > 1:
         cleanup()

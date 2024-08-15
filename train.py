@@ -150,7 +150,7 @@ def train(
     )
 
     model = Conformer(
-        vocab_size=len(assessor.dictionary),
+        vocab_size=len(assessor.vocab),
         n_mel_channels=n_mels,
         n_conformer_blocks=n_conformer_blocks,
         d_model=d_model,

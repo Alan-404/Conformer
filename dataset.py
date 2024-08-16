@@ -54,19 +54,19 @@ class ConformerCollate:
 
     def __call__(self, batch: Tuple[torch.Tensor, List[str]]) -> Union[Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor], Tuple[torch.Tensor, torch.Tensor]]:
         if self.training:
-            signals, graphemes = zip(*batch)
+            audios, graphemes = zip(*batch)
 
-            signals, signal_lengths = self.processor(signals)
+            audios, audio_lengths = self.processor(audios)
             tokens, token_lengths = self.assessor(graphemes)
 
-            signal_lengths, sorted_indices = torch.sort(signal_lengths, descending=True)
+            audio_lengths, sorted_indices = torch.sort(audio_lengths, descending=True)
 
-            signals = signals[sorted_indices]
+            audios = audios[sorted_indices]
             tokens = tokens[sorted_indices]
             token_lengths = token_lengths[sorted_indices]
 
-            return signals, tokens, signal_lengths, token_lengths
+            return audios, tokens, audio_lengths, token_lengths
         else:
-            signals, signal_lengths = self.processor(batch)
-            return signals, signal_lengths
+            audios, audio_lengths = self.processor(batch)
+            return audios, audio_lengths
             

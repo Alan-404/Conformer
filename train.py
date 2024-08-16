@@ -1,12 +1,9 @@
 import os
 
 import torch
-
 import torch.optim as optim
 import torch.optim.lr_scheduler as lr_scheduler
-
 from torch.cuda.amp import GradScaler, autocast
-
 from torch.utils.data import DataLoader
 from torch.utils.data import RandomSampler
 from torch.utils.data.distributed import DistributedSampler
@@ -32,6 +29,7 @@ def setup(rank: int, world_size: int) -> None:
     os.environ['MASTER_PORT'] = '12355'
     dist.init_process_group(backend='nccl', init_method='env://', rank=rank, world_size=world_size)
     torch.cuda.set_device(rank)
+    print(f"Initialized Thread {rank+1}/{world_size}")
 
 def cleanup() -> None:
     dist.destroy_process_group()

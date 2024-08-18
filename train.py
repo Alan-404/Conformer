@@ -130,6 +130,7 @@ def train(
         if logging:
             wandb.init(project=logging_project, name=logging_name)
         torchsummary.summary(model)
+        print("\n")
 
     processor = ConformerProcessor(
         sample_rate=sampling_rate,

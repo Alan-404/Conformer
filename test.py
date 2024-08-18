@@ -55,7 +55,6 @@ def test(
         kernel_size: int = 31,
         lstm_hidden_dim: int = 640,
         n_lstm_layers: int = 1,
-        dropout_rate: float = 0.0,
         # Saved Result Folder
         saved_folder: Optional[str] = None
     ) -> None:
@@ -92,7 +91,7 @@ def test(
         kernel_size=kernel_size,
         lstm_hidden_dim=lstm_hidden_dim,
         n_lstm_layers=n_lstm_layers,
-        dropout_rate=dropout_rate
+        dropout_rate=0.0
     )
 
     model.load_state_dict(torch.load(checkpoint, map_location='cpu')['model'])

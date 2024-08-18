@@ -11,6 +11,8 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 import torch.distributed as dist
 import torch.multiprocessing as mp
 
+import torchsummary
+
 from processing.processor import ConformerProcessor
 from processing.assessor import ConformerAssessor
 from model.conformer import Conformer
@@ -127,6 +129,7 @@ def train(
     if rank == 0:
         if logging:
             wandb.init(project=logging_project, name=logging_name)
+        torchsummary.summary(model)
 
     processor = ConformerProcessor(
         sample_rate=sampling_rate,

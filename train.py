@@ -206,6 +206,8 @@ def train(
             x_lengths = x_lengths.to(rank)
             y_lengths = y_lengths.to(rank)
 
+            print(len(train_dataloader))
+
             with autocast(enabled=fp16):
                 outputs, x_lengths = model(x, x_lengths)
                 with autocast(enabled=False):
@@ -228,7 +230,6 @@ def train(
         scheduler.step()
         n_epochs += 1
 
-        print(len(train_dataloader))
         ctc_loss = ctc_loss / len(train_dataloader)
         if world_size > 1:
             dist.all_reduce(ctc_loss, dist.ReduceOp.AVG)

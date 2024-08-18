@@ -126,12 +126,6 @@ def train(
     if world_size > 1:
         setup(rank, world_size)
 
-    if rank == 0:
-        if logging:
-            wandb.init(project=logging_project, name=logging_name)
-        torchsummary.summary(model)
-        print("\n")
-
     processor = ConformerProcessor(
         sample_rate=sampling_rate,
         n_fft=n_fft,
@@ -162,6 +156,13 @@ def train(
         n_lstm_layers=n_lstm_layers,
         dropout_rate=dropout_rate
     )
+
+    if rank == 0:
+        if logging:
+            wandb.init(project=logging_project, name=logging_name)
+        torchsummary.summary(model)
+        model.train()
+        print("\n")
 
     model.to(rank)
     if world_size > 1:

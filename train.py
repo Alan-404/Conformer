@@ -206,8 +206,6 @@ def train(
             x_lengths = x_lengths.to(rank)
             y_lengths = y_lengths.to(rank)
 
-            print(len(train_dataloader))
-
             with autocast(enabled=fp16):
                 outputs, x_lengths = model(x, x_lengths)
                 with autocast(enabled=False):
@@ -236,7 +234,8 @@ def train(
         
         if rank == 0:
             current_lr = optimizer.param_groups[0]['lr']
-            print(f"Epoch {epoch + 1}")
+            print(f"Epoch {epoch + 1}:")
+            print("==================================")
             print(f"CTC Loss: {(ctc_loss.item()):.4f}")
             print(f"Current Learning Rate: {current_lr}")
 

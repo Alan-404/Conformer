@@ -228,6 +228,7 @@ def train(
         scheduler.step()
         n_epochs += 1
 
+        print(len(train_dataloader))
         ctc_loss = ctc_loss / len(train_dataloader)
         if world_size > 1:
             dist.all_reduce(ctc_loss, dist.ReduceOp.AVG)
@@ -237,7 +238,6 @@ def train(
             print(f"Epoch {epoch + 1}")
             print(f"CTC Loss: {(ctc_loss.item()):.4f}")
             print(f"Current Learning Rate: {current_lr}")
-            print("\n")
 
             if logging:
                 wandb.log({
@@ -254,6 +254,9 @@ def train(
                 model, val_dataloader,
                 criterion, n_steps, fp16
             )
+
+        if rank == 0:
+            print("\n")
 
     if world_size > 1:
         cleanup()

@@ -15,6 +15,7 @@ MAX_AUDIO_VALUE = 32768.0
 
 class ConformerProcessor:
     def __init__(self, 
+                 # Audio Config
                  sample_rate: int = 16000, 
                  n_fft: int = 400, 
                  win_length: int = 400, 
@@ -24,8 +25,15 @@ class ConformerProcessor:
                  fmax: float = 8000.0,
                  norm: Optional[str] = "slaney",
                  mel_scale: str = 'slaney',
-                 vocab_dictionary: Optional[Dict[str, int]] = None,
+                 # Text Config
+                 tokenizer_path: Optional[str] = None,
+                 pad_token: str = "<PAD>",
+                 delim_token: str = "|",
+                 unk_token: str = "<UNK>",
+                 puncs: str = r"([:./,?!@#$%^&=`~;*\(\)\[\]\"\\])",
+                 # Device Config
                  device: Union[str, int] = 'cpu') -> None:
+        # Audio Setup
         assert mel_scale in ['htk', 'slaney'], "Invalid Mel Scale, Only HTK or Slaney"
         if norm is not None:
             assert norm == 'slaney', "Invalid Norm, we only support Slaney Norm"
@@ -46,10 +54,12 @@ class ConformerProcessor:
             mel_scale=mel_scale
         ).to(device)
 
-        self.vocab_dictionary = vocab_dictionary
+        # Text Setup
+        
 
         self.device = device
 
+    # Audio Functions 
     def read_audio(self, path: str) -> torch.Tensor:
         sr, signal = wavfile.read(path)
         signal = signal / MAX_AUDIO_VALUE
@@ -111,6 +121,69 @@ class ConformerProcessor:
         
         return mel
     
+    # Text Functions
+    def sort_pattern(self, patterns: List[str]):
+        patterns = sorted(patterns, key=len)
+        patterns.reverse()
+
+        return patterns
+    
+    def sentence2graphemes(self, sentence: str):
+        sentence = self.clean_text(sentence.upper())
+        words = sentence.split(" ")
+        graphemes = []
+
+        length = len(words)
+
+        for index, word in enumerate(words):
+            graphemes += self.word2graphemes(self.spec_replace(word))
+            if index != length - 1:
+                graphemes.append(self.delim_token)
+
+        return graphemes
+    
+    def slide_graphemes(self, text: str, patterns: List[str], n_grams: int = 4, reverse: bool = False):
+        if len(text) == 1:
+            if text in patterns:
+                return [text]
+            return [self.unk_token]
+        if reverse:
+            text = [text[i] for i in range(len(text) - 1, -1, -1)]
+            text = "".join(text)
+        graphemes = []
+        start = 0
+        if len(text) - 1 < n_grams:
+            n_grams = len(text)
+        num_steps = n_grams
+        while start < len(text):
+            found = True
+            item = text[start:start + num_steps]
+
+            if reverse:
+                item = [item[i] for i in range(len(item) - 1, -1, -1)]
+                item = "".join(item)
+                
+            if item in patterns:
+                graphemes.append(item)
+            elif num_steps == 1:
+                graphemes.append(self.unk_token)
+            else:
+                found = False
+
+            if found:
+                start += num_steps
+                if len(text[start:]) < n_grams:
+                    num_steps = len(text[start:])
+                else:
+                    num_steps = n_grams
+            else:
+                num_steps -= 1
+
+        if reverse:
+            graphemes = [graphemes[i] for i in range(len(graphemes) - 1, -1, -1)]
+
+        return graphemes
+
     def __call__(self, audios: List[torch.Tensor]) -> Tuple[torch.Tensor, torch.Tensor]:
         padded_audios = []
         lengths = []

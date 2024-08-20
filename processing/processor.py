@@ -7,7 +7,7 @@ import pickle
 import torch
 import torch.nn.functional as F
 import librosa
-
+import json
 from scipy.io import wavfile
 from torchaudio.transforms import MelSpectrogram
 
@@ -55,7 +55,24 @@ class ConformerProcessor:
         ).to(device)
 
         # Text Setup
-        
+        with open(tokenizer_path, 'r', encoding='utf8') as file:
+            patterns = json.load(file)
+
+        self.slide_patterns = self.sort_pattern(
+            patterns['single_vowel'] + patterns['composed_vowel'] + patterns['single_consonant'] + patterns['no_split']
+        )
+        self.vocab = [pad_token] + patterns['single_vowel'] + patterns['composed_vowel'] + patterns['single_consonant'] + patterns['no_split'] + [delim_token, unk_token]
+
+        self.pad_token = pad_token
+        self.delim_token = delim_token
+        self.unk_token = unk_token
+
+        self.pad_id = self.find_token_id(pad_token)
+        self.delim_id = self.find_token_id(delim_token)
+        self.unk_id = self.find_token_id(unk_token)
+
+        self.puncs = puncs
+        self.replace_dict = patterns['replace']
 
         self.device = device
 
@@ -128,6 +145,9 @@ class ConformerProcessor:
 
         return patterns
     
+    def word2graphemes(self, text: str, n_grams: int = 3, reverse: bool = False) -> List[str]:
+        return self.slide_graphemes(text, self.slide_patterns, reverse=reverse, n_grams=n_grams)
+    
     def sentence2graphemes(self, sentence: str):
         sentence = self.clean_text(sentence.upper())
         words = sentence.split(" ")
@@ -141,6 +161,16 @@ class ConformerProcessor:
                 graphemes.append(self.delim_token)
 
         return graphemes
+    
+    def spec_replace(self, word: str) -> str:
+        for key in self.replace_dict:
+            arr = word.split(key)
+            if len(arr) == 2:
+                if arr[1] in self.single_vowels:
+                    return word
+                else:
+                    return word.replace(key, self.replace_dict[key])
+        return word
     
     def slide_graphemes(self, text: str, patterns: List[str], n_grams: int = 4, reverse: bool = False):
         if len(text) == 1:
@@ -183,7 +213,14 @@ class ConformerProcessor:
             graphemes = [graphemes[i] for i in range(len(graphemes) - 1, -1, -1)]
 
         return graphemes
+    
+    def find_token_id(self, token: str) -> int:
+        if token in self.vocab:
+            return self.vocab.index(token)
+        return self.vocab.index(self.unk_token)
 
+
+    # Call Functions
     def __call__(self, audios: List[torch.Tensor]) -> Tuple[torch.Tensor, torch.Tensor]:
         padded_audios = []
         lengths = []

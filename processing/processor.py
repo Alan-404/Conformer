@@ -55,24 +55,46 @@ class ConformerProcessor:
         ).to(device)
 
         # Text Setup
-        with open(tokenizer_path, 'r', encoding='utf8') as file:
-            patterns = json.load(file)
+        if tokenizer_path is not None:
+            with open(tokenizer_path, 'r', encoding='utf8') as file:
+                patterns = json.load(file)
 
-        self.slide_patterns = self.sort_pattern(
-            patterns['single_vowel'] + patterns['composed_vowel'] + patterns['single_consonant'] + patterns['no_split']
-        )
-        self.vocab = [pad_token] + patterns['single_vowel'] + patterns['composed_vowel'] + patterns['single_consonant'] + patterns['no_split'] + [delim_token, unk_token]
+            self.slide_patterns = self.sort_pattern(
+                patterns['single_vowel'] + patterns['composed_vowel'] + patterns['single_consonant'] + patterns['no_split']
+            )
+            self.dictionary = patterns['dictionary']
 
-        self.pad_token = pad_token
-        self.delim_token = delim_token
-        self.unk_token = unk_token
+            self.single_vowels = patterns['single_vowel']
+            self.composed_vowels = patterns['composed_vowel']
 
-        self.pad_id = self.find_token_id(pad_token)
-        self.delim_id = self.find_token_id(delim_token)
-        self.unk_id = self.find_token_id(unk_token)
+            self.voiced_special = patterns['voiced_special']
+            self.voiceless_special = patterns['voiceless_special']
 
-        self.puncs = puncs
-        self.replace_dict = patterns['replace']
+            self.single_consonants = patterns['single_consonant']
+            self.no_split = patterns['no_split']
+            self.voiced = patterns['voiced']
+            self.voiceless = patterns['voiceless']
+                
+            self.single_suffixes = patterns['single_suffix']
+            self.composed_suffixes = patterns['composed_suffix']
+            self.no_split_suffixes = patterns['no_split_suffix']
+
+            self.short_items = patterns['short_item']
+
+            self.grammar = patterns['grammar']
+
+            self.replace_dict = patterns['replace']
+            self.reverse_replace = {v: k for k, v in self.replace_dict.items()}
+
+            self.delim_token = delim_token
+            self.unk_token = unk_token
+            self.pad_token = pad_token
+
+            self.vocab = [pad_token] + patterns['single_vowel'] + patterns['composed_vowel'] + patterns['single_consonant'] + patterns['no_split'] + patterns['voiced'] + patterns['voiceless'] + patterns['voiced_special'] + patterns['voiceless_special'] + patterns['exceptions'] + patterns['short_item'] + patterns['no_split_suffix'] + [delim_token, unk_token]
+
+            self.pad_id = self.find_token_id(pad_token)
+            self.unk_id = self.find_token_id(unk_token)
+            self.delim_id = self.find_token_id(delim_token)
 
         self.device = device
 
@@ -221,6 +243,8 @@ class ConformerProcessor:
 
 
     # Call Functions
+    def as_target(self, graphemes: List[List[str]]) -> Tuple[torch.Tensor, torch.Tensor]:
+        pass
     def __call__(self, audios: List[torch.Tensor]) -> Tuple[torch.Tensor, torch.Tensor]:
         padded_audios = []
         lengths = []

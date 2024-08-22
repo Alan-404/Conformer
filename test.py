@@ -9,7 +9,7 @@ from dataset import ConformerDataset, ConformerCollate
 from processing.processor import ConformerProcessor
 from processing.lm import KenLanguageModel
 from tqdm import tqdm
-from typing import Optional
+from typing import Optional, Union
 from evaluation import ConformerMetric
 
 import fire
@@ -46,7 +46,7 @@ def test(
         # Result Config
         saved_result_path: Optional[str] = None,
         # Device
-        device: str = 'cuda'
+        device: Union[str, int] = 'cuda'
     ):
 
     assert os.path.exists(test_path) and os.path.exists(checkpoint)

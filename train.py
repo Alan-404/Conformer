@@ -14,7 +14,6 @@ import torch.multiprocessing as mp
 import torchsummary
 
 from processing.processor import ConformerProcessor
-from processing.assessor import ConformerAssessor
 from model.conformer import Conformer
 from evaluation import ConformerCriterion, ConformerMetric
 from dataset import ConformerDataset, ConformerCollate
@@ -93,7 +92,7 @@ def train(
         val_path: Optional[str] = None,
         val_batch_size: int = 1,
         num_val_samples: Optional[int] = None,
-        # Processor Config
+        # Audio Config
         sampling_rate: int = 16000,
         n_mels: int = 80,
         n_fft: int = 400,
@@ -103,7 +102,7 @@ def train(
         fmax: Optional[float] = 8000.0,
         mel_norm: str = "slaney",
         mel_scale: str = 'slaney',
-        # Assessor Config
+        # Text Config
         tokenizer_path: str = "./tokenizers/vi.json",
         pad_token: str = "<PAD>",
         delim_token: str = "|",
@@ -135,10 +134,7 @@ def train(
         fmin=fmin,
         fmax=fmax if fmax is not None else sampling_rate//2,
         mel_scale=mel_scale,
-        norm=mel_norm
-    )
-
-    assessor = ConformerAssessor(
+        norm=mel_norm,
         tokenizer_path=tokenizer_path,
         pad_token=pad_token,
         delim_token=delim_token,
@@ -146,7 +142,7 @@ def train(
     )
 
     model = Conformer(
-        vocab_size=len(assessor.vocab),
+        vocab_size=len(processor.vocab),
         n_mel_channels=n_mels,
         n_conformer_blocks=n_conformer_blocks,
         d_model=d_model,
@@ -180,9 +176,9 @@ def train(
     if set_lr:
         optimizer.param_groups[0]['lr'] = lr
 
-    collate_fn = ConformerCollate(processor, assessor)
+    collate_fn = ConformerCollate(processor, training=True)
 
-    train_dataset = ConformerDataset(train_path, processor, assessor, num_examples=num_train_samples)
+    train_dataset = ConformerDataset(train_path, processor, training=True, num_examples=num_train_samples)
     train_sampler = DistributedSampler(train_dataset, num_replicas=world_size, rank=rank, shuffle=True) if world_size > 1 else RandomSampler(train_dataset)
     train_dataloader = DataLoader(train_dataset, batch_size=train_batch_size, sampler=train_sampler, collate_fn=collate_fn)
 
@@ -190,12 +186,12 @@ def train(
     if val_path is not None and os.path.exists(val_path):
         if val_batch_size > train_batch_size:
             val_batch_size = train_batch_size
-        val_dataset = ConformerDataset(val_path, processor, assessor, num_examples=num_val_samples)
+        val_dataset = ConformerDataset(val_path, processor, training=True, num_examples=num_val_samples)
         val_sampler = DistributedSampler(val_dataset, num_replicas=world_size, rank=rank, shuffle=False) if world_size > 1 else RandomSampler(val_dataset)
         val_dataloader = DataLoader(val_dataset, batch_size=val_batch_size, sampler=val_sampler, collate_fn=collate_fn)
         run_validation = True
     
-    criterion = ConformerCriterion(blank_id=assessor.pad_id)
+    criterion = ConformerCriterion(blank_id=processor.pad_id)
     scaler = GradScaler(enabled=fp16)
 
     for epoch in range(num_epochs):

@@ -2,13 +2,14 @@ import os
 import numpy as np
 from pydub import AudioSegment
 import librosa
-from typing import Union, Optional, List, Tuple, Dict
+from typing import Union, Optional, List, Tuple
 import pickle
 import torch
 import torch.nn.functional as F
 import librosa
 import json
 from scipy.io import wavfile
+import re
 from torchaudio.transforms import MelSpectrogram
 
 MAX_AUDIO_VALUE = 32768.0
@@ -96,6 +97,8 @@ class ConformerProcessor:
             self.unk_id = self.find_token_id(unk_token)
             self.delim_id = self.find_token_id(delim_token)
 
+            self.puncs = puncs
+
         self.device = device
 
     # Audio Functions 
@@ -111,9 +114,7 @@ class ConformerProcessor:
     def read_pickle(self, path: str) -> np.ndarray:
         with open(path, 'rb') as file:
             signal = pickle.load(file)
-
         signal = librosa.resample(y=signal, orig_sr=8000, target_sr=self.sample_rate)
-
         return signal
     
     def read_pcm(self, path: str) -> np.ndarray:
@@ -169,6 +170,18 @@ class ConformerProcessor:
     
     def word2graphemes(self, text: str, n_grams: int = 3, reverse: bool = False) -> List[str]:
         return self.slide_graphemes(text, self.slide_patterns, reverse=reverse, n_grams=n_grams)
+    
+    def graphemes2tokens(self, graphemes: List[str]) -> List[int]:
+        tokens = []
+        for grapheme in graphemes:
+            tokens.append(self.find_token_id(grapheme))
+        return tokens
+    
+    def clean_text(self, sentence: str) -> str:
+        sentence = re.sub(self.puncs, " ", sentence)
+        sentence = re.sub(r"\s\s+", " ", sentence)
+        sentence = sentence.strip()
+        return sentence
     
     def sentence2graphemes(self, sentence: str):
         sentence = self.clean_text(sentence.upper())
@@ -241,10 +254,32 @@ class ConformerProcessor:
             return self.vocab.index(token)
         return self.vocab.index(self.unk_token)
 
-
     # Call Functions
-    def as_target(self, graphemes: List[List[str]]) -> Tuple[torch.Tensor, torch.Tensor]:
-        pass
+    def as_target(self, list_graphemes: List[List[str]]) -> Tuple[torch.Tensor, torch.Tensor]:
+        list_tokens = []
+        max_length = 0
+        lengths = []
+
+        for graphemes in list_graphemes:
+            length = len(graphemes)
+            lengths.append(length)
+
+            if length > max_length:
+                max_length = length
+
+            list_tokens.append(self.graphemes2tokens(graphemes))
+
+        padded_tokens = []
+        for index, tokens in enumerate(list_tokens):
+            padded_tokens.append(
+                F.pad(tokens, pad=(0, max_length - lengths[index]), value=self.pad_id)
+            )
+        
+        padded_tokens = torch.stack(padded_tokens)
+        lengths = torch.tensor(lengths)
+
+        return padded_tokens, lengths
+
     def __call__(self, audios: List[torch.Tensor]) -> Tuple[torch.Tensor, torch.Tensor]:
         padded_audios = []
         lengths = []

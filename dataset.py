@@ -1,24 +1,34 @@
+import os
 from torch.utils.data import Dataset
 from processing.processor import ConformerProcessor
-from processing.assessor import ConformerAssessor
 
 from typing import Optional, Tuple, List, Union, Dict
 import torch
 
+import pyarrow as pa
 import pyarrow.parquet as pq
-
+import pandas as pd
 from torchaudio.transforms import SpecAugment
 
 class ConformerDataset(Dataset):
-    def __init__(self, manifest_path: str, processor: ConformerProcessor, assessor: Optional[ConformerAssessor] = None, num_examples: Optional[int] = None) -> None:
+    def __init__(self, manifest: Union[str, pd.DataFrame, pa.Table], processor: ConformerProcessor, training: bool = False, num_examples: Optional[int] = None) -> None:
         super().__init__()
-        self.table = pq.read_table(manifest_path)
+        if isinstance(manifest, str):
+            if os.path.splitext(manifest) == '.parquet':
+                self.table = pq.read_table(manifest)
+            else:
+                self.table = pa.Table.from_pandas(pd.read_csv(manifest))
+        else:
+            if isinstance(manifest, pd.DataFrame):
+                self.table = pa.Table.from_pandas(manifest)
+            else:
+                self.table = manifest
+        
         if num_examples is not None:
             self.table = self.table.slice(0, num_examples)
 
         self.processor = processor
-        self.training = assessor is not None
-        self.assessor = assessor
+        self.training = training
 
     def __len__(self) -> int:
         return self.table.num_rows
@@ -26,21 +36,21 @@ class ConformerDataset(Dataset):
     def get_row_by_index(self, index: int) -> Dict[str, str]:
         return {col: self.table[col][index].as_py() for col in self.table.column_names}
 
-    def __getitem__(self, index: int) -> Tuple[torch.Tensor, str]:
+    def __getitem__(self, index: int) -> Union[Tuple[torch.Tensor, str], str]:
         row = self.get_row_by_index(index)
-
         path = row['path']
         audio = self.processor.load_audio(path)
 
-        text = row['text'].split(" ")
-        
-        return audio, text
+        if self.training:
+            text = row['text'].split(" ")
+            return audio, text
+        else:
+            return path
 
 class ConformerCollate:
-    def __init__(self, processor: ConformerProcessor, assessor: Optional[ConformerAssessor] = None) -> None:
+    def __init__(self, processor: ConformerProcessor, training: bool = False) -> None:
         self.processor = processor
-        self.training = assessor is not None
-        self.assessor = assessor
+        self.training = training
 
         if self.training:
             self.augment = SpecAugment(
@@ -57,7 +67,7 @@ class ConformerCollate:
             audios, graphemes = zip(*batch)
 
             audios, audio_lengths = self.processor(audios)
-            tokens, token_lengths = self.assessor(graphemes)
+            tokens, token_lengths = self.processor.as_target(graphemes)
 
             audio_lengths, sorted_indices = torch.sort(audio_lengths, descending=True)
 
@@ -68,4 +78,6 @@ class ConformerCollate:
             return audios, tokens, audio_lengths, token_lengths
         else:
             audios, audio_lengths = self.processor(batch)
+            audio_lengths, sorted_indices = torch.sort(audio_lengths, descending=True)
+            audios = audios[sorted_indices]
             return audios, audio_lengths

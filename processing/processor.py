@@ -132,11 +132,6 @@ class ConformerProcessor:
     
     def split_segment(self, signal: torch.Tensor, start: float, end: float):
         return signal[int(start * self.sample_rate) : int(end * self.sample_rate)]
-
-    def load_audio(self, path: str) -> torch.Tensor:
-        signal = self.read_audio(path)
-        signal = torch.tensor(signal, dtype=torch.float).to(self.device)
-        return signal
     
     def mel_spectrogram(self, signal: torch.Tensor) -> Union[torch.Tensor, np.ndarray]:
         mel = self.__mel_spectrogram(signal)

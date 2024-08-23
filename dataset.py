@@ -39,7 +39,7 @@ class ConformerDataset(Dataset):
     def __getitem__(self, index: int) -> Union[Tuple[torch.Tensor, str], str]:
         row = self.get_row_by_index(index)
         path = row['path']
-        audio = self.processor.load_audio(path)
+        audio = self.processor.read_audio(path)
 
         if self.training:
             text = row['text'].split(" ")

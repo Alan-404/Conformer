@@ -104,6 +104,7 @@ def test(
     labels = df['text'].to_list()
     for i in range(len(labels)):
         labels[i] = str(labels[i]).upper()
+    
     for _, (inputs, lengths) in enumerate(tqdm(dataloader, leave=False)):
         inputs = inputs.to(device)
         lengths = lengths.to(device)

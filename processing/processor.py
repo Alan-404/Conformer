@@ -133,24 +133,12 @@ class ConformerProcessor:
     def split_segment(self, signal: torch.Tensor, start: float, end: float):
         return signal[int(start * self.sample_rate) : int(end * self.sample_rate)]
 
-    def load_audio(self, path: str, start: Optional[float] = None, end: Optional[float] = None, role: Optional[int] = None) -> torch.Tensor:
-        if ".pickle" in path:
-            signal = self.read_pickle(path)
-        elif ".pcm" in path:
-            signal = self.read_pcm(path)
-        else:
-            signal = self.read_signal(path, role)
-
-        if start is not None and end is not None:
-            signal = self.split_segment(signal, start, end)
-
-        signal = torch.tensor(signal, dtype=torch.float)
-
+    def load_audio(self, path: str) -> torch.Tensor:
+        signal = self.read_audio(path)
+        signal = torch.tensor(signal, dtype=torch.float).to(self.device)
         return signal
     
     def mel_spectrogram(self, signal: torch.Tensor) -> Union[torch.Tensor, np.ndarray]:
-        print(signal.device)
-        
         mel = self.__mel_spectrogram(signal)
         mel = torch.log(torch.clamp(mel, min=1e-5))
         return mel

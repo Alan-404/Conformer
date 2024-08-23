@@ -15,7 +15,7 @@ import torchsummary
 
 from processing.processor import ConformerProcessor
 from model.conformer import Conformer
-from evaluation import ConformerCriterion, ConformerMetric
+from evaluation import ConformerCriterion
 from dataset import ConformerDataset, ConformerCollate
 from manager import CheckpointManager
 

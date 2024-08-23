@@ -162,7 +162,7 @@ class ConformerProcessor:
         return mel
     
     # Text Functions
-    def sort_pattern(self, patterns: List[str]):
+    def sort_pattern(self, patterns: List[str]) -> List[str]:
         patterns = sorted(patterns, key=len)
         patterns.reverse()
 
@@ -171,11 +171,16 @@ class ConformerProcessor:
     def word2graphemes(self, text: str, n_grams: int = 3, reverse: bool = False) -> List[str]:
         return self.slide_graphemes(text, self.slide_patterns, reverse=reverse, n_grams=n_grams)
     
-    def graphemes2tokens(self, graphemes: List[str]) -> List[int]:
+    def graphemes2tokens(self, graphemes: List[str]) -> torch.Tensor:
         tokens = []
         for grapheme in graphemes:
             tokens.append(self.find_token_id(grapheme))
-        return tokens
+        return torch.tensor(tokens)
+    
+    def sentence2tokens(self, sentence: str) -> torch.Tensor:
+        graphemes = self.sentence2graphemes(sentence)
+        tokens = self.graphemes2tokens(graphemes)
+        return tokens.to(self.device)
     
     def clean_text(self, sentence: str) -> str:
         sentence = re.sub(self.puncs, " ", sentence)
@@ -272,11 +277,11 @@ class ConformerProcessor:
         padded_tokens = []
         for index, tokens in enumerate(list_tokens):
             padded_tokens.append(
-                F.pad(torch.tensor(tokens), pad=(0, max_length - lengths[index]), value=self.pad_id)
+                F.pad(tokens, pad=(0, max_length - lengths[index]), value=self.pad_id)
             )
         
         padded_tokens = torch.stack(padded_tokens)
-        lengths = torch.tensor(lengths)
+        lengths = torch.tensor(lengths).to(self.device)
 
         return padded_tokens, lengths
 
@@ -297,6 +302,6 @@ class ConformerProcessor:
             )
 
         mels = self.mel_spectrogram(torch.stack(padded_audios))
-        lengths = torch.tensor(lengths) // self.hop_length + 1
+        lengths = (torch.tensor(lengths).to(self.device) // self.hop_length) + 1
 
         return mels, lengths

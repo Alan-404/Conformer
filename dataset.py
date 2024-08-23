@@ -48,8 +48,9 @@ class ConformerDataset(Dataset):
             return path
 
 class ConformerCollate:
-    def __init__(self, processor: ConformerProcessor, training: bool = False) -> None:
+    def __init__(self, processor: ConformerProcessor, device: Union[str, int] = 'cpu', training: bool = False) -> None:
         self.processor = processor
+        self.device = device
         self.training = training
 
         if self.training:
@@ -60,7 +61,7 @@ class ConformerCollate:
                 freq_mask_param=35,
                 p=0.05,
                 zero_masking=True
-            )
+            ).to(self.device)
 
     def __call__(self, batch: Tuple[torch.Tensor, List[str]]) -> Union[Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor], Tuple[torch.Tensor, torch.Tensor]]:
         if self.training:

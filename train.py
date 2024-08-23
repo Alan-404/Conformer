@@ -138,7 +138,8 @@ def train(
         tokenizer_path=tokenizer_path,
         pad_token=pad_token,
         delim_token=delim_token,
-        unk_token=unk_token
+        unk_token=unk_token,
+        device=rank
     )
 
     model = Conformer(
@@ -176,7 +177,7 @@ def train(
     if set_lr:
         optimizer.param_groups[0]['lr'] = lr
 
-    collate_fn = ConformerCollate(processor, training=True)
+    collate_fn = ConformerCollate(processor, device=rank, training=True)
 
     train_dataset = ConformerDataset(train_path, processor, training=True, num_examples=num_train_samples)
     train_sampler = DistributedSampler(train_dataset, num_replicas=world_size, rank=rank, shuffle=True) if world_size > 1 else RandomSampler(train_dataset)

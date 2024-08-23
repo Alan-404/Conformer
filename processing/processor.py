@@ -148,17 +148,11 @@ class ConformerProcessor:
 
         return signal
     
-    def mel_spectrogram(self, signal: Union[torch.Tensor, np.ndarray]) -> Union[torch.Tensor, np.ndarray]:
-        is_numpy = False
-        if isinstance(signal, np.ndarray):
-            is_numpy = True
-            signal = torch.tensor(signal, dtype=torch.float)
+    def mel_spectrogram(self, signal: torch.Tensor) -> Union[torch.Tensor, np.ndarray]:
+        print(signal.device)
         
         mel = self.__mel_spectrogram(signal)
         mel = torch.log(torch.clamp(mel, min=1e-5))
-        if is_numpy:
-            mel = mel.numpy()
-        
         return mel
     
     # Text Functions

@@ -111,7 +111,7 @@ def test(
 
         with torch.inference_mode():
             outputs, lengths = model(inputs, lengths)
-            predicts += lm.batch_decode_beam_search(outputs.cpu(), lengths.cpu())
+            predicts += lm.decode_batch(outputs.cpu().numpy(), lengths.cpu().numpy())
         
     print(f"WER Score: {evaluator.wer_score(predicts, labels)}")
     print(f"CER Score: {evaluator.cer_score(predicts, labels)}")

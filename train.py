@@ -47,10 +47,10 @@ def validate(
 
     model.eval()
     for _, (x, y, x_lengths, y_lengths) in enumerate(tqdm(dataloader, leave=False)):
-        x = x.to(rank)
-        y = y.to(rank)
-        x_lengths = x_lengths.to(rank)
-        y_lengths = y_lengths.to(rank)
+        # x = x.to(rank)
+        # y = y.to(rank)
+        # x_lengths = x_lengths.to(rank)
+        # y_lengths = y_lengths.to(rank)
 
         with torch.no_grad():
             with autocast(enabled=fp16):

@@ -152,7 +152,7 @@ class ConformerProcessor:
         tokens = []
         for grapheme in graphemes:
             tokens.append(self.find_token_id(grapheme))
-        return torch.tensor(tokens)
+        return torch.tensor(tokens).to(self.device)
     
     def sentence2tokens(self, sentence: str) -> torch.Tensor:
         graphemes = self.sentence2graphemes(sentence)

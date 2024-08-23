@@ -110,25 +110,6 @@ class ConformerProcessor:
             signal = librosa.resample(signal, orig_sr=sr, target_sr=self.sample_rate)
         
         return torch.tensor(signal, dtype=torch.float).to(self.device)
-
-    def read_pickle(self, path: str) -> np.ndarray:
-        with open(path, 'rb') as file:
-            signal = pickle.load(file)
-        signal = librosa.resample(y=signal, orig_sr=8000, target_sr=self.sample_rate)
-        return signal
-    
-    def read_pcm(self, path: str) -> np.ndarray:
-        audio = AudioSegment.from_file(path, frame_rate=8000, channels=1, sample_width=2).set_frame_rate(self.sample_rate).get_array_of_samples()
-        return np.array(audio).astype(np.float64) / MAX_AUDIO_VALUE
-    
-    def read_signal(self, path: str, role: Optional[int] = None) -> np.ndarray:
-        if role is not None:
-            signal, _ = librosa.load(path, sr=self.sample_rate, mono=False)
-            signal = signal[role]
-        else:
-            signal, _ = librosa.load(path, sr=self.sample_rate, mono=True)
-
-        return signal
     
     def split_segment(self, signal: torch.Tensor, start: float, end: float):
         return signal[int(start * self.sample_rate) : int(end * self.sample_rate)]

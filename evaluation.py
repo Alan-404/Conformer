@@ -26,3 +26,10 @@ class ConformerMetric:
     
     def cer_score(self, hypothesis: Union[str, List[str]], references: Union[str, List[str]]) -> float:
         return jiwer.cer(references, hypothesis)
+    
+    def __call__(self, hypothesis: Union[str, List[str]], references: Union[str, List[str]]) -> torch.Any:
+        wer_score = self.wer_score(hypothesis, references)
+        cer_score = self.cer_score(hypothesis, references)
+
+        print(f"WER Score: {wer_score}")
+        print(f"CER Score: {cer_score}")

@@ -5,7 +5,7 @@ from torch.nn import Module
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import LRScheduler
 
-from typing import Optional
+from typing import Tuple
 
 class CheckpointManager:
     def __init__(self, saved_folder: str, n_savings: int = 3) -> None:
@@ -17,13 +17,10 @@ class CheckpointManager:
         if os.path.exists(saved_folder) == False:
             os.makedirs(saved_folder)
 
-    def load_checkpoint(self, checkpoint: str, model: Module, optimizer: Optional[Optimizer] = None, scheduler: Optional[Optimizer] = None, only_model: bool = False):
+    def load_checkpoint(self, checkpoint: str, model: Module, optimizer: Optimizer, scheduler: LRScheduler) -> Tuple[int, int]:
         checkpoint_data = torch.load(checkpoint, map_location='cpu')
 
         model.load_state_dict(checkpoint_data['model'])
-
-        if only_model:
-            pass
 
         optimizer.load_state_dict(checkpoint_data['optimizer'])
         scheduler.load_state_dict(checkpoint_data['scheduler'])
@@ -32,7 +29,7 @@ class CheckpointManager:
 
         return n_steps, n_epochs
     
-    def save_checkpoint(self, model: Module, optimizer: Optimizer, scheduler: LRScheduler, n_steps: int, n_epochs: int):
+    def save_checkpoint(self, model: Module, optimizer: Optimizer, scheduler: LRScheduler, n_steps: int, n_epochs: int) -> None:
         checkpoint_data = {
             'model': model.state_dict(),
             'optimizer': optimizer.state_dict(),

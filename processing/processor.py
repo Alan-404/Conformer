@@ -272,7 +272,7 @@ class ConformerProcessor:
         padded_tokens = []
         for index, tokens in enumerate(list_tokens):
             padded_tokens.append(
-                F.pad(tokens, pad=(0, max_length - lengths[index]), value=self.pad_id)
+                F.pad(torch.tensor(tokens), pad=(0, max_length - lengths[index]), value=self.pad_id)
             )
         
         padded_tokens = torch.stack(padded_tokens)

@@ -14,7 +14,7 @@ class ConformerDataset(Dataset):
     def __init__(self, manifest: Union[str, pd.DataFrame, pa.Table], processor: ConformerProcessor, training: bool = False, num_examples: Optional[int] = None) -> None:
         super().__init__()
         if isinstance(manifest, str):
-            if os.path.splitext(manifest) == '.parquet':
+            if ".parquet" in manifest:
                 self.table = pq.read_table(manifest)
             else:
                 self.table = pa.Table.from_pandas(pd.read_csv(manifest))

@@ -70,6 +70,11 @@ class ConformerCollate:
             audios, audio_lengths = self.processor(audios)
             tokens, token_lengths = self.processor.as_target(graphemes)
 
+            print(audios.device)
+            print(audio_lengths.device)
+            print(tokens.device)
+            print(token_lengths.device)
+
             audio_lengths, sorted_indices = torch.sort(audio_lengths, descending=True)
 
             audios = audios[sorted_indices]

@@ -103,8 +103,7 @@ class ConformerProcessor:
 
     # Audio Functions 
     def read_audio(self, path: str) -> torch.Tensor:
-        sr, signal = wavfile.read(path)
-        signal = signal / MAX_AUDIO_VALUE
+        signal, sr = librosa.load(path, sr=None)
 
         if sr != self.sample_rate:
             signal = librosa.resample(signal, orig_sr=sr, target_sr=self.sample_rate)

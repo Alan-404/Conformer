@@ -212,6 +212,7 @@ def train(
                 outputs, x_lengths = model(x, x_lengths)
                 with autocast(enabled=False):
                     loss = criterion.ctc_loss(outputs, y, x_lengths, y_lengths)
+                    print(loss)
                     assert torch.isnan(loss) == False
 
             optimizer.zero_grad()

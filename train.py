@@ -171,6 +171,7 @@ def train(
     checkpoint_manager = CheckpointManager(saved_folder=checkpoint_folder, n_savings=n_saved_checkpoints)
     if checkpoint is not None and os.path.exists(checkpoint):
         n_steps, n_epochs = checkpoint_manager.load_checkpoint(checkpoint, model, optimizer, scheduler)
+        print(f"Loaded Checkpoint {checkpoint}")
     else:
         n_steps, n_epochs = 0, 0
 
@@ -212,7 +213,6 @@ def train(
                 outputs, x_lengths = model(x, x_lengths)
                 with autocast(enabled=False):
                     loss = criterion.ctc_loss(outputs, y, x_lengths, y_lengths)
-                    print(loss)
                     assert torch.isnan(loss) == False
 
             optimizer.zero_grad()

@@ -4,7 +4,8 @@ import torch
 from torch.nn import Module
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import LRScheduler
-from common import change_format_single_gpu
+
+from checkpoint import load_model
 
 from typing import Tuple
 
@@ -21,11 +22,7 @@ class CheckpointManager:
     def load_checkpoint(self, checkpoint: str, model: Module, optimizer: Optimizer, scheduler: LRScheduler, world_size: int = 1) -> Tuple[int, int]:
         checkpoint_data = torch.load(checkpoint, map_location='cpu')
 
-        model_state_dict = checkpoint_data['model']
-        if world_size == 1:
-            model_state_dict = change_format_single_gpu(model_state_dict)
-        model.load_state_dict(model_state_dict)
-
+        load_model(checkpoint_data['model'], model, world_size=world_size)
         optimizer.load_state_dict(checkpoint_data['optimizer'])
         scheduler.load_state_dict(checkpoint_data['scheduler'])
         n_steps = checkpoint_data['n_steps']

@@ -4,6 +4,7 @@ import torch
 from torch.nn import Module
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import LRScheduler
+from common import change_format_single_gpu
 
 from typing import Tuple
 
@@ -17,10 +18,13 @@ class CheckpointManager:
         if os.path.exists(saved_folder) == False:
             os.makedirs(saved_folder)
 
-    def load_checkpoint(self, checkpoint: str, model: Module, optimizer: Optimizer, scheduler: LRScheduler) -> Tuple[int, int]:
+    def load_checkpoint(self, checkpoint: str, model: Module, optimizer: Optimizer, scheduler: LRScheduler, world_size: int = 1) -> Tuple[int, int]:
         checkpoint_data = torch.load(checkpoint, map_location='cpu')
 
-        model.load_state_dict(checkpoint_data['model'])
+        model_state_dict = checkpoint_data['model']
+        if world_size == 1:
+            model_state_dict = change_format_single_gpu(model_state_dict)
+        model.load_state_dict(model_state_dict)
 
         optimizer.load_state_dict(checkpoint_data['optimizer'])
         scheduler.load_state_dict(checkpoint_data['scheduler'])

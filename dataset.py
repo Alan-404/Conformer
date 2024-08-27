@@ -45,7 +45,7 @@ class ConformerDataset(Dataset):
             text = row['text'].split(" ")
             return audio, text
         else:
-            return path
+            return audio
 
 class ConformerCollate:
     def __init__(self, processor: ConformerProcessor, device: Union[str, int] = 'cpu', training: bool = False) -> None:

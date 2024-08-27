@@ -84,11 +84,7 @@ def test(
 
     lm = KenLanguageModel(
         lm_path=lm_path,
-        lexicon_path=lexicon_path,
-        tokens=processor.vocab,
-        pad_token=pad_token,
-        delim_token=delim_token,
-        unk_token=unk_token
+        vocab=processor.vocab
     )
 
     df = pd.read_csv(test_path)

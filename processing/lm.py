@@ -29,12 +29,12 @@ class KenLanguageModel:
     def __init__(self, 
                  lm_path: str, 
                  vocab: List[str], 
-                 alpha: float, 
-                 beta: float,
-                 beam_width: int,
-                 beam_prune_logp: float,
-                 hotwords: Union[List[str], Iterable[str]] = None,
-                 hotword_weight: Optional[float] = None,
+                 alpha: float = 2.1, 
+                 beta: float = 9.2,
+                 beam_width: int = 190,
+                 beam_prune_logp: float = -20,
+                 hotwords: Union[List[str], Iterable[str]] =  ['fpt', 'wifi', 'modem', 'fpt telecom', 'internet',   'free',  'lag', 'tổng đài viên', 'reset', 'check', 'test', 'code', 'port', 'net', 'email', 'mail', 'box'],
+                 hotword_weight: Optional[float] = 9.0,
                 ) -> None:
         self.decoder = build_ctcdecoder(
             labels=vocab,

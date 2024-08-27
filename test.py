@@ -11,6 +11,7 @@ from processing.lm import KenLanguageModel
 from tqdm import tqdm
 from typing import Optional, Union
 from evaluation import ConformerMetric
+from checkpoint import load_model
 
 import fire
 
@@ -79,7 +80,7 @@ def test(
         dropout_rate=0.0
     )
 
-    model.load_state_dict(torch.load(checkpoint, map_location='cpu')['model'])
+    load_model(torch.load(checkpoint, map_location='cpu')['model'], model)
     model.to(device)
 
     lm = KenLanguageModel(

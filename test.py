@@ -88,9 +88,11 @@ def test(
     )
 
     df = pd.read_csv(test_path)
+    if num_samples is not None:
+        df = df[:num_samples]
 
     collate_fn = ConformerCollate(processor)
-    dataset = ConformerDataset(df, processor, num_examples=num_samples)
+    dataset = ConformerDataset(df, processor, num_examples=None)
 
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False, collate_fn=collate_fn)
 

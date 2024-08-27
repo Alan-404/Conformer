@@ -109,7 +109,7 @@ def test(
 
         with torch.inference_mode():
             outputs, lengths = model(inputs, lengths)
-            predicts += lm.decode_batch(outputs.cpu().numpy(), lengths.cpu().numpy(), decode_func=processor.spec_decode)
+            predicts += lm.decode_batch(outputs.cpu().numpy(), lengths.cpu().numpy(), decode_func=processor.spec_decode_sentence)
         
     print(f"WER Score: {evaluator.wer_score(predicts, labels)}")
     print(f"CER Score: {evaluator.cer_score(predicts, labels)}")

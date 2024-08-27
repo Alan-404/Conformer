@@ -145,7 +145,7 @@ class ConformerProcessor:
         sentence = sentence.strip()
         return sentence
     
-    def sentence2graphemes(self, sentence: str):
+    def sentence2graphemes(self, sentence: str) -> List[str]:
         sentence = self.clean_text(sentence.upper())
         words = sentence.split(" ")
         graphemes = []
@@ -169,7 +169,17 @@ class ConformerProcessor:
                     return word.replace(key, self.replace_dict[key])
         return word
     
-    def slide_graphemes(self, text: str, patterns: List[str], n_grams: int = 4, reverse: bool = False):
+    def spec_decode(self, word: str) -> str:
+        for index, value in enumerate(list(self.replace_dict.values())):
+            arr = word.split(value)
+            if len(arr) == 2:
+                if arr[1] in self.single_vowels:
+                    return word
+                else:
+                    # return word.replace(val)
+                    pass
+    
+    def slide_graphemes(self, text: str, patterns: List[str], n_grams: int = 4, reverse: bool = False) -> List[str]:
         if len(text) == 1:
             if text in patterns:
                 return [text]

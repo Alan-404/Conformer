@@ -1,6 +1,6 @@
 import torch
 from pyctcdecode import build_ctcdecoder
-from typing import List, Union, Iterable, Optional
+from typing import List, Union, Iterable, Optional, Callable
 import numpy as np
 
 # from torchaudio.models.decoder._ctc_decoder import ctc_decoder
@@ -57,10 +57,11 @@ class KenLanguageModel:
             hotword_weight=self.hotword_weight
         )
 
-    def decode_batch(self, logits: np.ndarray, lengths: Optional[np.ndarray] = None) -> List[str]:
+    def decode_batch(self, logits: np.ndarray, lengths: Optional[np.ndarray] = None, decode_func: Callable[[str], str] = None) -> List[str]:
         preds = []
         for index, probs in enumerate(logits):
-            preds.append(
-                self.decode(probs[: lengths[index], :] if lengths is not None else probs)
-            )
+            text = self.decode(probs[: lengths[index], :] if lengths is not None else probs)
+            if decode_func is not None:
+                text = decode_func(text)
+            preds.append(text)
         return preds

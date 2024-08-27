@@ -97,6 +97,8 @@ class ConformerProcessor:
             self.unk_id = self.find_token_id(unk_token)
             self.delim_id = self.find_token_id(delim_token)
 
+            self.special_cases = list(self.replace_dict.keys())
+
             self.puncs = puncs
 
         self.device = device
@@ -169,15 +171,21 @@ class ConformerProcessor:
                     return word.replace(key, self.replace_dict[key])
         return word
     
+    def spec_decode_sentence(self, sentence: str) -> str:
+        words = sentence.split(" ")
+        correct_words = []
+        for word in words:
+            correct_words.append(self.spec_decode(word))
+        return correct_words
+    
     def spec_decode(self, word: str) -> str:
         for index, value in enumerate(list(self.replace_dict.values())):
+            if value not in word:
+                return word
             arr = word.split(value)
             if len(arr) == 2:
-                if arr[1] in self.single_vowels:
-                    return word
-                else:
-                    # return word.replace(val)
-                    pass
+                return word.replace(value, self.special_cases[index])
+        return word
     
     def slide_graphemes(self, text: str, patterns: List[str], n_grams: int = 4, reverse: bool = False) -> List[str]:
         if len(text) == 1:

@@ -176,7 +176,7 @@ class ConformerProcessor:
         correct_words = []
         for word in words:
             correct_words.append(self.spec_decode(word))
-        return correct_words
+        return " ".join(correct_words)
     
     def spec_decode(self, word: str) -> str:
         for index, value in enumerate(list(self.replace_dict.values())):

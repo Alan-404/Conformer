@@ -181,7 +181,7 @@ class ConformerProcessor:
     def spec_decode(self, word: str) -> str:
         for index, value in enumerate(list(self.replace_dict.values())):
             if value not in word:
-                return word
+                continue
             arr = word.split(value)
             if len(arr) == 2:
                 return word.replace(value, self.special_cases[index])

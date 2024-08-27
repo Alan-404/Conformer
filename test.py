@@ -19,7 +19,6 @@ def test(
         test_path: str,
         checkpoint: str,
         lm_path: str, 
-        lexicon_path: str,
         num_samples: Optional[int] = None,
         batch_size: int = 1,
         # Audio Config 

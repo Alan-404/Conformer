@@ -10,7 +10,7 @@ from checkpoint import load_model
 
 import pandas as pd
 
-def infer_scc(df: pd.DataFrame, checkpoint: str, lm_path: str, type_load: str = 'staff', batch_size: int = 1, device: str = 'cuda'):
+def infer_scc(df: pd.DataFrame, checkpoint: str, lm_path: str, type_load: str = 'staff', batch_size: int = 1, device: str = 'cuda', fp16: bool = False):
     dataset = InferenceDataset(df, load_type=type_load, device=device)
 
     processor = ConformerProcessor(tokenizer_path="./tokenizer/vi.json", device=device)
@@ -37,7 +37,7 @@ def infer_scc(df: pd.DataFrame, checkpoint: str, lm_path: str, type_load: str = 
     
     predicts = []
     for (inputs, lengths, sorted_indices) in dataloader:
-        with autocast(enabled=True):
+        with autocast(enabled=fp16):
             with torch.inference_mode():
                 outputs, lengths = model(inputs, lengths)
                 predicts += lm.decode_batch(outputs.cpu().numpy(), lengths.cpu().numpy(), decode_func=processor.spec_decode)[sorted_indices.cpu().numpy().tolist()]

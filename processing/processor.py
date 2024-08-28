@@ -2,13 +2,12 @@ import os
 import numpy as np
 from pydub import AudioSegment
 import librosa
-from typing import Union, Optional, List, Tuple
+from typing import Union, Optional, List, Tuple, Dict
 import pickle
 import torch
 import torch.nn.functional as F
 import librosa
 import json
-from scipy.io import wavfile
 import re
 from torchaudio.transforms import MelSpectrogram
 
@@ -97,11 +96,21 @@ class ConformerProcessor:
             self.unk_id = self.find_token_id(unk_token)
             self.delim_id = self.find_token_id(delim_token)
 
-            self.special_cases = list(self.replace_dict.keys())
+            self.num_replacements = len(self.replace_dict)
+            self.revesed_dict = self.create_revesed_dict()
 
             self.puncs = puncs
 
         self.device = device
+
+    def create_revesed_dict(self) -> Dict[str, str]:
+        revesed_dict = dict()
+        revesed_dict['patterns'] = []
+        revesed_dict['replacements'] = []
+        for key, value in self.replace_dict.items():
+            revesed_dict['patterns'].append(fr"{value}(\S)")
+            revesed_dict['replacements'].append(fr"{key}\1")
+        return revesed_dict
 
     # Audio Functions 
     def read_audio(self, path: str) -> torch.Tensor:
@@ -170,22 +179,11 @@ class ConformerProcessor:
                 else:
                     return word.replace(key, self.replace_dict[key])
         return word
-    
-    def spec_decode_sentence(self, sentence: str) -> str:
-        words = sentence.split(" ")
-        correct_words = []
-        for word in words:
-            correct_words.append(self.spec_decode(word))
-        return " ".join(correct_words)
-    
-    def spec_decode(self, word: str) -> str:
-        for index, value in enumerate(list(self.replace_dict.values())):
-            if value not in word:
-                continue
-            arr = word.split(value)
-            if len(arr) == 2:
-                return word.replace(value, self.special_cases[index])
-        return word
+
+    def spec_decode(self, text: str) -> str:
+        for i in range(self.num_replacements):
+            text = re.sub(self.revesed_dict['patterns'][i], self.revesed_dict['replacements'][i], text)
+        return text
     
     def slide_graphemes(self, text: str, patterns: List[str], n_grams: int = 4, reverse: bool = False) -> List[str]:
         if len(text) == 1:

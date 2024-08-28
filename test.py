@@ -32,7 +32,7 @@ def test(
         mel_norm: str = "slaney",
         mel_scale: str = 'slaney',
         # Text Config
-        tokenizer_path: str = "./tokenizers/vi.json",
+        tokenizer_path: str = "./tokenizer/vi.json",
         pad_token: str = "<PAD>",
         delim_token: str = "|",
         unk_token: str = "<UNK>",

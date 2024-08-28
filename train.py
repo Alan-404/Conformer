@@ -40,8 +40,9 @@ def validate(
         dataloader: DataLoader,
         criterion: ConformerCriterion,
         n_steps: int,
-        fp16: float,
+        fp16: bool,
     ) -> None:
+    val_ctc_loss = 0.0
 
     model.eval()
     for _, (x, y, x_lengths, y_lengths) in enumerate(tqdm(dataloader, leave=False)):
@@ -50,18 +51,18 @@ def validate(
                 outputs, x_lengths = model(x, x_lengths)
                 with autocast(enabled=False):
                     loss = criterion.ctc_loss(outputs, y, x_lengths, y_lengths)
-        ctc_loss += loss
+        val_ctc_loss += loss
 
-    ctc_loss = ctc_loss / len(dataloader)
+    val_ctc_loss = val_ctc_loss / len(dataloader)
     if world_size > 1:
-        dist.all_reduce(ctc_loss, dist.ReduceOp.AVG)
+        dist.all_reduce(val_ctc_loss, dist.ReduceOp.AVG)
     
     if rank == 0:
         print("Validation:")
-        print(f"Val CTC Loss: {(ctc_loss):.4f}")
+        print(f"Val CTC Loss: {(val_ctc_loss):.4f}")
 
         wandb.log({
-            'val_ctc_loss': ctc_loss
+            'val_ctc_loss': val_ctc_loss.item()
         }, n_steps)
 
 def train(
@@ -305,7 +306,7 @@ def main(
 
     fp16 = bool(fp16 == 1)
     logging = bool(logging == 1)
-
+    
     n_gpus = torch.cuda.device_count()
     if n_gpus == 0:
         print("Not Support CPU training")

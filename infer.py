@@ -1,5 +1,6 @@
 import torch
 from torch.utils.data import DataLoader
+from torch.cuda.amp import autocast
 
 from model.conformer import Conformer
 from processing.processor import ConformerProcessor
@@ -36,9 +37,10 @@ def infer_scc(df: pd.DataFrame, checkpoint: str, lm_path: str, type_load: str = 
     
     predicts = []
     for (inputs, lengths, sorted_indices) in dataloader:
-        with torch.inference_mode():
-            outputs, lengths = model(inputs, lengths)
-            predicts += lm.decode_batch(outputs.cpu().numpy(), lengths.cpu().numpy(), decode_func=processor.spec_decode)[sorted_indices.cpu().numpy().tolist()]
+        with autocast(enabled=True):
+            with torch.inference_mode():
+                outputs, lengths = model(inputs, lengths)
+                predicts += lm.decode_batch(outputs.cpu().numpy(), lengths.cpu().numpy(), decode_func=processor.spec_decode)[sorted_indices.cpu().numpy().tolist()]
 
     df['preds'] = predicts
 

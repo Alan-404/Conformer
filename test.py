@@ -2,6 +2,7 @@ import os
 import torch
 
 from torch.utils.data import DataLoader
+from torch.cuda.amp import GradScaler, autocast
 
 import pandas as pd
 from model.conformer import Conformer
@@ -21,6 +22,7 @@ def test(
         lm_path: str, 
         num_samples: Optional[int] = None,
         batch_size: int = 1,
+        fp16: bool = False,
         # Audio Config 
         sampling_rate: int = 16000,
         n_mels: int = 80,
@@ -48,8 +50,9 @@ def test(
         # Device
         device: Union[str, int] = 'cuda'
     ):
-
     assert os.path.exists(test_path) and os.path.exists(checkpoint)
+
+    fp16 = bool(fp16 == 1)
 
     processor = ConformerProcessor(
         sample_rate=sampling_rate,
@@ -105,8 +108,9 @@ def test(
     
     for (inputs, lengths, sorted_indices) in tqdm(dataloader, leave=False):
         with torch.inference_mode():
-            outputs, lengths = model(inputs, lengths)
-            predicts += lm.decode_batch(outputs.cpu().numpy(), lengths.cpu().numpy(), decode_func=processor.spec_decode)[sorted_indices.cpu().numpy().tolist()]
+            with autocast(enabled=fp16):
+                outputs, lengths = model(inputs, lengths)
+                predicts += lm.decode_batch(outputs.cpu().numpy(), lengths.cpu().numpy(), decode_func=processor.spec_decode)[sorted_indices.cpu().numpy().tolist()]
     
     wer_score = evaluator.wer_score(predicts, labels) * 100
     cer_score = evaluator.cer_score(predicts, labels) * 100

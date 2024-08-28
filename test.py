@@ -103,13 +103,15 @@ def test(
     for i in range(len(labels)):
         labels[i] = str(labels[i]).upper()
     
-    for _, (inputs, lengths) in enumerate(tqdm(dataloader, leave=False)):
+    for _, (inputs, lengths, sorted_indices) in enumerate(tqdm(dataloader, leave=False)):
         inputs = inputs.to(device)
         lengths = lengths.to(device)
 
+        reversed_indices = torch.argsort(sorted_indices).cpu().numpy()
+
         with torch.inference_mode():
             outputs, lengths = model(inputs, lengths)
-            predicts += lm.decode_batch(outputs.cpu().numpy(), lengths.cpu().numpy(), decode_func=processor.spec_decode_sentence)
+            predicts += lm.decode_batch(outputs.cpu().numpy(), lengths.cpu().numpy(), decode_func=processor.spec_decode_sentence)[reversed_indices]
         
     print(f"WER Score: {evaluator.wer_score(predicts, labels)}")
     print(f"CER Score: {evaluator.cer_score(predicts, labels)}")

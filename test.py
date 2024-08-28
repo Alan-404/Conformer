@@ -107,11 +107,9 @@ def test(
         inputs = inputs.to(device)
         lengths = lengths.to(device)
 
-        reversed_indices = torch.argsort(sorted_indices).cpu().numpy()
-
         with torch.inference_mode():
             outputs, lengths = model(inputs, lengths)
-            predicts += lm.decode_batch(outputs.cpu().numpy(), lengths.cpu().numpy(), decode_func=processor.spec_decode)[reversed_indices]
+            predicts += lm.decode_batch(outputs.cpu().numpy(), lengths.cpu().numpy(), decode_func=processor.spec_decode)[sorted_indices.cpu().numpy().tolist()]
         
     print(f"WER Score: {evaluator.wer_score(predicts, labels)}")
     print(f"CER Score: {evaluator.cer_score(predicts, labels)}")

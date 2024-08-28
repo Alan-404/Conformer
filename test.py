@@ -2,7 +2,7 @@ import os
 import torch
 
 from torch.utils.data import DataLoader
-from torch.cuda.amp import GradScaler, autocast
+from torch.cuda.amp import autocast
 
 import pandas as pd
 from model.conformer import Conformer
@@ -51,6 +51,9 @@ def test(
         device: Union[str, int] = 'cuda'
     ):
     assert os.path.exists(test_path) and os.path.exists(checkpoint)
+    if device != 'cpu':
+        if torch.cuda.is_available():
+            device = 'cpu'
 
     fp16 = bool(fp16 == 1)
 
@@ -67,7 +70,8 @@ def test(
         tokenizer_path=tokenizer_path,
         pad_token=pad_token,
         delim_token=delim_token,
-        unk_token=unk_token
+        unk_token=unk_token,
+        device=device
     )
 
     model = Conformer(
@@ -82,7 +86,7 @@ def test(
         dropout_rate=0.0
     )
 
-    load_model(torch.load(checkpoint, map_location='cpu')['model'], model)
+    load_model(checkpoint, model)
     model.to(device)
     model.eval()
 

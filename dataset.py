@@ -1,4 +1,3 @@
-import os
 from torch.utils.data import Dataset
 from processing.processor import ConformerProcessor
 
@@ -71,7 +70,7 @@ class ConformerDataset(Dataset):
     def get_row_by_index(self, index: int) -> Dict[str, str]:
         return {col: self.table[col][index].as_py() for col in self.table.column_names}
 
-    def __getitem__(self, index: int) -> Union[Tuple[torch.Tensor, str], str]:
+    def __getitem__(self, index: int) -> Union[Tuple[torch.Tensor, List[str]], torch.Tensor]:
         row = self.get_row_by_index(index)
         path = row['path']
         audio = self.processor.read_audio(path)
@@ -88,7 +87,7 @@ class ConformerCollate:
         self.device = device
         self.training = training
 
-        if self.training: 
+        if self.training:
             self.augment = SpecAugment(
                 n_time_masks=10,
                 time_mask_param=35,

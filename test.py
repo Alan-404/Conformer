@@ -81,6 +81,7 @@ def test(
 
     load_model(torch.load(checkpoint, map_location='cpu')['model'], model)
     model.to(device)
+    model.eval()
 
     lm = KenLanguageModel(
         lm_path=lm_path,
@@ -93,7 +94,6 @@ def test(
 
     collate_fn = ConformerCollate(processor)
     dataset = ConformerDataset(df, processor, num_examples=None)
-
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False, collate_fn=collate_fn)
 
     evaluator = ConformerMetric()
@@ -103,20 +103,19 @@ def test(
     for i in range(len(labels)):
         labels[i] = str(labels[i]).upper()
     
-    for _, (inputs, lengths, sorted_indices) in enumerate(tqdm(dataloader, leave=False)):
-        inputs = inputs.to(device)
-        lengths = lengths.to(device)
-
+    for (inputs, lengths, sorted_indices) in tqdm(dataloader, leave=False):
         with torch.inference_mode():
             outputs, lengths = model(inputs, lengths)
             predicts += lm.decode_batch(outputs.cpu().numpy(), lengths.cpu().numpy(), decode_func=processor.spec_decode)[sorted_indices.cpu().numpy().tolist()]
-        
-    print(f"WER Score: {evaluator.wer_score(predicts, labels)}")
-    print(f"CER Score: {evaluator.cer_score(predicts, labels)}")
+    
+    wer_score = evaluator.wer_score(predicts, labels) * 100
+    cer_score = evaluator.cer_score(predicts, labels) * 100
 
-    df['pred'] = predicts
+    print(f"WER Score: {(wer_score):.4f}%")
+    print(f"CER Score: {(cer_score):.4f}%")
 
     if saved_result_path is not None:
+        df['prediction'] = predicts
         df.to_csv(saved_result_path, index=False)
     
     print("Finish Testing")

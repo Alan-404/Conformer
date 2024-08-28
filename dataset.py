@@ -9,6 +9,41 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pandas as pd
 from torchaudio.transforms import SpecAugment
+import numpy as np
+import librosa
+
+class InferenceDataset(Dataset):
+    def __init__(self, prompts: pd.DataFrame, sr: int = 16000, load_type: str = 'staff', device: Union[str, int] = 'cuda') -> None:
+        super().__init__()
+        self.prompts = prompts
+        self.sr = sr
+
+        self.current_path = None
+        self.current_audio = None
+
+        self.type_load = 0 if load_type == 'staff' else 1
+        self.device = device
+
+    def __len__(self) -> int:
+        return len(self.prompts)
+    
+    def load_audio(self, path: str) -> None:
+        signal, _ = librosa.load(path, sr=self.sr, mono=False)
+        self.current_audio = signal[self.type_load]
+
+    def split_segment(self, audio: np.ndarray, start: float, end: float) -> np.ndarray:
+        return audio[int(float(start * self.sr)) : int(float(end * self.sr))]
+    
+    def __getitem__(self, index: int) -> torch.Tensor:
+        index_df = self.prompts.iloc[index]
+        if self.current_path is None or self.current_path != index_df['path']:
+            self.current_path = index_df['path']
+            self.load_audio(self.current_path)
+        
+        audio = self.split_segment(self.current_audio, index_df['start'], index_df['end'])
+        audio = torch.tensor(audio, device=self.device)
+
+        return audio
 
 class ConformerDataset(Dataset):
     def __init__(self, manifest: Union[str, pd.DataFrame, pa.Table], processor: ConformerProcessor, training: bool = False, num_examples: Optional[int] = None) -> None:
@@ -53,7 +88,7 @@ class ConformerCollate:
         self.device = device
         self.training = training
 
-        if self.training:
+        if self.training: 
             self.augment = SpecAugment(
                 n_time_masks=10,
                 time_mask_param=35,

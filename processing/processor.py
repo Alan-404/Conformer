@@ -140,18 +140,27 @@ class ConformerProcessor:
         return patterns
     
     def word2graphemes(self, text: str, n_grams: int = 3, reverse: bool = False) -> List[str]:
-        return self.slide_graphemes(text, self.slide_patterns, reverse=reverse, n_grams=n_grams)
+        first_items = ''
+        first_patterns = ['GI', 'QU']
+        for item in first_patterns:
+            if text.startswith(item):
+                first_items = item
+                text = text[2:]
+                break
+
+        text = self.spec_replace(text)
+        return [first_items] + self.slide_graphemes(text, self.slide_patterns, reverse=reverse, n_grams=n_grams)
     
     def graphemes2tokens(self, graphemes: List[str]) -> torch.Tensor:
         tokens = []
         for grapheme in graphemes:
             tokens.append(self.find_token_id(grapheme))
-        return torch.tensor(tokens).to(self.device)
+        return torch.tensor(tokens, device=self.device)
     
     def sentence2tokens(self, sentence: str) -> torch.Tensor:
         graphemes = self.sentence2graphemes(sentence)
         tokens = self.graphemes2tokens(graphemes)
-        return tokens.to(self.device)
+        return tokens
     
     def clean_text(self, sentence: str) -> str:
         sentence = re.sub(self.puncs, " ", sentence)
@@ -167,7 +176,7 @@ class ConformerProcessor:
         length = len(words)
 
         for index, word in enumerate(words):
-            graphemes += self.word2graphemes(self.spec_replace(word))
+            graphemes += self.word2graphemes(word)
             if index != length - 1:
                 graphemes.append(self.delim_token)
 

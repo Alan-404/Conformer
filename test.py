@@ -123,8 +123,9 @@ def test(
         with torch.inference_mode():
             with autocast(enabled=fp16):
                 outputs, lengths = model(inputs, lengths)
-                predicts += lm.decode_batch(outputs.cpu().numpy(), lengths.cpu().numpy(), decode_func=processor.spec_decode)[sorted_indices.cpu().numpy().tolist()]
-    
+                preds = lm.decode_batch(outputs.cpu().numpy(), lengths.cpu().numpy(), decode_func=processor.spec_decode)
+                predicts += [preds[i] for i in sorted_indices]
+
     if rank == 0:
         wer_score = evaluator.wer_score(predicts, labels) * 100
         cer_score = evaluator.cer_score(predicts, labels) * 100

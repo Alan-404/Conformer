@@ -140,16 +140,19 @@ class ConformerProcessor:
         return patterns
     
     def word2graphemes(self, text: str, n_grams: int = 3, reverse: bool = False) -> List[str]:
-        first_items = ''
+        first_item = None
         first_patterns = ['GI', 'QU']
         for item in first_patterns:
             if text.startswith(item):
-                first_items = item
+                first_item = item
                 text = text[2:]
                 break
 
         text = self.spec_replace(text)
-        return [first_items] + self.slide_graphemes(text, self.slide_patterns, reverse=reverse, n_grams=n_grams)
+        graphemes = self.slide_graphemes(text, self.slide_patterns, reverse=reverse, n_grams=n_grams)
+        if first_item is not None:
+            graphemes = [first_item] + graphemes
+        return graphemes
     
     def graphemes2tokens(self, graphemes: List[str]) -> torch.Tensor:
         tokens = []

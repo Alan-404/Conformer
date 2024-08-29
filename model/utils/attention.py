@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import math
-from typing import Optional, Tuple
+from typing import Optional
 
 class MultiHeadSelfAttentionModule(nn.Module):
     def __init__(self, d_model: int, n_heads: int, dropout_rate: float = 0.0) -> None:

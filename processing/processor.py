@@ -99,6 +99,7 @@ class ConformerProcessor:
 
             self.puncs = puncs
 
+        # Device Config
         self.device = device
 
     def create_revesed_dict(self) -> Dict[str, str]:
@@ -127,7 +128,7 @@ class ConformerProcessor:
         audio = self.split_segment(audio, start, end)
         return audio
     
-    def mel_spectrogram(self, signal: torch.Tensor) -> Union[torch.Tensor, np.ndarray]:
+    def mel_spectrogram(self, signal: torch.Tensor) -> torch.Tensor:
         mel = self.__mel_spectrogram(signal)
         mel = torch.log(torch.clamp(mel, min=1e-5))
         return mel
@@ -136,7 +137,6 @@ class ConformerProcessor:
     def sort_pattern(self, patterns: List[str]) -> List[str]:
         patterns = sorted(patterns, key=len)
         patterns.reverse()
-
         return patterns
     
     def word2graphemes(self, text: str, n_grams: int = 3, reverse: bool = False) -> List[str]:
@@ -235,7 +235,7 @@ class ConformerProcessor:
             return self.vocab.index(token)
         return self.vocab.index(self.unk_token)
 
-    # Call Functions
+    # Call Functions -- Use in the Call of DataLoader
     def as_target(self, list_graphemes: List[List[str]]) -> Tuple[torch.Tensor, torch.Tensor]:
         list_tokens = []
         max_length = 0
@@ -257,7 +257,7 @@ class ConformerProcessor:
             )
         
         padded_tokens = torch.stack(padded_tokens)
-        lengths = torch.tensor(lengths).to(self.device)
+        lengths = torch.tensor(lengths, device=self.device)
 
         return padded_tokens, lengths
 
@@ -278,6 +278,6 @@ class ConformerProcessor:
             )
 
         mels = self.mel_spectrogram(torch.stack(padded_audios))
-        lengths = (torch.tensor(lengths).to(self.device) // self.hop_length) + 1
+        lengths = (torch.tensor(lengths, device=self.device) // self.hop_length) + 1
 
         return mels, lengths

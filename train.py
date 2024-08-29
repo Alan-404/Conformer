@@ -194,7 +194,7 @@ def train(
         ctc_loss = 0.0
 
         model.train()
-        for _, (x, y, x_lengths, y_lengths) in enumerate(tqdm(train_dataloader, leave=False)):
+        for (x, y, x_lengths, y_lengths) in tqdm(train_dataloader, leave=False):
             x = x.to(rank)
             y = y.to(rank)
             x_lengths = x_lengths.to(rank)

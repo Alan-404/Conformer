@@ -141,7 +141,7 @@ class ConformerProcessor:
     
     def word2graphemes(self, text: str, n_grams: int = 3, reverse: bool = False) -> List[str]:
         first_item = None
-        first_patterns = ['GI', 'QU']
+        first_patterns = ['QU']
         for item in first_patterns:
             if text.startswith(item):
                 first_item = item

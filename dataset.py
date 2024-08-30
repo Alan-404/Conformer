@@ -116,4 +116,4 @@ class ConformerCollate:
             audios, audio_lengths = self.processor(batch)
             audio_lengths, sorted_indices = torch.sort(audio_lengths, descending=True)
             audios = audios[sorted_indices]
-            return audios, audio_lengths, torch.argsort(sorted_indices)
+            return audios, audio_lengths, torch.argsort(sorted_indices, descending=False)

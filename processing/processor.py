@@ -246,6 +246,25 @@ class ConformerProcessor:
         if token in self.vocab:
             return self.vocab.index(token)
         return self.vocab.index(self.unk_token)
+    
+    def greedy_decode_logits(self, logits: torch.Tensor) -> str:
+        if logits.ndim == 2:
+            logits = torch.argmax(logits, dim=-1) # (length,)
+        items = []
+        prev_logit = None
+
+        for logit in logits:
+            if prev_logit is None:
+                prev_logit = logit
+                items.append(self.vocab.index(logit.item()))
+            else:
+                if prev_logit == logit:
+                    continue
+                else:
+                    prev_logit = logit
+                    items.append(self.vocab.index(logit.item()))
+
+        return "".join(items).replace(self.delim_token, " ")
 
     # Call Functions -- Use in the Call of DataLoader
     def as_target(self, list_graphemes: List[List[str]]) -> Tuple[torch.Tensor, torch.Tensor]:

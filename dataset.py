@@ -39,7 +39,7 @@ class InferenceDataset(Dataset):
             self.current_path = index_df['path']
             self.load_audio(self.current_path)
         
-        audio = self.split_segment(self.current_audio, index_df['start'], index_df['end'])
+        audio = self.split_segment(self.current_audio, index_df['StartSegment'], index_df['EndSegment'])
         audio = torch.tensor(audio, device=self.device)
 
         return audio

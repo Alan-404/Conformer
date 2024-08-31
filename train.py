@@ -162,7 +162,8 @@ def train(
     checkpoint_manager = CheckpointManager(saved_folder=checkpoint_folder, n_savings=n_saved_checkpoints)
     if checkpoint is not None and os.path.exists(checkpoint):
         n_steps, n_epochs = checkpoint_manager.load_checkpoint(checkpoint, model, optimizer, scheduler, world_size=world_size)
-        print(f"Loaded Checkpoint {checkpoint}")
+        if rank == 0:
+            print(f"Loaded Checkpoint {checkpoint}")
     else:
         n_steps, n_epochs = 0, 0
 

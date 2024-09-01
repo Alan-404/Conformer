@@ -48,3 +48,12 @@ def infer_scc(df: pd.DataFrame, checkpoint: str, lm_path: str, type_load: str = 
     df['preds'] = predicts
 
     return df
+
+def infer(
+        manifest: str,
+        type: str,
+        checkpoint: str,
+        lm_path: str, 
+        fp16: bool = False,
+    ) -> None:
+    pass

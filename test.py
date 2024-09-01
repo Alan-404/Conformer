@@ -174,6 +174,8 @@ def main(
         # Device
         device: str = 'cuda'
     ):
+    fp16 = bool(fp16 == 1)
+    
     n_gpus = 0
     if device == 'cuda':
         n_gpus = torch.cuda.device_count()

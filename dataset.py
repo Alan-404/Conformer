@@ -107,7 +107,7 @@ class ConformerCollate:
             audio_lengths, sorted_indices = torch.sort(audio_lengths, descending=True)
 
             audios = audios[sorted_indices]
-            # audios = self.augment(audios)
+            audios = self.augment(audios)
             tokens = tokens[sorted_indices]
             token_lengths = token_lengths[sorted_indices]
 

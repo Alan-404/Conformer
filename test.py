@@ -13,7 +13,7 @@ from processing.processor import ConformerProcessor
 from processing.lm import KenLanguageModel
 from tqdm import tqdm
 from typing import Optional, Union
-from evaluation import ConformerMetric
+from evaluation import ConformerMetric, ConformerCriterion
 from checkpoint import load_model
 
 import fire
@@ -117,7 +117,7 @@ def test(
     labels = df['text'].to_list()
     for i in range(len(labels)):
         labels[i] = str(labels[i]).upper()
-    
+
     for (inputs, lengths, sorted_indices) in tqdm(dataloader, leave=False):
         with torch.inference_mode():
             with autocast(enabled=fp16):

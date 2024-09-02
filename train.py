@@ -186,7 +186,7 @@ def train(
 
     train_dataset = ConformerDataset(train_path, processor, training=True, num_examples=num_train_samples)
     train_sampler = DistributedSampler(train_dataset, num_replicas=world_size, rank=rank, shuffle=True) if world_size > 1 else RandomSampler(train_dataset)
-    train_dataloader = DataLoader(train_dataset, batch_size=train_batch_size, sampler=train_sampler, collate_fn=ConformerCollate(processor, device=rank, collate_type='train'))
+    train_dataloader = DataLoader(train_dataset, batch_size=train_batch_size, sampler=train_sampler, collate_fn=ConformerCollate(processor, collate_type='train'))
 
     run_validation = False
     if val_path is not None and os.path.exists(val_path):
@@ -194,7 +194,7 @@ def train(
             val_batch_size = train_batch_size
         val_dataset = ConformerDataset(val_path, processor, training=True, num_examples=num_val_samples)
         val_sampler = DistributedSampler(val_dataset, num_replicas=world_size, rank=rank, shuffle=False) if world_size > 1 else RandomSampler(val_dataset)
-        val_dataloader = DataLoader(val_dataset, batch_size=val_batch_size, sampler=val_sampler, collate_fn=ConformerCollate(processor, device=rank, collate_type='validate'))
+        val_dataloader = DataLoader(val_dataset, batch_size=val_batch_size, sampler=val_sampler, collate_fn=ConformerCollate(processor, collate_type='validate'))
         run_validation = True
     
     criterion = ConformerCriterion(blank_id=processor.pad_id)

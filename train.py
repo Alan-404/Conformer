@@ -147,6 +147,7 @@ def train(
         pad_token=pad_token,
         delim_token=delim_token,
         unk_token=unk_token,
+        training=True,
         device=rank
     )
 

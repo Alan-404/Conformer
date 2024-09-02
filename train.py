@@ -45,7 +45,8 @@ def validate(
         fp16: bool,
         logging: bool = False
     ) -> None:
-
+    if rank == 0:
+        print("Validation")
     val_ctc_loss = 0.0
     val_wer_score = 0.0
 

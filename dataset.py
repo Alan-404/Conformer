@@ -1,7 +1,7 @@
 from torch.utils.data import Dataset
 from processing.processor import ConformerProcessor
 
-from typing import Optional, Tuple, List, Union, Dict
+from typing import Optional, Tuple, List, Union, Dict, Literal
 import torch
 
 import pyarrow as pa
@@ -82,32 +82,21 @@ class ConformerDataset(Dataset):
             return audio
 
 class ConformerCollate:
-    def __init__(self, processor: ConformerProcessor, device: Union[str, int] = 'cpu', training: bool = False) -> None:
+    def __init__(self, processor: ConformerProcessor, collate_type: Literal['train', 'validate', 'test'] = 'train') -> None:
         self.processor = processor
-        self.device = device
-        self.training = training
-
-        if self.training:
-            self.augment = SpecAugment(
-                n_time_masks=10,
-                time_mask_param=35,
-                n_freq_masks=1,
-                freq_mask_param=35,
-                p=0.05,
-                zero_masking=True
-            ).to(self.device)
+        self.collate_type = collate_type
+        self.run_augment = (collate_type == 'train')
 
     def __call__(self, batch: Tuple[torch.Tensor, List[str]]) -> Union[Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor], Tuple[torch.Tensor, torch.Tensor]]:
-        if self.training:
+        if self.collate_type != 'test':
             audios, graphemes = zip(*batch)
 
-            audios, audio_lengths = self.processor(audios)
+            audios, audio_lengths = self.processor(audios, augment=self.run_augment)
             tokens, token_lengths = self.processor.as_target(graphemes)
             
             audio_lengths, sorted_indices = torch.sort(audio_lengths, descending=True)
 
             audios = audios[sorted_indices]
-            audios = self.augment(audios)
             tokens = tokens[sorted_indices]
             token_lengths = token_lengths[sorted_indices]
 

@@ -9,6 +9,8 @@ import json
 import re
 from torchaudio.transforms import MelSpectrogram
 
+from processing.augment import ConformerAugment
+
 MAX_AUDIO_VALUE = 32768.0
 
 class ConformerProcessor:
@@ -30,6 +32,7 @@ class ConformerProcessor:
                  unk_token: str = "<UNK>",
                  puncs: str = r"([:./,?!@#$%^&=`~;*\(\)\[\]\"\\])",
                  # Device Config
+                 training: bool = False,
                  device: Union[str, int] = 'cpu') -> None:
         # Audio Setup
         assert mel_scale in ['htk', 'slaney'], "Invalid Mel Scale, Only HTK or Slaney"
@@ -51,6 +54,16 @@ class ConformerProcessor:
             norm=norm,
             mel_scale=mel_scale
         ).to(device)
+
+        if training:
+            self.augment = ConformerAugment(
+                n_time_masks=10,
+                time_mask_param=35,
+                n_freq_masks=1,
+                freq_mask_param=35,
+                p=0.05,
+                zero_masking=True
+            ).to(device)
 
         # Text Setup
         if tokenizer_path is not None:
@@ -100,6 +113,7 @@ class ConformerProcessor:
             self.puncs = puncs
 
         # Device Config
+        self.training = training
         self.device = device
 
     def create_revesed_dict(self) -> Dict[str, str]:
@@ -200,6 +214,27 @@ class ConformerProcessor:
             text = re.sub(self.revesed_dict['patterns'][i], self.revesed_dict['replacements'][i], text)
         return text
     
+    def tokens2graphemes(self, tokens: torch.Tensor) -> List[str]:
+        graphemes = []
+        for token in tokens.cpu().numpy():
+            if token == self.pad_id:
+                break
+            elif token == self.delim_id:
+                graphemes.append(" ")
+            else:
+                graphemes.append(self.vocab[token])
+        return graphemes
+    
+    def decode_tokens(self, tokens: torch.Tensor) -> str:
+        graphemes = self.tokens2graphemes(tokens)
+        return "".join(graphemes)
+    
+    def batch_decode_tokens(self, tokens_list: Union[List[List[str]], torch.Tensor]) -> List[str]:
+        texts = []
+        for tokens in tokens_list:
+            texts.append(self.decode_tokens(tokens))
+        return texts
+    
     def slide_graphemes(self, text: str, patterns: List[str], n_grams: int = 4, reverse: bool = False) -> List[str]:
         if len(text) == 1:
             if text in patterns:
@@ -251,20 +286,47 @@ class ConformerProcessor:
         if logits.ndim == 2:
             logits = torch.argmax(logits, dim=-1) # (length,)
         items = []
-        prev_logit = None
+        prev_id = None
 
         for logit in logits:
-            if prev_logit is None:
-                prev_logit = logit
-                items.append(self.vocab.index(logit.item()))
+            token_id = logit.item()
+            if token_id == self.pad_id or token_id == self.unk_id:
+                continue
+            if prev_id is None:
+                prev_id = token_id
+                items.append(self.vocab[token_id])
             else:
-                if prev_logit == logit:
+                if prev_id == token_id:
                     continue
                 else:
-                    prev_logit = logit
-                    items.append(self.vocab.index(logit.item()))
+                    prev_id = token_id
+                    items.append(self.vocab[token_id])
+        
+        text = self.spec_decode("".join(items).replace(self.delim_token, " "))
+        return text
+    
+    def batch_greedy_decode_logits(self, logits: torch.Tensor) -> List[str]:
+        texts = []
+        for item in logits:
+            texts.append(self.greedy_decode_logits(item))
+        return texts
+    
+    def beam_search_decode(self, logits: torch.Tensor, beam_widths: int = 5) -> str:
+        logits = F.log_softmax(logits, dim=-1)
+        beams = [([], 0.0)]
 
-        return "".join(items).replace(self.delim_token, " ")
+        for time_step in range(logits.size(0)):
+            all_candidates = []
+
+            for seq, score in beams:
+                for token_id in range(logits.size(1)):
+                    new_seq = seq + [token_id]
+                    new_score = score + logits[time_step, token_id]
+                    all_candidates.append((new_seq, new_score))
+            
+            beams = sorted(all_candidates, key=lambda x: x[1], reverse=True)[:beam_widths]
+
+        return beams
 
     # Call Functions -- Use in the Call of DataLoader
     def as_target(self, list_graphemes: List[List[str]]) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -292,7 +354,7 @@ class ConformerProcessor:
 
         return padded_tokens, lengths
 
-    def __call__(self, audios: List[torch.Tensor]) -> Tuple[torch.Tensor, torch.Tensor]:
+    def __call__(self, audios: List[torch.Tensor], augment: bool = False) -> Tuple[torch.Tensor, torch.Tensor]:
         padded_audios = []
         lengths = []
         max_length = 0
@@ -309,6 +371,8 @@ class ConformerProcessor:
             )
 
         mels = self.mel_spectrogram(torch.stack(padded_audios))
+        if augment:
+            mels = self.augment(mels)
         lengths = (torch.tensor(lengths, device=self.device) // self.hop_length) + 1
 
         return mels, lengths

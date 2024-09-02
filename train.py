@@ -13,7 +13,7 @@ import torch.multiprocessing as mp
 
 from processing.processor import ConformerProcessor
 from model.conformer import Conformer
-from evaluation import ConformerCriterion
+from evaluation import ConformerCriterion, ConformerMetric
 from dataset import ConformerDataset, ConformerCollate
 from manager import CheckpointManager
 
@@ -37,12 +37,16 @@ def validate(
         rank: int,
         world_size: int,
         model: Conformer ,
+        processor: ConformerProcessor,
         dataloader: DataLoader,
         criterion: ConformerCriterion,
+        metric: ConformerMetric,
         n_steps: int,
         fp16: bool,
     ) -> None:
+
     val_ctc_loss = 0.0
+    val_wer_score = 0.0
 
     model.eval()
     for _, (x, y, x_lengths, y_lengths) in enumerate(tqdm(dataloader, leave=False)):
@@ -51,18 +55,26 @@ def validate(
                 outputs, x_lengths = model(x, x_lengths)
                 with autocast(enabled=False):
                     loss = criterion.ctc_loss(outputs, y, x_lengths, y_lengths)
+                    wer_score = torch.tensor(metric.wer_score(processor.batch_decode_tokens(y), processor.batch_greedy_decode_logits(outputs)), device=rank)
         val_ctc_loss += loss
+        val_wer_score += wer_score
 
-    val_ctc_loss = val_ctc_loss / len(dataloader)
+    num_batches = len(dataloader)
+
+    val_ctc_loss = val_ctc_loss / num_batches
+    val_wer_score = val_wer_score / num_batches
     if world_size > 1:
         dist.all_reduce(val_ctc_loss, dist.ReduceOp.AVG)
+        dist.all_reduce(val_wer_score, dist.ReduceOp.AVG)
     
     if rank == 0:
         print("Validation:")
         print(f"Val CTC Loss: {(val_ctc_loss):.4f}")
+        print(f"Val WER Score: {(val_wer_score):.4f}")
 
         wandb.log({
-            'val_ctc_loss': val_ctc_loss.item()
+            'val_ctc_loss': val_ctc_loss.item(),
+            'val_wer_score': val_wer_score.item()
         }, n_steps)
 
 def train(
@@ -170,11 +182,9 @@ def train(
     if set_lr:
         optimizer.param_groups[0]['lr'] = lr
 
-    collate_fn = ConformerCollate(processor, device=rank, training=True)
-
     train_dataset = ConformerDataset(train_path, processor, training=True, num_examples=num_train_samples)
     train_sampler = DistributedSampler(train_dataset, num_replicas=world_size, rank=rank, shuffle=True) if world_size > 1 else RandomSampler(train_dataset)
-    train_dataloader = DataLoader(train_dataset, batch_size=train_batch_size, sampler=train_sampler, collate_fn=collate_fn)
+    train_dataloader = DataLoader(train_dataset, batch_size=train_batch_size, sampler=train_sampler, collate_fn=ConformerCollate(processor, device=rank, collate_type='train'))
 
     run_validation = False
     if val_path is not None and os.path.exists(val_path):
@@ -182,10 +192,11 @@ def train(
             val_batch_size = train_batch_size
         val_dataset = ConformerDataset(val_path, processor, training=True, num_examples=num_val_samples)
         val_sampler = DistributedSampler(val_dataset, num_replicas=world_size, rank=rank, shuffle=False) if world_size > 1 else RandomSampler(val_dataset)
-        val_dataloader = DataLoader(val_dataset, batch_size=val_batch_size, sampler=val_sampler, collate_fn=collate_fn)
+        val_dataloader = DataLoader(val_dataset, batch_size=val_batch_size, sampler=val_sampler, collate_fn=ConformerCollate(processor, device=rank, collate_type='validate'))
         run_validation = True
     
     criterion = ConformerCriterion(blank_id=processor.pad_id)
+    metric = ConformerMetric()
     scaler = GradScaler(enabled=fp16)
 
     for epoch in range(num_epochs):
@@ -246,8 +257,9 @@ def train(
         if run_validation:
             validate(
                 rank, world_size,
-                model, val_dataloader,
-                criterion, n_steps, fp16
+                model, processor, val_dataloader,
+                criterion, metric,
+                n_steps, fp16
             )
 
         if rank == 0:

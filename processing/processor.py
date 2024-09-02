@@ -56,14 +56,7 @@ class ConformerProcessor:
         ).to(device)
 
         if training:
-            self.augment = ConformerAugment(
-                n_time_masks=10,
-                time_mask_param=35,
-                n_freq_masks=1,
-                freq_mask_param=35,
-                p=0.05,
-                zero_masking=True
-            ).to(device)
+            self.augment = ConformerAugment(device=device)
 
         # Text Setup
         if tokenizer_path is not None:

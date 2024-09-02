@@ -47,6 +47,7 @@ def validate(
     ) -> None:
     if rank == 0:
         print("Validation")
+    
     val_ctc_loss = 0.0
     val_wer_score = 0.0
 
@@ -70,7 +71,6 @@ def validate(
         dist.all_reduce(val_wer_score, dist.ReduceOp.AVG)
     
     if rank == 0:
-        print("Validation:")
         print(f"Val CTC Loss: {(val_ctc_loss):.4f}")
         print(f"Val WER Score: {(val_wer_score):.4f}")
 

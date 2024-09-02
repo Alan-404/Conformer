@@ -6,7 +6,7 @@ class ConformerAugment:
         self.spec_augment = SpecAugment(
             n_time_masks=10,
             time_mask_param=35,
-            n_freq_masks=1,
+            n_freq_masks=10,
             freq_mask_param=35,
             p=0.05,
             zero_masking=True

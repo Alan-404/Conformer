@@ -371,8 +371,8 @@ class ConformerProcessor:
             )
 
         mels = self.mel_spectrogram(torch.stack(padded_audios))
-        # if augment:
-        #     mels = self.augment(mels)
+        if augment:
+            mels = self.augment(mels)
         lengths = (torch.tensor(lengths, device=self.device) // self.hop_length) + 1
 
         return mels, lengths

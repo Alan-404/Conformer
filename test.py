@@ -1,11 +1,10 @@
 import os
 import torch
 
-from torch.utils.data import DataLoader
 from torch.cuda.amp import autocast
 import torch.distributed as distributed
 import torch.multiprocessing as mp
-from torch.utils.data import SequentialSampler, DistributedSampler
+from torch.utils.data import DataLoader, SequentialSampler, DistributedSampler
 
 import pandas as pd
 from model.conformer import Conformer

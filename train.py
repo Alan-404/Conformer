@@ -43,6 +43,7 @@ def validate(
         metric: ConformerMetric,
         n_steps: int,
         fp16: bool,
+        logging: bool = False
     ) -> None:
 
     val_ctc_loss = 0.0
@@ -72,10 +73,11 @@ def validate(
         print(f"Val CTC Loss: {(val_ctc_loss):.4f}")
         print(f"Val WER Score: {(val_wer_score):.4f}")
 
-        wandb.log({
-            'val_ctc_loss': val_ctc_loss.item(),
-            'val_wer_score': val_wer_score.item()
-        }, n_steps)
+        if logging:
+            wandb.log({
+                'val_ctc_loss': val_ctc_loss.item(),
+                'val_wer_score': val_wer_score.item()
+            }, n_steps)
 
 def train(
         rank: int,
@@ -259,7 +261,7 @@ def train(
                 rank, world_size,
                 model, processor, val_dataloader,
                 criterion, metric,
-                n_steps, fp16
+                n_steps, fp16, logging
             )
 
         if rank == 0:

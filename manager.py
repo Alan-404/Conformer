@@ -7,7 +7,7 @@ from torch.optim.lr_scheduler import LRScheduler
 
 from checkpoint import load_model
 
-from typing import Tuple
+from typing import Tuple, Literal
 
 class CheckpointManager:
     def __init__(self, saved_folder: str, n_savings: int = 3) -> None:
@@ -47,3 +47,32 @@ class CheckpointManager:
             self.saved_samples.pop(0)
         
         self.saved_samples.append(n_steps)
+
+class EarlyStopping:
+    def __init__(self, n_patiences: int = 3, condition_metric: Literal['up', 'down'] = 'up') -> None:
+        self.early_stop = False
+
+        self.max_patiences = n_patiences
+        self.current_patiences = 0
+
+        self.up = (condition_metric == 'up')
+
+        self.current_score = None
+        self.best_score = None
+
+    def __call__(self, score: float) -> None:
+        if self.current_score is not None:
+            if (self.current_score > score) == self.up:
+                self.current_patiences += 1
+            elif self.current_score == score:
+                self.current_score += 0.5
+            else:
+                self.current_patiences = 0
+            
+            self.current_score = score
+
+            if self.current_patiences >= self.max_patiences:
+                self.early_stop = True
+        else:
+            self.current_score = score
+            self.best_score = score

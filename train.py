@@ -58,7 +58,7 @@ def validate(
                 outputs, x_lengths = model(x, x_lengths)
                 with autocast(enabled=False):
                     loss = criterion.ctc_loss(outputs, y, x_lengths, y_lengths)
-                    wer_score = torch.tensor(metric.wer_score(processor.batch_decode_tokens(y), processor.batch_greedy_decode_logits(outputs)), device=rank)
+                    wer_score = torch.tensor(metric.wer_score(processor.batch_greedy_decode_logits(outputs), processor.batch_decode_tokens(y)), device=rank)
         val_ctc_loss += loss
         val_wer_score += wer_score
 

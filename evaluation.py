@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-import jiwer
+from torchmetrics import WordErrorRate, CharErrorRate
 
 from typing import Optional, Union, List
 
@@ -18,17 +18,11 @@ class ConformerCriterion:
 
 class ConformerMetric:
     def __init__(self) -> None:
-        pass
+        self.wer_metric = WordErrorRate()
+        self.cer_metric = CharErrorRate()
 
-    def wer_score(self, pred: Union[str, List[str]], target: Union[str, List[str]]) -> float:
-        return jiwer.wer(target, pred)
+    def wer_score(self, prediction: Union[str, List[str]], target: Union[str, List[str]]) -> torch.Tensor:
+        return self.wer_metric(prediction, target)
     
-    def cer_score(self, pred: Union[str, List[str]], target: Union[str, List[str]]) -> float:
-        return jiwer.cer(target, pred)
-    
-    def __call__(self, pred: Union[str, List[str]], target: Union[str, List[str]]) -> None:
-        wer_score = self.wer_score(pred, target)
-        cer_score = self.cer_score(pred, target)
-
-        print(f"WER Score: {wer_score}")
-        print(f"CER Score: {cer_score}")
+    def cer_score(self, prediction: Union[str, List[str]], target: Union[str, List[str]]) -> torch.Tensor:
+        return self.cer_metric(prediction, target)

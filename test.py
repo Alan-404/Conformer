@@ -13,7 +13,7 @@ from processing.processor import ConformerProcessor
 from processing.lm import KenLanguageModel
 from tqdm import tqdm
 from typing import Optional, Union
-from evaluation import ConformerMetric, ConformerCriterion
+from evaluation import ConformerMetric
 from checkpoint import load_model
 
 import fire
@@ -21,6 +21,7 @@ import fire
 def setup(rank: int, world_size: int) -> None:
     os.environ['MASTER_ADDR'] = 'localhost'
     os.environ['MASTER_PORT'] = '12355'
+    torch.cuda.set_device(rank)
     distributed.init_process_group('nccl', 'env://', world_size=world_size, rank=rank)
 
 def cleanup() -> None:
@@ -113,7 +114,7 @@ def test(
 
     evaluator = ConformerMetric()
     
-    predicts = []
+    predictions = []
     labels = df['text'].to_list()
     for i in range(len(labels)):
         labels[i] = str(labels[i]).upper()
@@ -123,17 +124,17 @@ def test(
             with autocast(enabled=fp16):
                 outputs, lengths = model(inputs, lengths)
                 preds = lm.decode_batch(outputs.cpu().numpy(), lengths.cpu().numpy(), decode_func=processor.spec_decode)
-                predicts += [preds[i] for i in sorted_indices]
+                predictions += [preds[i] for i in sorted_indices]
 
     if rank == 0 or rank == 'cpu':
-        wer_score = evaluator.wer_score(predicts, labels) * 100
-        cer_score = evaluator.cer_score(predicts, labels) * 100
+        wer_score = evaluator.wer_score(predictions, labels) * 100
+        cer_score = evaluator.cer_score(predictions, labels) * 100
 
         print(f"WER Score: {(wer_score):.4f}%")
         print(f"CER Score: {(cer_score):.4f}%")
 
         if saved_result_path is not None:
-            df['prediction'] = predicts
+            df['prediction'] = predictions
             df.to_csv(saved_result_path, index=False)
         
         print("Finish Testing")

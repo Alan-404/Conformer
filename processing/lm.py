@@ -91,15 +91,7 @@ class KenCTCDecoder:
         return trie
     
     def _to_hypo(self, results) -> List[CTCHypothesis]:
-        return [
-            CTCHypothesis(
-                tokens=self._get_tokens(result.tokens),
-                words=[self.word_dict.get_entry(x) for x in result.words if x >= 0],
-                score=result.score,
-                timesteps=self._get_timesteps(result.tokens),
-            )
-            for result in results
-        ]
+        return [" ".join([self.word_dict.get_entry(x) for x in result.words if x >= 0]) for result in results]
     
     def _get_tokens(self, idxs: torch.IntTensor) -> torch.LongTensor:
         idxs = (g[0] for g in it.groupby(idxs))

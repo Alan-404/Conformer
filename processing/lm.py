@@ -50,14 +50,14 @@ class KenCTCDecoder:
             criterion_type=CriterionType.CTC,
         )
 
-        word_dict = create_word_dict(lexicon)
-        lm = KenLM(lm_path, word_dict)
+        self.word_dict = create_word_dict(lexicon)
+        lm = KenLM(lm_path, self.word_dict)
 
         self.sil_idx = tokens_dict.get_index(processor.delim_token)
-        self.unk_idx = word_dict.get_index(processor.unk_token)
+        self.unk_idx = self.word_dict.get_index(processor.unk_token)
         self.blank_idx = tokens_dict.get_index(processor.pad_token)
 
-        trie = self.__construct_trie(tokens_dict, word_dict, lexicon, lm, self.sil_idx)
+        trie = self.__construct_trie(tokens_dict, self.word_dict, lexicon, lm, self.sil_idx)
 
         token_lm = False
         transitions = []

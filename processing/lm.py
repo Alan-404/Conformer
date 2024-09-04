@@ -73,6 +73,11 @@ class KenCTCDecoder:
         return [" ".join([self.word_dict.get_entry(x) for x in result.words if x >= 0]) for result in results]
     
     def __call__(self, emissions: torch.Tensor, lengths: Optional[torch.Tensor] = None) -> List[str]:
+        if emissions.device != 'cpu':
+            emissions = emissions.cpu()
+            if lengths is not None:
+                lengths = lengths.cpu()
+        
         batch_size, time_steps, _ = emissions.size()
 
         if lengths is None:

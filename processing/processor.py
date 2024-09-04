@@ -85,6 +85,8 @@ class ConformerProcessor:
 
             self.short_items = patterns['short_item']
 
+            self.mix = patterns['mix']
+
             self.grammar = patterns['grammar']
 
             self.replace_dict = patterns['replace']
@@ -148,11 +150,17 @@ class ConformerProcessor:
     
     def word2graphemes(self, text: str, n_grams: int = 3, reverse: bool = False) -> List[str]:
         first_item = None
-        first_patterns = ['QU']
-        for item in first_patterns:
+        for item in self.mix:
             if text.startswith(item):
+                if len(text) == len(item):
+                    return [*item]
+                else:
+                    if text[len(item)] in self.single_consonants:
+                        first_item = item[0]
+                        text = text[1:]
+                        break
                 first_item = item
-                text = text[2:]
+                text = text[len(item):]
                 break
 
         text = self.spec_replace(text)

@@ -379,6 +379,7 @@
     "other_consonant": [],
     "voiced_special": [],
     "voiceless_special": [],
+    "mix": ["QU", "GI"],
     "exceptions": [],
     "short_item": [],
     "single_suffix": [],

@@ -10,7 +10,7 @@ import pandas as pd
 from model.conformer import Conformer
 from dataset import ConformerDataset, ConformerCollate
 from processing.processor import ConformerProcessor
-from processing.lm import KenLanguageModel
+from processing.lm import KenCTCDecoder
 from tqdm import tqdm
 from typing import Optional, Union
 from evaluation import ConformerMetric
@@ -34,6 +34,7 @@ def test(
         test_path: str,
         checkpoint: str,
         lm_path: str, 
+        lexicon_path: str,
         num_samples: Optional[int] = None,
         batch_size: int = 1,
         fp16: bool = False,
@@ -98,9 +99,10 @@ def test(
     model.to(rank)
     model.eval()
 
-    lm = KenLanguageModel(
-        lm_path=lm_path,
-        vocab=processor.vocab
+    ctc_decoder = KenCTCDecoder(
+        processor=processor,
+        lexicon_path=lexicon_path,
+        lm_path=lm_path
     )
 
     df = pd.read_csv(test_path)
@@ -123,7 +125,7 @@ def test(
         with torch.inference_mode():
             with autocast(enabled=fp16):
                 outputs, lengths = model(inputs, lengths)
-                preds = lm.decode_batch(outputs.cpu().numpy(), lengths.cpu().numpy(), decode_func=processor.spec_decode)
+                preds = ctc_decoder(outputs, lengths)
                 predictions += [preds[i] for i in sorted_indices]
 
     if rank == 0 or rank == 'cpu':

@@ -28,13 +28,24 @@ def cleanup() -> None:
     distributed.destroy_process_group()
 
 def test(
-        rank: Union[str, int],
+        device: Union[str, int],
         world_size: int,
         # Data Config
         test_path: str,
         checkpoint: str,
+        # CTC Decoder Config
         lm_path: str, 
         lexicon_path: str,
+        nbest: int = 1,
+        beam_size: int = 50,
+        beam_size_token: Optional[int] = None,
+        beam_threshold: float = 50,
+        lm_weight: float = 2.0,
+        word_score: float = 0.0,
+        unk_score: float = float('-inf'),
+        sil_score: float = 0.0,
+        log_add: bool = False,
+        # Inference Config
         num_samples: Optional[int] = None,
         batch_size: int = 1,
         fp16: bool = False,
@@ -64,7 +75,7 @@ def test(
         saved_result_path: Optional[str] = None
     ):
     if world_size > 1:
-        setup(world_size, rank)
+        setup(world_size, device)
 
     processor = ConformerProcessor(
         sample_rate=sampling_rate,
@@ -80,7 +91,7 @@ def test(
         pad_token=pad_token,
         delim_token=delim_token,
         unk_token=unk_token,
-        device=rank
+        device=device
     )
 
     model = Conformer(
@@ -96,13 +107,22 @@ def test(
     )
 
     load_model(checkpoint, model)
-    model.to(rank)
+    model.to(device)
     model.eval()
 
     ctc_decoder = KenCTCDecoder(
         processor=processor,
         lexicon_path=lexicon_path,
-        lm_path=lm_path
+        lm_path=lm_path,
+        nbest=nbest,
+        beam_size=beam_size,
+        beam_size_token=beam_size_token,
+        beam_threshold=beam_threshold,
+        lm_weight=lm_weight,
+        word_score=word_score,
+        unk_score=unk_score,
+        sil_score=sil_score,
+        log_add=log_add
     )
 
     df = pd.read_csv(test_path)
@@ -111,7 +131,7 @@ def test(
 
     collate_fn = ConformerCollate(processor)
     dataset = ConformerDataset(df, processor, num_examples=None)
-    sampler = DistributedSampler(dataset, num_replicas=world_size, rank=rank, shuffle=False) if world_size > 1 else SequentialSampler(dataset)
+    sampler = DistributedSampler(dataset, num_replicas=world_size, rank=device, shuffle=False) if world_size > 1 else SequentialSampler(dataset)
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False, sampler=sampler, collate_fn=collate_fn)
 
     evaluator = ConformerMetric()
@@ -128,7 +148,7 @@ def test(
                 preds = ctc_decoder(outputs, lengths)
                 predictions += [preds[i] for i in sorted_indices]
 
-    if rank == 0 or rank == 'cpu':
+    if device == 0 or device == 'cpu':
         wer_score = evaluator.wer_score(predictions, labels) * 100
         cer_score = evaluator.cer_score(predictions, labels) * 100
 
@@ -145,7 +165,18 @@ def main(
         # Data Config
         test_path: str,
         checkpoint: str,
+        # CTC Decoder Config
         lm_path: str, 
+        lexicon_path: str,
+        nbest: int = 1,
+        beam_size: int = 50,
+        beam_size_token: Optional[int] = None,
+        beam_threshold: float = 50,
+        lm_weight: float = 2.0,
+        word_score: float = 0.0,
+        unk_score: float = float('-inf'),
+        sil_score: float = 0.0,
+        log_add: bool = False,
         num_samples: Optional[int] = None,
         batch_size: int = 1,
         fp16: bool = False,
@@ -187,7 +218,9 @@ def main(
             device = 0
         test(
             device, n_gpus,
-            test_path, checkpoint, lm_path, num_samples, batch_size, fp16,
+            test_path, checkpoint, 
+            lm_path, lexicon_path, nbest, beam_size, beam_size_token, beam_threshold, lm_weight, word_score, unk_score, sil_score, log_add, 
+            num_samples, batch_size, fp16,
             sampling_rate, n_mels, n_fft, win_length, hop_length, fmin, fmax, mel_norm, mel_scale,
             tokenizer_path, pad_token, delim_token, unk_token,
             n_conformer_blocks, d_model, n_heads, kernel_size, lstm_hidden_dim, n_lstm_layers, saved_result_path
@@ -197,7 +230,9 @@ def main(
             fn=test,
             args=(
                 n_gpus,
-                test_path, checkpoint, lm_path, num_samples, batch_size, fp16,
+                test_path, checkpoint, 
+                lm_path, lm_path, lexicon_path, nbest, beam_size, beam_size_token, beam_threshold, lm_weight, word_score, unk_score, sil_score, log_add, 
+                num_samples, batch_size, fp16,
                 sampling_rate, n_mels, n_fft, win_length, hop_length, fmin, fmax, mel_norm, mel_scale,
                 tokenizer_path, pad_token, delim_token, unk_token,
                 n_conformer_blocks, d_model, n_heads, kernel_size, lstm_hidden_dim, n_lstm_layers, saved_result_path

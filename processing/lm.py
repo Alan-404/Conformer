@@ -69,7 +69,7 @@ class KenCTCDecoder:
         trie.smear(SmearingMode.MAX)
         return trie
     
-    def _to_hypo(self, results) -> List[str]:
+    def _to_hypo(self, results: List[torch.Tensor]) -> List[str]:
         return [" ".join([self.word_dict.get_entry(x) for x in result.words if x >= 0]) for result in results]
     
     def __call__(self, emissions: torch.Tensor, lengths: Optional[torch.Tensor] = None) -> List[str]:

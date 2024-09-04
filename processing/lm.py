@@ -33,7 +33,7 @@ class KenCTCDecoder:
         )
 
         word_dict = create_word_dict(lexicon)
-        lm = KenLM(lm, word_dict)
+        lm = KenLM(lm_path, word_dict)
 
         sil_idx = tokens_dict.get_index(processor.delim_token)
         unk_idx = word_dict.get_index(processor.unk_token)

@@ -103,7 +103,7 @@ class KenCTCDecoder:
     
     def _get_tokens(self, idxs: torch.IntTensor) -> torch.LongTensor:
         idxs = (g[0] for g in it.groupby(idxs))
-        idxs = filter(lambda x: x != self.blank, idxs)
+        idxs = filter(lambda x: x != self.blank_idx, idxs)
         return torch.LongTensor(list(idxs))
     
     def _get_timesteps(self, idxs: torch.IntTensor) -> torch.IntTensor:
@@ -111,7 +111,7 @@ class KenCTCDecoder:
 
         timesteps = []
         for i, idx in enumerate(idxs):
-            if idx == self.blank:
+            if idx == self.blank_idx:
                 continue
             if i == 0 or idx != idxs[i - 1]:
                 timesteps.append(i)

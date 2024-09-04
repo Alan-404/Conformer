@@ -26,3 +26,4 @@ class ConformerMetric:
     
     def cer_score(self, prediction: Union[str, List[str]], target: Union[str, List[str]]) -> torch.Tensor:
         return self.cer_metric(prediction, target)
+    

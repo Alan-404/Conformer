@@ -11,7 +11,6 @@ class KenCTCDecoder:
     def __init__(self,
                  processor: ConformerProcessor,
                  lexicon_path: str, lm_path: str,
-                 lm_dict: Optional[str] = None,
                  nbest: int = 1, beam_size: int = 50, beam_size_token: Optional[int] = None, beam_threshold: float = 50,
                  lm_weight: float = 2,
                  word_score: float = 0, unk_score: float = float('-inf'), sil_score: float = 0,
@@ -35,11 +34,11 @@ class KenCTCDecoder:
         word_dict = create_word_dict(lexicon)
         lm = KenLM(lm_path, word_dict)
 
-        sil_idx = tokens_dict.get_index(processor.delim_token)
-        unk_idx = word_dict.get_index(processor.unk_token)
-        blank_idx = tokens_dict.get_index(processor.pad_token)
+        self.sil_idx = tokens_dict.get_index(processor.delim_token)
+        self.unk_idx = word_dict.get_index(processor.unk_token)
+        self.blank_idx = tokens_dict.get_index(processor.pad_token)
 
-        trie = self.__construct_trie(tokens_dict, word_dict, lexicon, lm, sil_idx)
+        trie = self.__construct_trie(tokens_dict, word_dict, lexicon, lm, self.sil_idx)
 
         token_lm = False
         transitions = []
@@ -48,12 +47,14 @@ class KenCTCDecoder:
             decoder_options,
             trie,
             lm,
-            sil_idx,
-            blank_idx,
-            unk_idx,
+            self.sil_idx,
+            self.blank_idx,
+            self.unk_idx,
             transitions,
             token_lm,
         )
+
+        self.nbest = nbest
 
     def __construct_trie(self, tokens_dict: Dictionary, word_dict: Dictionary, lexicon: Dict[str, List[List[str]]], lm: KenLM, silence: str) -> Trie:
         vocab_size = tokens_dict.index_size()
@@ -69,6 +70,22 @@ class KenCTCDecoder:
 
         trie.smear(SmearingMode.MAX)
         return trie
+    
+    def __call__(self, emissions: torch.Tensor, lengths: Optional[torch.Tensor] = None) -> List[str]:
+        batch_size, time_steps, vocab_size = emissions.size()
+
+        if lengths is None:
+            lengths = torch.full((batch_size, ), time_steps)
+
+        float_bytes = 4
+        hypos = []
+
+        for batch_idx in range(batch_size):
+            emissions_ptr = emissions.data_ptr() + float_bytes * batch_idx * emissions.stride(0)
+            results = self.decoder.decode(emissions_ptr, lengths[batch_idx], vocab_size)
+            hypos.append(self._to_hypo(results[: self.nbest]))
+        
+        return hypos
 
 # class KenLanguageModel:
 #     def __init__(self, 

@@ -101,7 +101,7 @@ class KenCTCDecoder:
 
         results_dict = {k: v for k, v in sorted(results_dict.items(), key=lambda item: item[1])}
 
-        texts = results_dict.keys()[:self.nbest]
+        texts = list(results_dict.keys())[:self.nbest]
         return texts
     
     def post_process_s2t(self, raw: str) -> str:

@@ -5,6 +5,8 @@ import subprocess
 from tqdm import tqdm
 import re
 
+import fire
+
 def main(
         saved_folder: str,
         text_path: str,
@@ -52,4 +54,7 @@ def main(
             if index != last_idx:
                 file.write("\n")
     
-    subprocess.run(["kenlm/build/bin/lmplz", "-o", f"{n_grams}", "--text", f"{text_path}", "--arpa", f"{saved_folder}/lm.arpa"], capture_output=True, text=True)
+    subprocess.run(["kenlm/build/bin/lmplz", "-o", f"{n_grams}", "--text", f"{text_path}", "--arpa", f"{saved_folder}/lm.arpa", "-S", "2G"], capture_output=True, text=True)
+
+if __name__ == '__main__':
+    fire.Fire(main)

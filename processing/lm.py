@@ -1,5 +1,5 @@
 import torch
-from flashlight.lib.text.decoder import CriterionType, LexiconDecoder, LexiconDecoderOptions, Trie, KenLM, SmearingMode
+from flashlight.lib.text.decoder import CriterionType, LexiconDecoder, LexiconDecoderOptions, Trie, KenLM, SmearingMode, DecodeResult
 from flashlight.lib.text.dictionary import create_word_dict, Dictionary, load_words
 from processing.processor import ConformerProcessor
 import re
@@ -86,14 +86,22 @@ class KenCTCDecoder:
         trie.smear(SmearingMode.MAX)
         return trie
     
-    def _to_hypo(self, results: List[torch.Tensor]) -> List[str]:
-        results = [" ".join([self.word_dict.get_entry(x) for x in result.words if x >= 0]) for result in results]
-        texts = []
-        for item in results:
-            texts.append(self.post_process_s2t(item))
+    def _to_hypo(self, results: List[DecodeResult]) -> List[str]:
+        results_dict = dict(0)
 
-        if self.nbest == 1:
-            return texts[0]
+        for result in results:
+            pred = " ".join([self.word_dict.get_entry(x) for x in result.words if x >= 0])
+            pred_score = result.score
+            if len(self.hotwords_dict) != 0:
+                for hotword, hotword_score in self.hotwords_dict.items():
+                    num_appearances = pred.count(hotword)
+                    if num_appearances > 0:
+                        pred_score += num_appearances + hotword_score
+            results_dict[pred] = pred_score
+
+        results_dict = {k: v for k, v in sorted(results_dict.items(), key=lambda item: item[1])}
+
+        texts = results_dict.keys()[:self.nbest]
         return texts
     
     def post_process_s2t(self, raw: str) -> str:

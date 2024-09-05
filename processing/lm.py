@@ -142,7 +142,7 @@ class KenCTCDecoder:
         for batch_idx in range(batch_size):
             emissions_ptr = emissions.data_ptr() + self.float_bytes * batch_idx * emissions.stride(0)
             results = self.decoder.decode(emissions_ptr, lengths[batch_idx], self.vocab_size)
-            hypos.append(self._to_hypo(results[: self.nbest]))
+            hypos.append(self._to_hypo(results))
         
         if batch_size == 1:
             return hypos[0]

@@ -38,7 +38,7 @@ def main(
 
     unique_words = []
     lexicon = []
-    print("Getting Unique Words")
+    print("Getting Unique Words and Creating Lexicon")
     for text in tqdm(texts):
         words = text.split(" ")
         for word in words:
@@ -58,6 +58,7 @@ def main(
     
     print("Creating KenLM")
     subprocess.run(["kenlm/build/bin/lmplz", "-o", f"{n_grams}", "--text", f"{saved_folder}/lm_text.txt", "--arpa", f"{saved_folder}/lm.arpa", "-S", "2G"], capture_output=True, text=True)
+    print("Finish Creating KenLM")
 
 if __name__ == '__main__':
     fire.Fire(main)

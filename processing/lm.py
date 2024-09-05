@@ -3,7 +3,7 @@ from flashlight.lib.text.decoder import CriterionType, LexiconDecoder, LexiconDe
 from flashlight.lib.text.dictionary import create_word_dict, Dictionary, load_words
 from processing.processor import ConformerProcessor
 import re
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Union
 
 class KenCTCDecoder:
     def __init__(self,
@@ -57,6 +57,8 @@ class KenCTCDecoder:
 
         self.nbest = nbest
 
+        self.float_bytes = 4
+
     def __construct_trie(self, tokens_dict: Dictionary, word_dict: Dictionary, lexicon: Dict[str, List[List[str]]], lm: KenLM, silence: str) -> Trie:
         vocab_size = tokens_dict.index_size()
         trie = Trie(vocab_size, silence)
@@ -78,6 +80,8 @@ class KenCTCDecoder:
         for item in results:
             texts.append(self.post_process_s2t(item))
 
+        if self.nbest == 1:
+            return texts[0]
         return texts
     
     def post_process_s2t(self, raw: str) -> str:
@@ -97,8 +101,11 @@ class KenCTCDecoder:
         text = ' '.join([word for word in text.split(' ') if word not in ['n','d','h','g']])
         text = re.sub("\s\s+", " ", text)
         return text.strip()
-
+    
     def __call__(self, emissions: torch.Tensor, lengths: Optional[torch.Tensor] = None) -> List[str]:
+        if emissions.ndim == 2:
+            emissions = emissions.unsqueeze(0)
+        
         if emissions.device != 'cpu':
             emissions = emissions.cpu()
             if lengths is not None:
@@ -109,11 +116,10 @@ class KenCTCDecoder:
         if lengths is None:
             lengths = torch.full((batch_size, ), time_steps)
 
-        float_bytes = 4
         hypos = []
 
         for batch_idx in range(batch_size):
-            emissions_ptr = emissions.data_ptr() + float_bytes * batch_idx * emissions.stride(0)
+            emissions_ptr = emissions.data_ptr() + self.float_bytes * batch_idx * emissions.stride(0)
             results = self.decoder.decode(emissions_ptr, lengths[batch_idx], self.vocab_size)
             hypos.append(self._to_hypo(results[: self.nbest]))
         

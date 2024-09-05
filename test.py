@@ -129,10 +129,9 @@ def test(
     if num_samples is not None:
         df = df[:num_samples]
 
-    collate_fn = ConformerCollate(processor)
     dataset = ConformerDataset(df, processor, num_examples=None)
     sampler = DistributedSampler(dataset, num_replicas=world_size, rank=device, shuffle=False) if world_size > 1 else SequentialSampler(dataset)
-    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False, sampler=sampler, collate_fn=collate_fn)
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False, sampler=sampler, collate_fn=ConformerCollate(processor, collate_type='test'))
 
     evaluator = ConformerMetric()
     

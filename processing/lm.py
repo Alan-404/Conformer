@@ -98,8 +98,7 @@ class KenCTCDecoder:
             if len(self.hotwords_dict) != 0:
                 for hotword, hotword_score in self.hotwords_dict.items():
                     num_appearances = pred.count(hotword)
-                    if num_appearances > 0:
-                        pred_score += num_appearances + hotword_score
+                    pred_score += num_appearances * hotword_score
             outputs.append(CTCResult(pred, pred_score))
 
         outputs = sorted(outputs, key=lambda x: x.score)

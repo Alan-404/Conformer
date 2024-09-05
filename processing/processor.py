@@ -31,6 +31,13 @@ class ConformerProcessor:
                  delim_token: str = "|",
                  unk_token: str = "<UNK>",
                  puncs: str = r"([:./,?!@#$%^&=`~;*\(\)\[\]\"\\])",
+                 # Augment Config
+                 n_time_masks: int = 10, 
+                 time_mask_param: int = 35, 
+                 n_freq_masks: int = 10, 
+                 freq_mask_param: int = 35, 
+                 ratio: float = 0.05, 
+                 zero_masking: bool = True,
                  # Device Config
                  training: bool = False,
                  device: Union[str, int] = 'cpu') -> None:
@@ -56,7 +63,15 @@ class ConformerProcessor:
         ).to(device)
 
         if training:
-            self.augment = ConformerAugment(device=device)
+            self.augment = ConformerAugment(
+                n_time_masks=n_time_masks,
+                time_mask_param=time_mask_param,
+                n_freq_masks=n_freq_masks,
+                freq_mask_param=freq_mask_param,
+                ratio=ratio,
+                zero_masking=zero_masking,
+                device=device
+            )
 
         # Text Setup
         if tokenizer_path is not None:

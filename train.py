@@ -124,6 +124,13 @@ def train(
         lstm_hidden_dim: int = 640,
         n_lstm_layers: int = 1,
         dropout_rate: float = 0.1,
+        # Augment Config
+        n_time_masks: int = 10, 
+        time_mask_param: int = 35, 
+        n_freq_masks: int = 10, 
+        freq_mask_param: int = 35, 
+        ratio: float = 0.05, 
+        zero_masking: bool = True,
         # Logging Config
         logging: bool = True,
         logging_project: str = "Conformer S2T",
@@ -148,6 +155,12 @@ def train(
         pad_token=pad_token,
         delim_token=delim_token,
         unk_token=unk_token,
+        n_time_masks=n_time_masks,
+        time_mask_param=time_mask_param,
+        n_freq_masks=n_freq_masks,
+        freq_mask_param=freq_mask_param,
+        ratio=ratio,
+        zero_masking=zero_masking,
         training=True,
         device=rank
     )
@@ -315,6 +328,13 @@ def main(
         lstm_hidden_dim: int = 640,
         n_lstm_layers: int = 1,
         dropout_rate: float = 0.1,
+        # Augment Config
+        n_time_masks: int = 10, 
+        time_mask_param: int = 35, 
+        n_freq_masks: int = 10, 
+        freq_mask_param: int = 35, 
+        ratio: float = 0.05, 
+        zero_masking: bool = True,
         # Logging Config
         logging: bool = True,
         logging_project: str = "Conformer S2T",

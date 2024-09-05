@@ -3,6 +3,7 @@ from processing.processor import ConformerProcessor
 import io
 import subprocess
 from tqdm import tqdm
+import re
 
 def main(
         saved_folder: str,
@@ -22,7 +23,16 @@ def main(
     texts = []
     print("Formatting Text")
     for item in tqdm(data):
-        texts.append(str(item).upper().strip())
+        text = str(item).upper().strip()
+        text = re.sub("\s\s+", " ", text)
+        texts.append(text)
+    
+    last_idx = len(texts) - 1
+    with open(f"{saved_folder}/lm_text.txt", 'w', encoding='utf8') as file:
+        for index, line in enumerate(texts):
+            file.write(line)
+            if index != last_idx:
+                file.write("\n")
 
     unique_words = []
     lexicon = []
@@ -35,11 +45,11 @@ def main(
                 graphemes = " ".join(processor.word2graphemes(word))
                 lexicon.append(f"{word} {graphemes} {processor.delim_token}")
 
-    num_words = len(unique_words) - 1
+    last_idx = len(unique_words) - 1
     with open(f"{saved_folder}/lexicon.txt", 'w', encoding='utf8') as file:
         for index, line in enumerate(lexicon):
             file.write(line)
-            if index != num_words:
+            if index != last_idx:
                 file.write("\n")
     
-    
+    subprocess.run(["kenlm/build/bin/lmplz", "-o", f"{n_grams}", "--text", f"{text_path}", "--arpa", f"{saved_folder}/lm.arpa"], capture_output=True, text=True)

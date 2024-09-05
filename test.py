@@ -10,7 +10,7 @@ import pandas as pd
 from model.conformer import Conformer
 from dataset import ConformerDataset, ConformerCollate
 from processing.processor import ConformerProcessor
-from processing.lm import KenCTCDecoder
+from processing.lm import KenCTCDecoder, KenLanguageModel
 from tqdm import tqdm
 from typing import Optional, Union
 from evaluation import ConformerMetric
@@ -34,8 +34,8 @@ def test(
         test_path: str,
         checkpoint: str,
         # CTC Decoder Config
-        lm_path: str, 
-        lexicon_path: str,
+        lm_path: Optional[str] = None, 
+        lexicon_path: Optional[str] = None,
         nbest: int = 1,
         beam_size: int = 190,
         beam_size_token: Optional[int] = 100,
@@ -110,19 +110,24 @@ def test(
     model.to(device)
     model.eval()
 
-    ctc_decoder = KenCTCDecoder(
-        processor=processor,
-        lexicon_path=lexicon_path,
+    # ctc_decoder = KenCTCDecoder(
+    #     processor=processor,
+    #     lexicon_path=lexicon_path,
+    #     lm_path=lm_path,
+    #     nbest=nbest,
+    #     beam_size=beam_size,
+    #     beam_size_token=beam_size_token,
+    #     beam_threshold=beam_threshold,
+    #     lm_weight=lm_weight,
+    #     word_score=word_score,
+    #     unk_score=unk_score,
+    #     sil_score=sil_score,
+    #     log_add=log_add
+    # )
+
+    ctc_decoder = KenLanguageModel(
         lm_path=lm_path,
-        nbest=nbest,
-        beam_size=beam_size,
-        beam_size_token=beam_size_token,
-        beam_threshold=beam_threshold,
-        lm_weight=lm_weight,
-        word_score=word_score,
-        unk_score=unk_score,
-        sil_score=sil_score,
-        log_add=log_add
+        vocab=processor.vocab
     )
 
     df = pd.read_csv(test_path)
@@ -143,8 +148,8 @@ def test(
     for (inputs, lengths, sorted_indices) in tqdm(dataloader, leave=False):
         with torch.inference_mode():
             with autocast(enabled=fp16):
-                outputs, output_lengths = model(inputs, lengths)
-                preds = ctc_decoder(outputs.cpu(), output_lengths.cpu())
+                outputs, lengths = model(inputs, lengths)
+                preds = ctc_decoder(outputs.cpu(), lengths.cpu(), processor.spec_decode)
                 predictions += [preds[index] for index in sorted_indices]
 
     if device == 0 or device == 'cpu':

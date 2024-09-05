@@ -99,7 +99,8 @@ class KenCTCDecoder:
                         pred_score += num_appearances + hotword_score
             results_dict[pred] = pred_score
 
-        results_dict = {k: v for k, v in sorted(results_dict.items(), key=lambda item: item[1])}
+        results_dict = {k: v for k, v in sorted(results_dict.items(), key=lambda item: item[1], reverse=True)}
+        print(results_dict)
 
         texts = list(results_dict.keys())[:self.nbest]
         return texts

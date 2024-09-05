@@ -131,8 +131,10 @@ class KenCTCDecoder:
         return text.strip()
     
     def __call__(self, emissions: torch.Tensor, lengths: Optional[torch.Tensor] = None) -> List[str]:
+        return_str = False
         if emissions.ndim == 2:
             emissions = emissions.unsqueeze(0)
+            return_str = True
         
         if emissions.device != 'cpu':
             emissions = emissions.cpu()
@@ -151,7 +153,7 @@ class KenCTCDecoder:
             results = self.decoder.decode(emissions_ptr, lengths[batch_idx], self.vocab_size)
             hypos.append(self._to_hypo(results[:self.top_k]))
         
-        if batch_size == 1:
+        if return_str == True:
             return hypos[0]
         return hypos
 

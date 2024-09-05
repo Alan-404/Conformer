@@ -143,9 +143,9 @@ def test(
     for (inputs, lengths, sorted_indices) in tqdm(dataloader, leave=False):
         with torch.inference_mode():
             with autocast(enabled=fp16):
-                outputs, lengths = model(inputs, lengths)
-                preds = ctc_decoder(outputs, lengths)
-                predictions += [preds[i] for i in sorted_indices]
+                outputs, output_lengths = model(inputs, lengths)
+                preds = ctc_decoder(outputs.cpu(), output_lengths.cpu())
+                predictions += [preds[index] for index in sorted_indices]
 
     if device == 0 or device == 'cpu':
         wer_score = evaluator.wer_score(predictions, labels) * 100

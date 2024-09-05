@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from torchmetrics import WordErrorRate, CharErrorRate
+from torchmetrics.text import WordErrorRate, CharErrorRate
 
 from typing import Optional, Union, List
 
@@ -26,4 +26,3 @@ class ConformerMetric:
     
     def cer_score(self, prediction: Union[str, List[str]], target: Union[str, List[str]]) -> torch.Tensor:
         return self.cer_metric(prediction, target)
-    

@@ -357,6 +357,7 @@ def main(
             sampling_rate, n_mels, n_fft, win_length, hop_length, fmin, fmax, mel_norm, mel_scale,
             tokenizer_path, pad_token, delim_token, unk_token,
             n_conformer_blocks, d_model, n_heads, kernel_size, lstm_hidden_dim, n_lstm_layers, dropout_rate,
+            n_time_masks, time_mask_param, n_freq_masks, freq_mask_param, ratio, zero_masking,
             logging, logging_project, logging_name
         )
     else:

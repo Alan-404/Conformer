@@ -25,8 +25,8 @@ def main(
     texts = []
     print("Formatting Text")
     for item in tqdm(data):
-        text = str(item).upper().strip()
-        text = re.sub("\s\s+", " ", text)
+        text = str(item).upper()
+        text = processor.clean_text(text)
         texts.append(text)
     
     last_idx = len(texts) - 1
@@ -43,8 +43,10 @@ def main(
         words = text.split(" ")
         for word in words:
             if word not in unique_words:
-                unique_words.append(word)
                 graphemes = " ".join(processor.word2graphemes(word))
+                if processor.unk_token in graphemes:
+                    continue
+                unique_words.append(word)
                 lexicon.append(f"{word} {graphemes} {processor.delim_token}")
 
     last_idx = len(unique_words) - 1
@@ -54,7 +56,8 @@ def main(
             if index != last_idx:
                 file.write("\n")
     
-    subprocess.run(["kenlm/build/bin/lmplz", "-o", f"{n_grams}", "--text", f"{text_path}", "--arpa", f"{saved_folder}/lm.arpa", "-S", "2G"], capture_output=True, text=True)
+    print("Creating KenLM")
+    subprocess.run(["kenlm/build/bin/lmplz", "-o", f"{n_grams}", "--text", f"{saved_folder}/lm_text.txt", "--arpa", f"{saved_folder}/lm.arpa", "-S", "2G"], capture_output=True, text=True)
 
 if __name__ == '__main__':
     fire.Fire(main)

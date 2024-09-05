@@ -4,6 +4,9 @@ from flashlight.lib.text.dictionary import create_word_dict, Dictionary, load_wo
 from processing.processor import ConformerProcessor
 import re
 from typing import Optional, List, Dict, Union
+from collections import namedtuple
+
+CTCResult = namedtuple('CTCResult', ['text', 'score'])
 
 class KenCTCDecoder:
     def __init__(self,
@@ -12,7 +15,7 @@ class KenCTCDecoder:
                  nbest: int = 1, beam_size: int = 50, beam_size_token: Optional[int] = None, beam_threshold: float = 50,
                  lm_weight: float = 2,
                  word_score: float = 0, unk_score: float = float('-inf'), sil_score: float = 0,
-                 log_add: bool = False,
+                 top_k: int = 10, log_add: bool = False,
                  hotwords: Optional[Union[Dict[str, float], List[str]]] = None, hotword_score: Optional[float] = None) -> None:
         self.hotwords_dict = dict()
         if hotwords is not None:
@@ -68,7 +71,7 @@ class KenCTCDecoder:
         )
 
         self.nbest = nbest
-
+        self.top_k = top_k
         self.float_bytes = 4
 
     def __construct_trie(self, tokens_dict: Dictionary, word_dict: Dictionary, lexicon: Dict[str, List[List[str]]], lm: KenLM, silence: str) -> Trie:
@@ -86,8 +89,8 @@ class KenCTCDecoder:
         trie.smear(SmearingMode.MAX)
         return trie
     
-    def _to_hypo(self, results: List[DecodeResult]) -> List[str]:
-        results_dict = dict()
+    def _to_hypo(self, results: List[DecodeResult]) -> Union[List[str], str]:
+        outputs = []
 
         for result in results:
             pred = self.post_process_s2t(" ".join([self.word_dict.get_entry(x) for x in result.words if x >= 0]))
@@ -97,12 +100,17 @@ class KenCTCDecoder:
                     num_appearances = pred.count(hotword)
                     if num_appearances > 0:
                         pred_score += num_appearances + hotword_score
-            results_dict[pred] = pred_score
+            outputs.append(CTCResult(pred, pred_score))
 
-        results_dict = {k: v for k, v in sorted(results_dict.items(), key=lambda item: item[1], reverse=True)}
-        print(results_dict)
+        outputs = sorted(outputs, key=lambda x: x.score)
 
-        texts = list(results_dict.keys())[:self.nbest]
+        if self.nbest == 1:
+            return outputs[0].text
+
+        texts = []
+        for i in range(self.nbest):
+            texts.append(outputs[i].text)
+        
         return texts
     
     def post_process_s2t(self, raw: str) -> str:
@@ -142,7 +150,7 @@ class KenCTCDecoder:
         for batch_idx in range(batch_size):
             emissions_ptr = emissions.data_ptr() + self.float_bytes * batch_idx * emissions.stride(0)
             results = self.decoder.decode(emissions_ptr, lengths[batch_idx], self.vocab_size)
-            hypos.append(self._to_hypo(results))
+            hypos.append(self._to_hypo(results[:self.top_k]))
         
         if batch_size == 1:
             return hypos[0]

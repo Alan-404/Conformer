@@ -2,7 +2,7 @@ import torch
 from flashlight.lib.text.decoder import CriterionType, LexiconDecoder, LexiconDecoderOptions, Trie, KenLM, SmearingMode
 from flashlight.lib.text.dictionary import create_word_dict, Dictionary, load_words
 from processing.processor import ConformerProcessor
-
+import re
 from typing import Optional, List, Dict
 
 class KenCTCDecoder:
@@ -17,9 +17,12 @@ class KenCTCDecoder:
         tokens_dict = Dictionary(processor.vocab)
         lexicon = load_words(lexicon_path)
 
+        if beam_size_token is None:
+            beam_size_token = tokens_dict.index_size()
+
         decoder_options = LexiconDecoderOptions(
             beam_size=beam_size,
-            beam_size_token=beam_size_token or tokens_dict.index_size(),
+            beam_size_token=beam_size_token,
             beam_threshold=beam_threshold,
             lm_weight=lm_weight,
             word_score=word_score,
@@ -70,8 +73,31 @@ class KenCTCDecoder:
         return trie
     
     def _to_hypo(self, results: List[torch.Tensor]) -> List[str]:
-        return [" ".join([self.word_dict.get_entry(x) for x in result.words if x >= 0]) for result in results]
+        results = [" ".join([self.word_dict.get_entry(x) for x in result.words if x >= 0]) for result in results]
+        texts = []
+        for item in results:
+            texts.append(self.post_process_s2t(item))
+
+        return texts
     
+    def post_process_s2t(self, raw: str) -> str:
+        if not raw or len(raw)==1:
+            return ''
+        text = raw.replace('ti vi', 'tivi').replace('goai phoai', 'wifi')
+        text = text.replace('côm bô', 'combo').replace("on lai", "online").replace("ốp lai", "offline")
+        text = text.replace('ca cộng', 'k cộng').replace("gia lô", "zalo")
+        text = text.replace('ốp thiết bị', 'off thiết bị')
+        text = text.replace('cờ lao', 'cloud').replace("nhận mát", "nhận mac").replace("nhận mắc", "nhận mac")
+        text = text.replace('in tơ net','internet').replace('in tơ nét','internet')
+        text = text.replace('ca me ra', 'camera').replace('ca mê ra', 'camera').replace("cam mê ra", "camera").replace("cam me ra", "camera")
+        text = text.replace("a bi quan", "ip1").replace("i bi quan", "ip1").replace("i bi a", "ip1").replace("con vật to", "converter")
+        text = text.replace("vốt chơ", "voucher ").replace("lô gô", "logo")
+        text = text.replace("lên áp", "lên app").replace("cái áp", "cái app").replace("meo", "mail").replace("thu lại bọt", "thu lại port").replace("thu bọt", "thu port")
+        text = text.replace("hai fpt", "hi fpt").replace("tàu lâu", "tào lao").replace("gửi mai", "gửi mail")
+        text = ' '.join([word for word in text.split(' ') if word not in ['n','d','h','g']])
+        text = re.sub("\s\s+", " ", text)
+        return text.strip()
+
     def __call__(self, emissions: torch.Tensor, lengths: Optional[torch.Tensor] = None) -> List[str]:
         if emissions.device != 'cpu':
             emissions = emissions.cpu()

@@ -12,7 +12,19 @@ class KenCTCDecoder:
                  nbest: int = 1, beam_size: int = 50, beam_size_token: Optional[int] = None, beam_threshold: float = 50,
                  lm_weight: float = 2,
                  word_score: float = 0, unk_score: float = float('-inf'), sil_score: float = 0,
-                 log_add: bool = False) -> None:
+                 log_add: bool = False,
+                 hotwords: Optional[Union[Dict[str, float], List[str]]] = None, hotword_score: Optional[float] = None) -> None:
+        self.hotwords_dict = dict()
+        if hotwords is not None:
+            if isinstance(hotwords, list):
+                assert hotword_score is not None and hotword_score > 0
+                for hotword in hotwords:
+                    self.hotwords_dict[hotword] = hotword_score
+            else:
+                for score in hotwords.values():
+                    assert score > 0
+                self.hotwords_dict = hotwords
+        
         self.vocab_size = len(processor.vocab)
         tokens_dict = Dictionary(processor.vocab)
         lexicon = load_words(lexicon_path)

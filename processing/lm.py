@@ -87,10 +87,10 @@ class KenCTCDecoder:
         return trie
     
     def _to_hypo(self, results: List[DecodeResult]) -> List[str]:
-        results_dict = dict(0)
+        results_dict = dict()
 
         for result in results:
-            pred = " ".join([self.word_dict.get_entry(x) for x in result.words if x >= 0])
+            pred = self.post_process_s2t(" ".join([self.word_dict.get_entry(x) for x in result.words if x >= 0]))
             pred_score = result.score
             if len(self.hotwords_dict) != 0:
                 for hotword, hotword_score in self.hotwords_dict.items():

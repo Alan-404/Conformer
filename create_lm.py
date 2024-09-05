@@ -44,7 +44,7 @@ def main(
         for word in words:
             if word not in unique_words:
                 graphemes = " ".join(processor.word2graphemes(word))
-                if processor.unk_token in graphemes:
+                if processor.unk_token in graphemes or len(word) == 0:
                     continue
                 unique_words.append(word)
                 lexicon.append(f"{word} {graphemes} {processor.delim_token}")

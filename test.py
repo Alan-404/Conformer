@@ -35,14 +35,19 @@ def all_gather_list(predictions: List[str], num_items: int, rank: int) -> List[s
 
     if rank == 0:
         results = []
-        num_groups = num_items // distributed.get_world_size()
+        
+        num_steps = num_items // distributed.get_world_size()
+        last_idx = num_items - 1
+        if num_items % distributed.get_world_size() != 0:
+            num_steps += 1
 
-        for group_idx in range(num_groups):
-            results += [gathered_list[group_idx][index] for index in range(distributed.get_world_size())]
-        
-        for index in range(num_items%num_groups):
-            results.append(gathered_list[num_groups][index])
-        
+        for index in range(num_steps):
+            for rank_idx in range(distributed.get_world_size()):
+                idx = index + rank_idx*num_steps
+                results.append(gathered_list[idx])
+                if idx == last_idx:
+                    break
+    
         return results
 
 def test(

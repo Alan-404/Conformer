@@ -23,6 +23,7 @@ def setup(rank: int, world_size: int) -> None:
     os.environ['MASTER_PORT'] = '12355'
     torch.cuda.set_device(rank)
     distributed.init_process_group('nccl', 'env://', world_size=world_size, rank=rank)
+    print(f"Initialized Thread {rank+1}/{world_size}")
 
 def cleanup() -> None:
     distributed.destroy_process_group()
@@ -65,7 +66,7 @@ def test(
         saved_result_path: Optional[str] = None
     ):
     if world_size > 1:
-        setup(world_size, device)
+        setup(device, world_size)
 
     processor = ConformerProcessor(
         sample_rate=sampling_rate,
@@ -96,11 +97,11 @@ def test(
         dropout_rate=0.0
     )
 
+    model.to(device)
     if world_size > 1:
         model = DDP(model, device_ids=[device])
 
-    load_model(checkpoint, model)
-    model.to(device)
+    load_model(checkpoint, model, world_size=world_size)
     model.eval()
 
     ctc_decoder = KenLanguageModel(

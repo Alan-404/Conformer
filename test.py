@@ -128,6 +128,8 @@ def test(
     
     predictions = []
 
+    if world_size > 1:
+        dataloader.sampler.set_epoch(0)
     for (inputs, lengths, sorted_indices) in tqdm(dataloader, leave=False):
         with torch.inference_mode():
             with autocast(enabled=fp16):
@@ -137,8 +139,6 @@ def test(
 
     if world_size > 1:
         predictions = all_gather_list(predictions, device)
-        print(predictions)
-        print(len(predictions))
 
     if device == 0 or device == 'cpu':
         labels = df['text'].to_list()

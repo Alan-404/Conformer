@@ -12,7 +12,7 @@ from dataset import ConformerDataset, ConformerCollate
 from processing.processor import ConformerProcessor
 from processing.lm import KenLanguageModel
 from tqdm import tqdm
-from typing import Optional, Union
+from typing import Optional, Union, List
 from evaluation import ConformerMetric
 from checkpoint import load_model
 
@@ -27,6 +27,13 @@ def setup(rank: int, world_size: int) -> None:
 
 def cleanup() -> None:
     distributed.destroy_process_group()
+
+def all_gather_list(predictions: List[str]) -> List[str]:
+    gathered_list = [None] * distributed.get_world_size()
+
+    distributed.all_gather_object(gathered_list, predictions)
+
+    return [item for sublist in gathered_list for item in sublist]
 
 def test(
         device: Union[str, int],
@@ -129,7 +136,7 @@ def test(
                 predictions += [preds[index] for index in sorted_indices]
 
     if world_size > 1:
-        distributed.all_gather_object(predictions)
+        predictions = all_gather_list(predictions)
 
     if device == 0 or device == 'cpu':
         labels = df['text'].to_list()

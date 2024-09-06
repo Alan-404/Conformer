@@ -1,6 +1,6 @@
 import os
 import torch
-
+from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.cuda.amp import autocast
 import torch.distributed as distributed
 import torch.multiprocessing as mp
@@ -96,6 +96,9 @@ def test(
         dropout_rate=0.0
     )
 
+    if world_size > 1:
+        model = DDP(model, device_ids=[device])
+
     load_model(checkpoint, model)
     model.to(device)
     model.eval()
@@ -131,7 +134,7 @@ def test(
         labels = df['text'].to_list()
         for i in range(len(labels)):
             labels[i] = str(labels[i]).upper()
-            
+
         wer_score = evaluator.wer_score(predictions, labels) * 100
         cer_score = evaluator.cer_score(predictions, labels) * 100
 

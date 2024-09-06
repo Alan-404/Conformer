@@ -38,7 +38,7 @@ class KenLanguageModel:
         if decode_func is not None:
             text = decode_func(text)
         
-        text = self.post_process_s2t(text)
+        # text = self.post_process_s2t(text)
         return text
     
     def post_process_s2t(self, raw: str) -> str:

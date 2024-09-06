@@ -160,6 +160,7 @@ def test(
         wer_score = evaluator.wer_score(predictions, labels) * 100
         cer_score = evaluator.cer_score(predictions, labels) * 100
 
+        print("Test Results: ")
         print(f"WER Score: {(wer_score):.4f}%")
         print(f"CER Score: {(cer_score):.4f}%")
 

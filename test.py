@@ -38,7 +38,7 @@ def all_gather_list(predictions: List[str], num_items: int, rank: int) -> List[s
         num_groups = num_items // distributed.get_world_size()
 
         for group_idx in range(num_groups):
-            results += [gathered_list[group_idx][index] for index in distributed.get_world_size()]
+            results += [gathered_list[group_idx][index] for index in range(distributed.get_world_size())]
         
         for index in range(num_items%num_groups):
             results.append(gathered_list[num_groups][index])

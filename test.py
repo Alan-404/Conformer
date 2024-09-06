@@ -134,7 +134,7 @@ def test(
         with torch.inference_mode():
             with autocast(enabled=fp16):
                 outputs, lengths = model(inputs, lengths)
-                preds = ctc_decoder(outputs.cpu(), lengths.cpu(), processor.spec_decode)
+                preds = ctc_decoder(outputs.cpu().numpy(), lengths.cpu().numpy(), processor.spec_decode)
                 predictions += [preds[index] for index in sorted_indices]
 
     if device == 0 or device == 'cpu':

@@ -142,9 +142,6 @@ def test(
     evaluator = ConformerMetric()
     
     predictions = []
-
-    if world_size > 1:
-        dataloader.sampler.set_epoch(0)
     for (inputs, lengths, sorted_indices) in tqdm(dataloader, leave=False):
         with torch.inference_mode():
             with autocast(enabled=fp16):

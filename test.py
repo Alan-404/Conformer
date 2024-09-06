@@ -10,7 +10,7 @@ import pandas as pd
 from model.conformer import Conformer
 from dataset import ConformerDataset, ConformerCollate
 from processing.processor import ConformerProcessor
-from processing.lm import KenCTCDecoder, KenLanguageModel
+from processing.lm import KenLanguageModel
 from tqdm import tqdm
 from typing import Optional, Union
 from evaluation import ConformerMetric
@@ -109,21 +109,6 @@ def test(
     load_model(checkpoint, model)
     model.to(device)
     model.eval()
-
-    # ctc_decoder = KenCTCDecoder(
-    #     processor=processor,
-    #     lexicon_path=lexicon_path,
-    #     lm_path=lm_path,
-    #     nbest=nbest,
-    #     beam_size=beam_size,
-    #     beam_size_token=beam_size_token,
-    #     beam_threshold=beam_threshold,
-    #     lm_weight=lm_weight,
-    #     word_score=word_score,
-    #     unk_score=unk_score,
-    #     sil_score=sil_score,
-    #     log_add=log_add
-    # )
 
     ctc_decoder = KenLanguageModel(
         lm_path=lm_path,

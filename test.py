@@ -35,16 +35,6 @@ def test(
         checkpoint: str,
         # CTC Decoder Config
         lm_path: Optional[str] = None, 
-        lexicon_path: Optional[str] = None,
-        nbest: int = 1,
-        beam_size: int = 190,
-        beam_size_token: Optional[int] = 100,
-        beam_threshold: float = 50,
-        lm_weight: float = 2.0,
-        word_score: float = 0.0,
-        unk_score: float = float('-inf'),
-        sil_score: float = 0.0,
-        log_add: bool = False,
         # Inference Config
         num_samples: Optional[int] = None,
         batch_size: int = 1,
@@ -126,9 +116,6 @@ def test(
     evaluator = ConformerMetric()
     
     predictions = []
-    labels = df['text'].to_list()
-    for i in range(len(labels)):
-        labels[i] = str(labels[i]).upper()
 
     for (inputs, lengths, sorted_indices) in tqdm(dataloader, leave=False):
         with torch.inference_mode():
@@ -137,7 +124,14 @@ def test(
                 preds = ctc_decoder(outputs.cpu().numpy(), lengths.cpu().numpy(), processor.spec_decode)
                 predictions += [preds[index] for index in sorted_indices]
 
+    if world_size > 1:
+        distributed.all_gather_object(predictions)
+
     if device == 0 or device == 'cpu':
+        labels = df['text'].to_list()
+        for i in range(len(labels)):
+            labels[i] = str(labels[i]).upper()
+            
         wer_score = evaluator.wer_score(predictions, labels) * 100
         cer_score = evaluator.cer_score(predictions, labels) * 100
 
@@ -156,16 +150,6 @@ def main(
         checkpoint: str,
         # CTC Decoder Config
         lm_path: str, 
-        lexicon_path: str,
-        nbest: int = 1,
-        beam_size: int = 50,
-        beam_size_token: Optional[int] = None,
-        beam_threshold: float = 50,
-        lm_weight: float = 2.0,
-        word_score: float = 0.0,
-        unk_score: float = float('-inf'),
-        sil_score: float = 0.0,
-        log_add: bool = False,
         num_samples: Optional[int] = None,
         batch_size: int = 1,
         fp16: bool = False,
@@ -208,7 +192,7 @@ def main(
         test(
             device, n_gpus,
             test_path, checkpoint, 
-            lm_path, lexicon_path, nbest, beam_size, beam_size_token, beam_threshold, lm_weight, word_score, unk_score, sil_score, log_add, 
+            lm_path,
             num_samples, batch_size, fp16,
             sampling_rate, n_mels, n_fft, win_length, hop_length, fmin, fmax, mel_norm, mel_scale,
             tokenizer_path, pad_token, delim_token, unk_token,
@@ -220,7 +204,7 @@ def main(
             args=(
                 n_gpus,
                 test_path, checkpoint, 
-                lm_path, lm_path, lexicon_path, nbest, beam_size, beam_size_token, beam_threshold, lm_weight, word_score, unk_score, sil_score, log_add, 
+                lm_path,
                 num_samples, batch_size, fp16,
                 sampling_rate, n_mels, n_fft, win_length, hop_length, fmin, fmax, mel_norm, mel_scale,
                 tokenizer_path, pad_token, delim_token, unk_token,

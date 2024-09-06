@@ -298,7 +298,7 @@ class ConformerProcessor:
             return self.vocab.index(token)
         return self.vocab.index(self.unk_token)
     
-    def greedy_decode_logits(self, logits: torch.Tensor) -> str:
+    def greedy_decode(self, logits: torch.Tensor) -> str:
         if logits.ndim == 2:
             logits = torch.argmax(logits, dim=-1) # (length,)
         items = []
@@ -321,10 +321,10 @@ class ConformerProcessor:
         text = self.spec_decode("".join(items).replace(self.delim_token, " "))
         return text
     
-    def batch_greedy_decode_logits(self, logits: torch.Tensor) -> List[str]:
+    def batch_greedy_decode(self, logits: torch.Tensor) -> List[str]:
         texts = []
         for item in logits:
-            texts.append(self.greedy_decode_logits(item))
+            texts.append(self.greedy_decode(item))
         return texts
     
     def beam_search_decode(self, logits: torch.Tensor, beam_widths: int = 5) -> str:

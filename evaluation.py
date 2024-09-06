@@ -3,12 +3,11 @@ import torch.nn as nn
 
 from torchmetrics.text import WordErrorRate, CharErrorRate
 
-from typing import Optional, Union, List
+from typing import Union, List
 
 class ConformerCriterion:
-    def __init__(self, blank_id: Optional[int] = None) -> None:
-        if blank_id is not None:
-            self.ctc_criterion = nn.CTCLoss(blank=blank_id, zero_infinity=True)
+    def __init__(self, blank_id: int = 0) -> None:
+        self.ctc_criterion = nn.CTCLoss(blank=blank_id, zero_infinity=True)
 
     def ctc_loss(self, outputs: torch.Tensor, targets: torch.Tensor, input_lengths: torch.Tensor, target_lengths: torch.Tensor) -> torch.Tensor:
         outputs = outputs.float()

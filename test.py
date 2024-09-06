@@ -28,12 +28,21 @@ def setup(rank: int, world_size: int) -> None:
 def cleanup() -> None:
     distributed.destroy_process_group()
 
-def all_gather_list(predictions: List[str], rank: int) -> List[str]:
+def all_gather_list(predictions: List[str], num_items: int) -> List[str]:
     gathered_list = [None] * distributed.get_world_size()
     distributed.all_gather_object(gathered_list, predictions)
-    for sublit in gathered_list:
-        print(sublit)
-    return [item for sublist in gathered_list for item in sublist]
+    gathered_list = [item for sublist in gathered_list for item in sublist]
+
+    results = []
+    num_groups = num_items // distributed.get_world_size()
+
+    for group_idx in range(num_groups):
+        results += [gathered_list[group_idx][index] for index in distributed.get_world_size()]
+    
+    for index in range(num_items%num_groups):
+        results.append(gathered_list[num_groups][index])
+    
+    return results
 
 def test(
         device: Union[str, int],

@@ -28,11 +28,11 @@ def setup(rank: int, world_size: int) -> None:
 def cleanup() -> None:
     distributed.destroy_process_group()
 
-def all_gather_list(predictions: List[str]) -> List[str]:
+def all_gather_list(predictions: List[str], rank: int) -> List[str]:
     gathered_list = [None] * distributed.get_world_size()
-
     distributed.all_gather_object(gathered_list, predictions)
-
+    for sublit in gathered_list:
+        print(sublit)
     return [item for sublist in gathered_list for item in sublist]
 
 def test(
@@ -122,7 +122,7 @@ def test(
 
     dataset = ConformerDataset(df, processor, num_examples=None)
     sampler = DistributedSampler(dataset, num_replicas=world_size, rank=device, shuffle=False) if world_size > 1 else SequentialSampler(dataset)
-    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False, sampler=sampler, collate_fn=ConformerCollate(processor, collate_type='test'))
+    dataloader = DataLoader(dataset, batch_size=batch_size, sampler=sampler, collate_fn=ConformerCollate(processor, collate_type='test'))
 
     evaluator = ConformerMetric()
     
@@ -136,7 +136,9 @@ def test(
                 predictions += [preds[index] for index in sorted_indices]
 
     if world_size > 1:
-        predictions = all_gather_list(predictions)
+        predictions = all_gather_list(predictions, device)
+        print(predictions)
+        print(len(predictions))
 
     if device == 0 or device == 'cpu':
         labels = df['text'].to_list()
@@ -154,6 +156,9 @@ def test(
             df.to_csv(saved_result_path, index=False)
         
         print("Finish Testing")
+
+    if world_size > 1:
+        cleanup()
 
 def main(
         # Data Config

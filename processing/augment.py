@@ -1,6 +1,7 @@
 import torch
+import torch.nn as nn
 from torchaudio.transforms import SpecAugment
-
+import random
 from typing import Union
 
 class ConformerAugment:
@@ -16,3 +17,16 @@ class ConformerAugment:
 
     def __call__(self, mels: torch.Tensor) -> torch.Tensor:
         return self.spec_augment(mels)
+    
+# class TimeWrapping(nn.Module):
+#     def __init__(self, W: int = 80) -> None:
+#         super().__init__()
+#         self.W = W
+    
+#     def forward(self, x: torch.Tensor) -> torch.Tensor:
+#         if x.ndim == 2:
+#             freq_length, time_length = x.size()
+#         else:
+#             _, freq_length, time_length = x.size()
+
+#         y = freq_length // 2

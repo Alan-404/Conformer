@@ -91,7 +91,7 @@ class ConformerCollate:
         if self.collate_type != 'test':
             audios, graphemes = zip(*batch)
 
-            audios, audio_lengths = self.processor(audios, augment=self.run_augment)
+            audios, audio_lengths = self.processor(audios, augment=False)
             tokens, token_lengths = self.processor.as_target(graphemes)
             
             audio_lengths, sorted_indices = torch.sort(audio_lengths, descending=True)

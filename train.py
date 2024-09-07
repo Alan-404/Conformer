@@ -132,7 +132,7 @@ def train(
         ratio: float = 1, 
         zero_masking: bool = True,
         # Logging Config
-        logging: bool = True,
+        logging: bool = False,
         logging_project: str = "Conformer S2T",
         logging_name: Optional[str] = None
     ) -> None:

@@ -305,7 +305,7 @@ def main(
         val_path: Optional[str] = None,
         val_batch_size: int = 1,
         num_val_samples: Optional[int] = None,
-        # Processor Config
+        # Audio Config
         sampling_rate: int = 16000,
         n_mels: int = 80,
         n_fft: int = 400,
@@ -315,15 +315,15 @@ def main(
         fmax: Optional[float] = 8000.0,
         mel_norm: str = "slaney",
         mel_scale: str = 'slaney',
-        # Assessor Config
-        tokenizer_path: str = "./tokenizer/vi.json",
+        # Text Config
+        tokenizer_path: str = "./tokenizers/vi.json",
         pad_token: str = "<PAD>",
         delim_token: str = "|",
         unk_token: str = "<UNK>",
         # Model Config
-        n_conformer_blocks: int = 17, 
-        d_model: int = 512, 
-        n_heads: int = 8, 
+        n_conformer_blocks: int = 16, 
+        d_model: int = 256, 
+        n_heads: int = 4, 
         kernel_size: int = 31,
         lstm_hidden_dim: int = 640,
         n_lstm_layers: int = 1,

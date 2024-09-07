@@ -5,7 +5,7 @@ import random
 from typing import Union
 
 class ConformerAugment:
-    def __init__(self, n_time_masks: int = 10, time_mask_param: int = 35, n_freq_masks: int = 10, freq_mask_param: int = 35, ratio: float = 0.05, zero_masking: bool = True, device: Union[str, int] = 'cpu') -> None:
+    def __init__(self, n_time_masks: int = 2, time_mask_param: int = 100, n_freq_masks: int = 2, freq_mask_param: int = 27, ratio: float = 1, zero_masking: bool = True, device: Union[str, int] = 'cpu') -> None:
         self.spec_augment = SpecAugment(
             n_time_masks=n_time_masks,
             time_mask_param=time_mask_param,

@@ -321,9 +321,9 @@ def main(
         delim_token: str = "|",
         unk_token: str = "<UNK>",
         # Model Config
-        n_conformer_blocks: int = 16, 
-        d_model: int = 256, 
-        n_heads: int = 4, 
+        n_conformer_blocks: int = 17, 
+        d_model: int = 512, 
+        n_heads: int = 8, 
         kernel_size: int = 31,
         lstm_hidden_dim: int = 640,
         n_lstm_layers: int = 1,
@@ -355,7 +355,7 @@ def main(
             checkpoint_folder, checkpoint, save_checkpoint_after_steps, save_checkpoint_after_epochs, n_saved_checkpoints,
             val_path, val_batch_size, num_val_samples,
             sampling_rate, n_mels, n_fft, win_length, hop_length, fmin, fmax, mel_norm, mel_scale,
-            tokenizer_path, pad_token, delim_token, unk_token,
+            tokenizer_path, pad_token, delim_token, unk_token, 
             n_conformer_blocks, d_model, n_heads, kernel_size, lstm_hidden_dim, n_lstm_layers, dropout_rate,
             n_time_masks, time_mask_param, n_freq_masks, freq_mask_param, ratio, zero_masking,
             logging, logging_project, logging_name
@@ -369,8 +369,9 @@ def main(
                 checkpoint_folder, checkpoint, save_checkpoint_after_steps, save_checkpoint_after_epochs, n_saved_checkpoints,
                 val_path, val_batch_size, num_val_samples,
                 sampling_rate, n_mels, n_fft, win_length, hop_length, fmin, fmax, mel_norm, mel_scale,
-                tokenizer_path, pad_token, delim_token, unk_token,
+                tokenizer_path, pad_token, delim_token, unk_token, 
                 n_conformer_blocks, d_model, n_heads, kernel_size, lstm_hidden_dim, n_lstm_layers, dropout_rate,
+                n_time_masks, time_mask_param, n_freq_masks, freq_mask_param, ratio, zero_masking,
                 logging, logging_project, logging_name
             ),
             nprocs=n_gpus,
